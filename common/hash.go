@@ -11,6 +11,7 @@ import (
 	_ "crypto/sha512"
 	"encoding/binary"
 	"math/big"
+	"strconv"
 )
 
 const (
@@ -40,6 +41,9 @@ func SHA512_256(in ...[]byte) []byte {
 	for _, bz := range in {
 		data = append(data, bz...)
 		data = append(data, hashInputDelimiter) // safety delimiter
+		l := []byte(strconv.Itoa(len(bz)))
+		data = append(data, l...) // Security audit: length of each byte buffer should be added after
+		// each security delimiters in order to enforce proper domain separation
 	}
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
@@ -73,6 +77,9 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	for i := range in {
 		data = append(data, ptrs[i]...)
 		data = append(data, hashInputDelimiter) // safety delimiter
+		l := []byte(strconv.Itoa(len(ptrs[i])))
+		data = append(data, l...) // Security audit: length of each byte buffer should be added after
+		// each security delimiters in order to enforce proper domain separation
 	}
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
