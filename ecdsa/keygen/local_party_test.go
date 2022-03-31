@@ -63,9 +63,11 @@ func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold 
 		var P *LocalParty
 		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams).(*LocalParty)
+			P_, _ := NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams)
+			P, _ = P_.(*LocalParty)
 		} else {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P_, _ := NewLocalParty(params, outCh, endCh)
+			P, _ = P_.(*LocalParty)
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -120,9 +122,11 @@ func TestStartRound1Paillier(t *testing.T) {
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
-		lp = NewLocalParty(params, out, nil, fixtures[0].LocalPreParams).(*LocalParty)
+		lp_, _ := NewLocalParty(params, out, nil, fixtures[0].LocalPreParams)
+		lp = lp_.(*LocalParty)
 	} else {
-		lp = NewLocalParty(params, out, nil).(*LocalParty)
+		lp_, _ := NewLocalParty(params, out, nil)
+		lp = lp_.(*LocalParty)
 	}
 	if err := lp.Start(); err != nil {
 		assert.FailNow(t, err.Error())
@@ -160,9 +164,11 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
-		lp = NewLocalParty(params, out, nil, fixtures[0].LocalPreParams).(*LocalParty)
+		lp_, _ := NewLocalParty(params, out, nil, fixtures[0].LocalPreParams)
+		lp = lp_.(*LocalParty)
 	} else {
-		lp = NewLocalParty(params, out, nil).(*LocalParty)
+		lp_, _ := NewLocalParty(params, out, nil)
+		lp = lp_.(*LocalParty)
 	}
 	if err := lp.Start(); err != nil {
 		assert.FailNow(t, err.Error())
@@ -207,9 +213,11 @@ func TestBadMessageCulprits(t *testing.T) {
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
-		lp = NewLocalParty(params, out, nil, fixtures[0].LocalPreParams).(*LocalParty)
+		lp_, _ := NewLocalParty(params, out, nil, fixtures[0].LocalPreParams)
+		lp = lp_.(*LocalParty)
 	} else {
-		lp = NewLocalParty(params, out, nil).(*LocalParty)
+		lp_, _ := NewLocalParty(params, out, nil)
+		lp = lp_.(*LocalParty)
 	}
 	if err := lp.Start(); err != nil {
 		assert.FailNow(t, err.Error())
@@ -384,5 +392,21 @@ keygen:
 				break keygen
 			}
 		}
+	}
+}
+
+func TestTooManyParties(t *testing.T) {
+	setUp("info")
+
+	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
+	p2pCtx := tss.NewPeerContext(pIDs)
+	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
+
+	out := make(chan tss.Message, len(pIDs))
+	var err error
+	_, err = NewLocalParty(params, out, nil)
+	if !assert.Error(t, err) {
+		t.FailNow()
+		return
 	}
 }

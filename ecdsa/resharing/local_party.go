@@ -24,6 +24,8 @@ import (
 var _ tss.Party = (*LocalParty)(nil)
 var _ fmt.Stringer = (*LocalParty)(nil)
 
+const MaxParties = 10000
+
 type (
 	LocalParty struct {
 		*tss.BaseParty
@@ -71,8 +73,14 @@ func NewLocalParty(
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
 	end chan<- keygen.LocalPartySaveData,
-) tss.Party {
+) (tss.Party, error) {
 	oldPartyCount := len(params.OldParties().IDs())
+	if oldPartyCount > MaxParties {
+		return nil, fmt.Errorf("resharing.NewLocalParty expected at most %d old parties", MaxParties)
+	}
+	if params.NewPartyCount() > MaxParties {
+		return nil, fmt.Errorf("resharing.NewLocalParty expected at most %d new parties", MaxParties)
+	}
 	subset := key
 	if params.IsOldCommittee() {
 		subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
@@ -97,7 +105,7 @@ func NewLocalParty(
 	if key.LocalPreParams.ValidateWithProof() {
 		p.save.LocalPreParams = key.LocalPreParams
 	}
-	return p
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
