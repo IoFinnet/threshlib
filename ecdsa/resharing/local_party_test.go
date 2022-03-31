@@ -73,7 +73,8 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the old parties first
 	for j, pID := range oldPIDs {
 		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
-		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
+		P_, _ := NewLocalParty(params, oldKeys[j], outCh, endCh) // discard old key data
+		P := P_.(*LocalParty)
 		oldCommittee = append(oldCommittee, P)
 	}
 	// init the new parties
@@ -83,7 +84,8 @@ func TestE2EConcurrent(t *testing.T) {
 		if j < len(fixtures) && len(newPIDs) <= len(fixtures) {
 			save.LocalPreParams = fixtures[j].LocalPreParams
 		}
-		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
+		P_, _ := NewLocalParty(params, save, outCh, endCh)
+		P := P_.(*LocalParty)
 		newCommittee = append(newCommittee, P)
 	}
 
@@ -172,7 +174,8 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold)
-		P := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
+		P_, _ := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh)
+		P := P_.(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -229,5 +232,33 @@ signing:
 				return
 			}
 		}
+	}
+}
+
+func TestTooManyParties(t *testing.T) {
+	setUp("info")
+
+	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
+	p2pCtx := tss.NewPeerContext(pIDs)
+	oldP2PCtx := tss.NewPeerContext(pIDs)
+	params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
+		len(pIDs), MaxParties/10)
+
+	var err error
+	var void keygen.LocalPartySaveData
+	_, err = NewLocalParty(params, void, nil, nil)
+	if !assert.Error(t, err) {
+		t.FailNow()
+		return
+	}
+
+	params = tss.NewReSharingParameters(tss.S256(), tss.NewPeerContext(tss.GenerateTestPartyIDs(MaxParties-1)), p2pCtx,
+		pIDs[0], MaxParties+1, MaxParties/10, len(pIDs), MaxParties/10)
+
+	err = nil
+	_, err = NewLocalParty(params, void, nil, nil)
+	if !assert.Error(t, err) {
+		t.FailNow()
+		return
 	}
 }

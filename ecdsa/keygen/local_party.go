@@ -28,6 +28,8 @@ import (
 var _ tss.Party = (*LocalParty)(nil)
 var _ fmt.Stringer = (*LocalParty)(nil)
 
+const MaxParties = 10000
+
 type (
 	LocalParty struct {
 		*tss.BaseParty
@@ -73,10 +75,13 @@ func NewLocalParty(
 	out chan<- tss.Message,
 	end chan<- LocalPartySaveData,
 	optionalPreParams ...LocalPreParams,
-) tss.Party {
+) (tss.Party, error) {
 	partyCount := params.PartyCount()
 	data := NewLocalPartySaveData(partyCount)
 	// when `optionalPreParams` is provided we'll use the pre-computed primes instead of generating them from scratch
+	if partyCount > MaxParties {
+		return nil, fmt.Errorf("keygen.NewLocalParty expected at most %d parties", MaxParties)
+	}
 	if 0 < len(optionalPreParams) {
 		if 1 < len(optionalPreParams) {
 			panic(errors.New("keygen.NewLocalParty expected 0 or 1 item in `optionalPreParams`"))
@@ -106,7 +111,7 @@ func NewLocalParty(
 	p.temp.r3msgpffac = make([]*zkpfac.ProofFac, partyCount)
 	p.temp.r3msgpfsch = make([]*zkpsch.ProofSch, partyCount)
 	p.temp.r4msgpf = make([]*zkpsch.ProofSch, partyCount)
-	return p
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {

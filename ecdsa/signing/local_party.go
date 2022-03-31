@@ -27,6 +27,8 @@ import (
 var _ tss.Party = (*LocalParty)(nil)
 var _ fmt.Stringer = (*LocalParty)(nil)
 
+const MaxParties = 10000
+
 type (
 	LocalParty struct {
 		*tss.BaseParty
@@ -128,8 +130,11 @@ func NewLocalParty(
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
 	startRndNums ...int,
-) tss.Party {
+) (tss.Party, error) {
 	partyCount := len(params.Parties().IDs())
+	if partyCount > MaxParties {
+		return nil, fmt.Errorf("signing.NewLocalParty expected at most %d parties", MaxParties)
+	}
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
 		params:    params,
@@ -190,7 +195,7 @@ func NewLocalParty(
 	p.temp.r5msgsji = make([]*big.Int, partyCount)
 	p.temp.r5msg𝛽ʹji = make([]*big.Int, partyCount)
 
-	return p
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {

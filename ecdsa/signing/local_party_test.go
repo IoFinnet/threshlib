@@ -53,7 +53,8 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh)
+		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -91,7 +92,8 @@ func TestE2EConcurrent(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh)
+		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -207,7 +209,8 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh)
+		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -400,7 +403,8 @@ func TestAbortIdentification(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh)
+		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -640,4 +644,20 @@ func TestFillTo32BytesInPlace(t *testing.T) {
 	assert.True(t, big.NewInt(0).SetBytes(normalizedS).Cmp(s) == 0)
 	assert.Equal(t, 32, len(normalizedS))
 	assert.NotEqual(t, 32, len(s.Bytes()))
+}
+
+func TestTooManyParties(t *testing.T) {
+	setUp("info")
+
+	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
+	p2pCtx := tss.NewPeerContext(pIDs)
+	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
+
+	var err error
+	var void keygen.LocalPartySaveData
+	_, err = NewLocalParty(big.NewInt(42), params, void, big.NewInt(0), nil, nil)
+	if !assert.Error(t, err) {
+		t.FailNow()
+		return
+	}
 }
