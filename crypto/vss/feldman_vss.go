@@ -22,7 +22,7 @@ import (
 
 type (
 	Share struct {
-		Threshold int
+		Threshold uint
 		ID,       // xi
 		Share *big.Int // Sigma i
 	}
@@ -59,14 +59,14 @@ func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,
 // requiring a minimum number of shares to recreate, of length shares, from the input secret
 //
-func Create(ec elliptic.Curve, threshold int, secret *big.Int, indexes []*big.Int) (Vs, Shares, error) {
+func Create(ec elliptic.Curve, threshold uint, secret *big.Int, indexes []*big.Int) (Vs, Shares, error) {
 	if secret == nil || indexes == nil {
 		return nil, nil, fmt.Errorf("vss secret or indexes == nil: %v %v", secret, indexes)
 	}
 	if threshold < 1 {
 		return nil, nil, errors.New("vss threshold < 1")
 	}
-	num := len(indexes)
+	num := uint(len(indexes))
 	if num < threshold {
 		return nil, nil, ErrNumSharesBelowThreshold
 	}
@@ -84,7 +84,8 @@ func Create(ec elliptic.Curve, threshold int, secret *big.Int, indexes []*big.In
 	}
 
 	shares := make(Shares, num)
-	for i := 0; i < num; i++ {
+	var i uint
+	for i = 0; i < num; i++ {
 		if indexes[i].Cmp(big.NewInt(0)) == 0 {
 			return nil, nil, fmt.Errorf("party index should not be 0")
 		}
@@ -94,14 +95,15 @@ func Create(ec elliptic.Curve, threshold int, secret *big.Int, indexes []*big.In
 	return v, shares, nil
 }
 
-func (share *Share) Verify(ec elliptic.Curve, threshold int, vs Vs) bool {
+func (share *Share) Verify(ec elliptic.Curve, threshold uint, vs Vs) bool {
 	if share.Threshold != threshold || vs == nil {
 		return false
 	}
 	var err error
 	modQ := common.ModInt(ec.Params().N)
 	v, t := vs[0], one // YRO : we need to have our accumulator outside of the loop
-	for j := 1; j <= threshold; j++ {
+	var j uint
+	for j = 1; j <= threshold; j++ {
 		// t = k_i^j
 		t = modQ.Mul(t, share.ID)
 		// v = v * v_j^t
@@ -116,7 +118,7 @@ func (share *Share) Verify(ec elliptic.Curve, threshold int, vs Vs) bool {
 }
 
 func (shares Shares) ReConstruct(ec elliptic.Curve) (secret *big.Int, err error) {
-	if shares != nil && shares[0].Threshold > len(shares) {
+	if shares != nil && shares[0].Threshold > uint(len(shares)) {
 		return nil, ErrNumSharesBelowThreshold
 	}
 	modN := common.ModInt(ec.Params().N)
@@ -147,11 +149,12 @@ func (shares Shares) ReConstruct(ec elliptic.Curve) (secret *big.Int, err error)
 	return secret, nil
 }
 
-func samplePolynomial(ec elliptic.Curve, threshold int, secret *big.Int) []*big.Int {
+func samplePolynomial(ec elliptic.Curve, threshold uint, secret *big.Int) []*big.Int {
 	q := ec.Params().N
 	v := make([]*big.Int, threshold+1)
 	v[0] = secret
-	for i := 1; i <= threshold; i++ {
+	var i uint
+	for i = 1; i <= threshold; i++ {
 		ai := common.GetRandomPositiveInt(q)
 		v[i] = ai
 	}
@@ -162,12 +165,13 @@ func samplePolynomial(ec elliptic.Curve, threshold int, secret *big.Int) []*big.
 // evaluatePolynomial([a, b, c, d], x):
 // 		returns a + bx + cx^2 + dx^3
 //
-func evaluatePolynomial(ec elliptic.Curve, threshold int, v []*big.Int, id *big.Int) (result *big.Int) {
+func evaluatePolynomial(ec elliptic.Curve, threshold uint, v []*big.Int, id *big.Int) (result *big.Int) {
 	q := ec.Params().N
 	modQ := common.ModInt(q)
 	result = new(big.Int).Set(v[0])
 	X := big.NewInt(int64(1))
-	for i := 1; i <= threshold; i++ {
+	var i uint
+	for i = 1; i <= threshold; i++ {
 		ai := v[i]
 		X = modQ.Mul(X, id)
 		aiXi := new(big.Int).Mul(ai, X)

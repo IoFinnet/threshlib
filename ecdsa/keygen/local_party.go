@@ -139,7 +139,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		return ok, err
 	}
 	// check that the message's "from index" will fit into the array
-	if maxFromIdx := p.params.PartyCount() - 1; maxFromIdx < msg.GetFrom().Index {
+	if maxFromIdx := p.params.PartyCount() - 1; maxFromIdx < uint(msg.GetFrom().Index) {
 		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
 			p.params.PartyCount(), msg.GetFrom().Index), msg.GetFrom())
 	}
@@ -157,11 +157,11 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
 	case *KGRound1Message:
-		//p.temp.kgRound1Messages[fromPIdx] = msg // TODO remove
+		// p.temp.kgRound1Messages[fromPIdx] = msg // TODO remove
 		r1msg := msg.Content().(*KGRound1Message)
 		p.temp.r1msgVHashs[fromPIdx] = r1msg.UnmarshalVHash()
 	case *KGRound2Message:
-		//p.temp.kgRound2Messages[fromPIdx] = msg
+		// p.temp.kgRound2Messages[fromPIdx] = msg
 		r2msg := msg.Content().(*KGRound2Message)
 		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
 		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNTilde()
@@ -179,7 +179,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err)
 		}
 	case *KGRound3Message:
-		//p.temp.kgRound3Messages[fromPIdx] = msg
+		// p.temp.kgRound3Messages[fromPIdx] = msg
 		r3msg := msg.Content().(*KGRound3Message)
 		xij, err := p.data.PaillierSK.Decrypt(r3msg.UnmarshalShare())
 		if err != nil {
@@ -210,7 +210,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		}
 		p.temp.r3msgpfsch[fromPIdx] = proofSch
 	case *KGRound4Message:
-		//p.temp.kgRound4Messages[fromPIdx] = msg
+		// p.temp.kgRound4Messages[fromPIdx] = msg
 		r4msg := msg.Content().(*KGRound4Message)
 		proof, err := r4msg.UnmarshalProof(p.params.EC())
 		if err != nil {

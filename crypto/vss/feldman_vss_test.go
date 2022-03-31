@@ -44,22 +44,24 @@ func TestCheckIndexesZero(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	num, threshold := 5, 3
+	var num, threshold uint
+	num, threshold = 5, 3
 
 	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
 
 	ids := make([]*big.Int, 0)
-	for i := 0; i < num; i++ {
+	var i uint
+	for i = 0; i < num; i++ {
 		ids = append(ids, common.GetRandomPositiveInt(tss.EC().Params().N))
 	}
 
 	vs, _, err := Create(tss.EC(), threshold, secret, ids)
 	assert.Nil(t, err)
 
-	assert.Equal(t, threshold+1, len(vs))
+	assert.Equal(t, threshold+1, uint(len(vs)))
 	// assert.Equal(t, num, params.NumShares)
 
-	assert.Equal(t, threshold+1, len(vs))
+	assert.Equal(t, threshold+1, uint(len(vs)))
 
 	// ensure that each vs has two points on the curve
 	for i, pg := range vs {
@@ -72,30 +74,34 @@ func TestCreate(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
-	num, threshold := 5, 3
+	var num, threshold uint
+	num, threshold = 5, 3
 
 	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
 
 	ids := make([]*big.Int, 0)
-	for i := 0; i < num; i++ {
+	var i uint
+	for i = 0; i < num; i++ {
 		ids = append(ids, common.GetRandomPositiveInt(tss.EC().Params().N))
 	}
 
 	vs, shares, err := Create(tss.EC(), threshold, secret, ids)
 	assert.NoError(t, err)
 
-	for i := 0; i < num; i++ {
+	for i = 0; i < num; i++ {
 		assert.True(t, shares[i].Verify(tss.EC(), threshold, vs))
 	}
 }
 
 func TestReconstruct(t *testing.T) {
-	num, threshold := 5, 3
+	var num, threshold uint
+	num, threshold = 5, 3
 
 	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
 
 	ids := make([]*big.Int, 0)
-	for i := 0; i < num; i++ {
+	var i uint
+	for i = 0; i < num; i++ {
 		ids = append(ids, common.GetRandomPositiveInt(tss.EC().Params().N))
 	}
 
