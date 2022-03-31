@@ -9,7 +9,7 @@ package keygen
 import (
 	"errors"
 	"math/big"
-	sync "sync"
+	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -161,10 +161,7 @@ func (round *round4) Start() *tss.Error {
 		return round.WrapError(err)
 	}
 	round.save.ECDSAPub = ecdsaPubKey
-
-	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), ecdsaPubKey)
-
+	
 	proof, err := zkpsch.NewProof(round.save.BigXj[i], round.save.Xi)
 	if err != nil {
 		return round.WrapError(err)
