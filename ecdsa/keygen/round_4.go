@@ -161,7 +161,7 @@ func (round *round4) Start() *tss.Error {
 		return round.WrapError(err)
 	}
 	round.save.ECDSAPub = ecdsaPubKey
-	
+
 	proof, err := zkpsch.NewProof(round.save.BigXj[i], round.save.Xi)
 	if err != nil {
 		return round.WrapError(err)
