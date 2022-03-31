@@ -57,11 +57,11 @@ func handleMessage(t *testing.T, msg tss.Message, parties []*LocalParty, updater
 	return false
 }
 
-func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold int, fixtures []LocalPartySaveData, outCh chan tss.Message, endCh chan LocalPartySaveData, parties []*LocalParty, errCh chan *tss.Error) ([]*LocalParty, chan *tss.Error) {
+func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold uint, fixtures []LocalPartySaveData, outCh chan tss.Message, endCh chan LocalPartySaveData, parties []*LocalParty, errCh chan *tss.Error) ([]*LocalParty, chan *tss.Error) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold)
+		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], uint(len(pIDs)), threshold)
 		if i < len(fixtures) {
 			P_, _ := NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams)
 			P, _ = P_.(*LocalParty)
@@ -111,7 +111,7 @@ func TestStartRound1Paillier(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(2)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
+	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], uint(len(pIDs)), uint(threshold))
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -153,7 +153,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(2)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
+	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], uint(len(pIDs)), uint(threshold))
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -202,7 +202,7 @@ func TestBadMessageCulprits(t *testing.T) {
 
 	pIDs := tss.GenerateTestPartyIDs(2)
 	p2pCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), 1)
+	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], uint(len(pIDs)), 1)
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -246,7 +246,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 	// tss.SetCurve(elliptic.P256())
 
-	threshold := testThreshold
+	threshold := uint(testThreshold)
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...",
@@ -400,7 +400,7 @@ func TestTooManyParties(t *testing.T) {
 
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
+	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], uint(len(pIDs)), MaxParties/100)
 
 	out := make(chan tss.Message, len(pIDs))
 	var err error

@@ -43,7 +43,7 @@ func setUp(level string) {
 func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	setUp("info")
 
-	threshold := testThreshold
+	threshold := uint(testThreshold)
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants, testSetIdEdwards)
 	if err != nil {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
@@ -64,7 +64,7 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold) // TODO
+		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], uint(len(pIDs)), threshold) // TODO
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {
@@ -217,7 +217,7 @@ keygen:
 func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 	setUp("info")
 
-	threshold := testThreshold
+	threshold := uint(testThreshold)
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants, testSetIdS256Schnorr)
 	if err != nil {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
@@ -238,7 +238,7 @@ func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], uint(len(pIDs)), threshold)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {

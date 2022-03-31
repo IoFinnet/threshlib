@@ -133,7 +133,7 @@ func (round *presign1) prepare() error {
 	xi = mod.Add(round.temp.keyDerivationDelta, xi)
 	round.key.Xi = xi
 
-	if round.Threshold()+1 > len(ks) {
+	if round.Threshold()+1 > uint(len(ks)) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))
 	}
 	if wi, BigWs, err := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, BigXs); err != nil {

@@ -28,7 +28,7 @@ import (
 // as these are not used during the signing phase.
 func TestHDKeyDerivation(t *testing.T) {
 	setUp("info")
-	threshold := testThreshold
+	threshold := uint(testThreshold)
 
 	// PHASE: load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
