@@ -70,6 +70,9 @@ func (round *round1) Start() *tss.Error {
 	P2, Q2 := new(big.Int).Lsh(preParams.P, 1), new(big.Int).Lsh(preParams.Q, 1)
 	𝜑 := new(big.Int).Mul(P2, Q2)
 	𝜓i, err := zkpprm.NewProof(preParams.H1i, preParams.H2i, preParams.NTildei, 𝜑, preParams.Beta)
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
 	listToHash, err := crypto.FlattenECPoints(vs)
 	if err != nil {
 		return round.WrapError(err, Pi)

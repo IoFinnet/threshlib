@@ -162,7 +162,10 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.r1msgVHashs[fromPIdx] = r1msg.UnmarshalVHash()
 	case *KGRound2Message:
 		// p.temp.kgRound2Messages[fromPIdx] = msg
-		r2msg := msg.Content().(*KGRound2Message)
+		r2msg, ok := msg.Content().(*KGRound2Message)
+		if !ok {
+			return false, p.WrapError(fmt.Errorf("error with KGRound2Message (%d)", fromPIdx))
+		}
 		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
 		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNTilde()
 		p.data.H1j[fromPIdx], p.data.H2j[fromPIdx] = r2msg.UnmarshalH1(), r2msg.UnmarshalH2()
