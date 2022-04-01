@@ -171,7 +171,13 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.data.H1j[fromPIdx], p.data.H2j[fromPIdx] = r2msg.UnmarshalH1(), r2msg.UnmarshalH2()
 		var err error
 		p.temp.r2msgVss[fromPIdx], err = r2msg.UnmarshalVs(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err)
+		}
 		p.temp.r2msgAj[fromPIdx], err = r2msg.UnmarshalAi(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err)
+		}
 		p.temp.r2msgXj[fromPIdx], err = r2msg.UnmarshalXi(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err)
