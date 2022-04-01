@@ -366,9 +366,12 @@ func (m *TempDataDumpMessage) ValidateBasic() bool {
 		common.NonEmptyBytes(m.DataDump)
 }
 
-func (m *TempDataDumpMessage) UnmarshalTempDump() localTempData {
+func (m *TempDataDumpMessage) UnmarshalTempDump() (*localTempData, error) {
 	dataDec := gob.NewDecoder(bytes.NewReader(m.GetDataDump()))
 	var tempData localTempData
-	dataDec.Decode(&tempData)
-	return tempData
+	err := dataDec.Decode(&tempData)
+	if err != nil {
+		return nil, err
+	}
+	return &tempData, nil
 }
