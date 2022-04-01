@@ -180,6 +180,9 @@ func DeriveChildKeyFromHierarchy(indicesHierarchy []uint32, pk *ExtendedKey, mod
 	var k = pk
 	var err error
 	var childKey *ExtendedKey
+	if pk == nil {
+		return nil, nil, errors.New("pubkey cannot be nil")
+	}
 	mod_ := common.ModInt(mod)
 	ilNum := big.NewInt(0)
 	for index := range indicesHierarchy {
@@ -199,6 +202,9 @@ func DeriveChildKeyFromHierarchy(indicesHierarchy []uint32, pk *ExtendedKey, mod
 func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
 	if index >= HardenedKeyStart {
 		return nil, nil, errors.New("the index must be non-hardened")
+	}
+	if pk == nil {
+		return nil, nil, errors.New("pubkey cannot be nil")
 	}
 	if pk.Depth == maxDepth {
 		return nil, nil, errors.New("cannot derive key beyond max depth")
