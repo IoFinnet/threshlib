@@ -31,6 +31,7 @@ var (
 // ----- //
 
 func NewSignRound1Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	commitment cmt.HashCommitment,
 ) tss.ParsedMessage {
@@ -41,7 +42,7 @@ func NewSignRound1Message(
 	content := &SignRound1Message{
 		Commitment: commitment.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -57,6 +58,7 @@ func (m *SignRound1Message) UnmarshalCommitment() *big.Int {
 // ----- //
 
 func NewSignRound2Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	deCommitment cmt.HashDeCommitment,
 	proof *zkpsch.ProofSch,
@@ -71,7 +73,7 @@ func NewSignRound2Message(
 		DeCommitment: dcBzs,
 		Proof:        proofBzs[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -93,6 +95,7 @@ func (m *SignRound2Message) UnmarshalZKProof(ec elliptic.Curve) (*zkpsch.ProofSc
 // ----- //
 
 func NewSignRound3Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	si *big.Int,
 ) tss.ParsedMessage {
@@ -103,7 +106,7 @@ func NewSignRound3Message(
 	content := &SignRound3Message{
 		S: si.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 

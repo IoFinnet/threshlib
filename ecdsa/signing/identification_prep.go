@@ -24,7 +24,8 @@ func (round *identificationPrep) Start() *tss.Error {
 		if j == i {
 			continue
 		}
-		r5msg := NewIdentificationPrepRound5Message(Pj, round.PartyID(), round.temp.𝛾i, round.temp.DeltaMtASij[j], round.temp.DeltaShareBetaNegs[j])
+		r5msg := NewIdentificationPrepRound5Message(round.temp.sessionId, Pj, round.PartyID(), round.temp.𝛾i,
+			round.temp.DeltaMtASij[j], round.temp.DeltaShareBetaNegs[j])
 		round.out <- r5msg
 
 	}

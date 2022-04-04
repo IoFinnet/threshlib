@@ -92,6 +92,7 @@ type (
 		SigmaShare *big.Int
 
 		// msg store
+		sessionId          *big.Int
 		r1msgG             []*big.Int
 		r1msgK             []*big.Int
 		r1msg𝜓0ij          []*zkpenc.ProofEnc
@@ -129,6 +130,7 @@ func NewLocalParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
+	sessionId *big.Int,
 	startRndNums ...int,
 ) (tss.Party, error) {
 	partyCount := len(params.Parties().IDs())
@@ -157,6 +159,7 @@ func NewLocalParty(
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
 	p.temp.m = msg
+	p.temp.sessionId = sessionId
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
 	p.temp.DeltaShareBetas = make([]*big.Int, partyCount)
 	p.temp.DeltaShareBetaNegs = make([]*big.Int, partyCount)
@@ -227,8 +230,8 @@ func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 	return tss.BaseUpdate(p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
-	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
+func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool, sessionId *big.Int) (bool, *tss.Error) {
+	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast, sessionId)
 	if err != nil {
 		return false, p.WrapError(err)
 	}

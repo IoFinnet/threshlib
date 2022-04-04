@@ -59,7 +59,8 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	updater := test.SharedPartyUpdater
 
 	msg := big.NewInt(200)
@@ -67,7 +68,7 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(edwards.Edwards(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh, sessionId).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -178,12 +179,14 @@ func TestE2EConcurrentS256Schnorr(t *testing.T) {
 
 	msg, _ := hex.DecodeString("304502210088BE0644191B935DB1CD786B43FF27798006578D8C908906B49E89") // big.NewInt(200).Bytes()
 	msgI := big.NewInt(0).SetBytes(msg)
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
 
-		P := NewLocalParty(msgI, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(msgI, params, keys[i], outCh, endCh, sessionId).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {

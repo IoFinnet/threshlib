@@ -87,7 +87,10 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{errors.New("failed to unmarshal schnorr proof"), nil}
 				return
 			}
-			ok = proof.Verify(PjVs[0])
+			if round.temp.sessionId == nil {
+				ch <- vssOut{errors.New("sessionId not set"), nil}
+			}
+			ok = proof.VerifyWithNonce(PjVs[0], round.temp.sessionId)
 			if !ok {
 				ch <- vssOut{errors.New("failed to prove schnorr proof"), nil}
 				return

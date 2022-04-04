@@ -20,7 +20,7 @@ func SharedPartyUpdater(party tss.Party, msg tss.Message, errCh chan<- *tss.Erro
 		errCh <- party.WrapError(err)
 		return
 	}
-	pMsg, err := tss.ParseWireMessage(bz, msg.GetFrom(), msg.IsBroadcast())
+	pMsg, err := tss.ParseWireMessage(bz, msg.GetFrom(), msg.IsBroadcast(), msg.GetSessionId())
 	if err != nil {
 		errCh <- party.WrapError(err)
 		return

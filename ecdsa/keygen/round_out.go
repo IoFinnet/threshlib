@@ -34,7 +34,10 @@ func (round *roundout) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r4msgpf[j].Verify(round.save.BigXj[j]); !ok {
+			if round.temp.sessionId == nil {
+				errChs <- round.WrapError(errors.New("sessionId not set"))
+			}
+			if ok := round.temp.r4msgpf[j].VerifyWithNonce(round.save.BigXj[j], round.temp.sessionId); !ok {
 				errChs <- round.WrapError(errors.New("proof sch verify failed"), Pj)
 			}
 		}(j, Pj)

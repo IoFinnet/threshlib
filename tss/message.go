@@ -8,6 +8,7 @@ package tss
 
 import (
 	"fmt"
+	"math/big"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -24,6 +25,8 @@ type (
 		GetFrom() *PartyID
 		// Indicates whether the message should be broadcast to other participants
 		IsBroadcast() bool
+		// Sessiong Id
+		GetSessionId() *big.Int
 		// Indicates whether the message is to the old committee during re-sharing; used mainly in tests
 		IsToOldCommittee() bool
 		// Indicates whether the message is to both committees during re-sharing; used mainly in tests
@@ -79,7 +82,7 @@ var (
 // ----- //
 
 // NewMessageWrapper constructs a MessageWrapper from routing metadata and content
-func NewMessageWrapper(routing MessageRouting, content MessageContent) *MessageWrapper {
+func NewMessageWrapper(routing MessageRouting, content MessageContent, sessionId *big.Int) *MessageWrapper {
 	// marshal the content to the ProtoBuf Any type
 	any, _ := anypb.New(content)
 	// convert given PartyIDs to the wire format
@@ -97,6 +100,7 @@ func NewMessageWrapper(routing MessageRouting, content MessageContent) *MessageW
 		From:                    routing.From.MessageWrapper_PartyID,
 		To:                      to,
 		Message:                 any,
+		SessionId:               sessionId.Bytes(),
 	}
 }
 
@@ -124,6 +128,10 @@ func (mm *MessageImpl) GetFrom() *PartyID {
 
 func (mm *MessageImpl) IsBroadcast() bool {
 	return mm.wire.IsBroadcast
+}
+
+func (mm *MessageImpl) GetSessionId() *big.Int {
+	return big.NewInt(0).SetBytes(mm.wire.SessionId)
 }
 
 // only `true` in DGRound2Message (resharing)

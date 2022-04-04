@@ -31,7 +31,7 @@ var (
 
 // ----- //
 
-func NewKGRound1Message(from *tss.PartyID, ct cmt.HashCommitment) tss.ParsedMessage {
+func NewKGRound1Message(sessionId *big.Int, from *tss.PartyID, ct cmt.HashCommitment) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
@@ -39,7 +39,7 @@ func NewKGRound1Message(from *tss.PartyID, ct cmt.HashCommitment) tss.ParsedMess
 	content := &KGRound1Message{
 		Commitment: ct.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -54,6 +54,7 @@ func (m *KGRound1Message) UnmarshalCommitment() *big.Int {
 // ----- //
 
 func NewKGRound2Message1(
+	sessionId *big.Int,
 	to, from *tss.PartyID,
 	share *vss.Share,
 ) tss.ParsedMessage {
@@ -65,7 +66,7 @@ func NewKGRound2Message1(
 	content := &KGRound2Message1{
 		Share: share.Share.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -81,6 +82,7 @@ func (m *KGRound2Message1) UnmarshalShare() *big.Int {
 // ----- //
 
 func NewKGRound2Message2(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	deCommitment cmt.HashDeCommitment,
 	proof *zkpsch.ProofSch,
@@ -95,7 +97,7 @@ func NewKGRound2Message2(
 		DeCommitment: dcBzs,
 		Proof:        proofBzs[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 

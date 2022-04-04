@@ -67,7 +67,7 @@ func (round *round1) Start() *tss.Error {
 	round.temp.NewShares = shares
 
 	// 5. "broadcast" C_i to members of the NEW committee
-	r1msg := NewDGRound1Message(
+	r1msg := NewDGRound1Message(round.temp.sessionId,
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
 		round.input.EDDSAPub, vCmt.C)
 	round.temp.dgRound1Messages[i] = r1msg

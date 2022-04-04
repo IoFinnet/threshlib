@@ -32,14 +32,14 @@ func (round *round3) Start() *tss.Error {
 	// 1-2. send share to Pj from the new committee
 	for j, Pj := range round.NewParties().IDs() {
 		share := round.temp.NewShares[j]
-		r3msg1 := NewDGRound3Message1(Pj, round.PartyID(), share)
+		r3msg1 := NewDGRound3Message1(round.temp.sessionId, Pj, round.PartyID(), share)
 		round.temp.dgRound3Message1s[i] = r3msg1
 		round.out <- r3msg1
 	}
 
 	// 3. broadcast de-commitment to new committees
 	vDeCmt := round.temp.VD
-	r3msg2 := NewDGRound3Message2(
+	r3msg2 := NewDGRound3Message2(round.temp.sessionId,
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
 		vDeCmt)
 	round.temp.dgRound3Message2s[i] = r3msg2

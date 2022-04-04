@@ -128,7 +128,8 @@ func (round *presign2) Start() *tss.Error {
 				errChs <- round.WrapError(errors.New("encryption failed"), Pj)
 				return
 			}
-			r2msg := NewPreSignRound2Message(Pj, round.PartyID(), Γi, DeltaMtA.Dji, DeltaMtA.Fji, ChiMtA.Dji, ChiMtA.Fji, DeltaMtA.Proofji, ChiMtA.Proofji, ProofLogstar)
+			r2msg := NewPreSignRound2Message(round.temp.sessionId, Pj, round.PartyID(), Γi, DeltaMtA.Dji, DeltaMtA.Fji,
+				ChiMtA.Dji, ChiMtA.Fji, DeltaMtA.Proofji, ChiMtA.Proofji, ProofLogstar)
 			round.out <- r2msg
 
 			round.temp.DeltaShareBetas[j] = DeltaMtA.Beta

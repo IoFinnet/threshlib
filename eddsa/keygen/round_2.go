@@ -34,7 +34,7 @@ func (round *round2) Start() *tss.Error {
 	// 3. p2p send share ij to Pj
 	shares := round.temp.shares
 	for j, Pj := range round.Parties().IDs() {
-		r2msg1 := NewKGRound2Message1(Pj, round.PartyID(), shares[j])
+		r2msg1 := NewKGRound2Message1(round.temp.sessionId, Pj, round.PartyID(), shares[j])
 		// do not send to this Pj, but store for round 3
 		if j == i {
 			round.temp.kgRound2Message1s[j] = r2msg1
@@ -45,13 +45,16 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 5. compute Schnorr prove
-	pii, err := zkpsch.NewProof(round.temp.vs[0], round.temp.ui)
+	if round.temp.sessionId == nil {
+		return round.WrapError(errors.New("sessionId not set"))
+	}
+	pii, err := zkpsch.NewProofGivenNonce(round.temp.vs[0], round.temp.ui, round.temp.sessionId)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ui, vi0)"))
 	}
 
 	// 5. BROADCAST de-commitments of Shamir poly*G and Schnorr prove
-	r2msg2 := NewKGRound2Message2(round.PartyID(), round.temp.deCommitPolyG, pii)
+	r2msg2 := NewKGRound2Message2(round.temp.sessionId, round.PartyID(), round.temp.deCommitPolyG, pii)
 	round.temp.kgRound2Message2s[i] = r2msg2
 	round.out <- r2msg2
 

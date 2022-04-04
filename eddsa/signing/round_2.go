@@ -32,13 +32,16 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	pir, err := zkpsch.NewProof(round.temp.pointRi, round.temp.ri)
+	if round.temp.sessionId == nil {
+		return round.WrapError(errors.New("sessionId not set"))
+	}
+	pir, err := zkpsch.NewProofGivenNonce(round.temp.pointRi, round.temp.ri, round.temp.sessionId)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ri, pointRi)"))
 	}
 
 	// 3. BROADCAST de-commitments of Shamir poly*G and Schnorr prove
-	r2msg2 := NewSignRound2Message(round.PartyID(), round.temp.deCommit, pir)
+	r2msg2 := NewSignRound2Message(round.temp.sessionId, round.PartyID(), round.temp.deCommit, pir)
 	round.temp.signRound2Messages[i] = r2msg2
 	round.out <- r2msg2
 

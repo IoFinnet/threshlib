@@ -71,7 +71,10 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Rj proof"), Pj)
 		}
-		ok = proof.Verify(Rj)
+		if round.temp.sessionId == nil {
+			return round.WrapError(errors.New("sessionId not set"))
+		}
+		ok = proof.VerifyWithNonce(Rj, round.temp.sessionId)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Rj"), Pj)
 		}
@@ -154,7 +157,7 @@ func (round *round3) Start() *tss.Error {
 	}
 
 	// 10. broadcast si to other parties
-	r3msg := NewSignRound3Message(round.PartyID(), si)
+	r3msg := NewSignRound3Message(round.temp.sessionId, round.PartyID(), si)
 	round.temp.signRound3Messages[round.PartyID().Index] = r3msg
 	round.out <- r3msg
 

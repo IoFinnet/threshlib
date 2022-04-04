@@ -30,7 +30,7 @@ func (round *round2) Start() *tss.Error {
 	i := Pi.Index
 
 	// 1. "broadcast" "ACK" members of the OLD committee
-	r2msg := NewDGRound2Message(round.OldParties().IDs(), Pi)
+	r2msg := NewDGRound2Message(round.temp.sessionId, round.OldParties().IDs(), Pi)
 	round.temp.dgRound2Messages[i] = r2msg
 	round.out <- r2msg
 

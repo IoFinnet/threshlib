@@ -152,7 +152,8 @@ func (round *identification6) Start() *tss.Error {
 		return round.WrapError(fmt.Errorf("error in zkpdec"))
 	}
 
-	r6msg := NewIdentificationRound6Message(round.PartyID(), Hi, proofHMul, DeltaShareEnc, encryptedValueSum, proofDeltaShare)
+	r6msg := NewIdentificationRound6Message(round.temp.sessionId, round.PartyID(), Hi, proofHMul, DeltaShareEnc,
+		encryptedValueSum, proofDeltaShare)
 	round.out <- r6msg
 
 	// retire unused variables

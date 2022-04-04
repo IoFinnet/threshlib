@@ -67,13 +67,15 @@ func TestE2EConcurrent(t *testing.T) {
 	errCh := make(chan *tss.Error, bothCommitteesPax)
 	outCh := make(chan tss.Message, bothCommitteesPax)
 	endCh := make(chan keygen.LocalPartySaveData, bothCommitteesPax)
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
 		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
-		P_, _ := NewLocalParty(params, oldKeys[j], outCh, endCh) // discard old key data
+		P_, _ := NewLocalParty(params, oldKeys[j], outCh, endCh, sessionId) // discard old key data
 		P := P_.(*LocalParty)
 		oldCommittee = append(oldCommittee, P)
 	}
@@ -84,7 +86,7 @@ func TestE2EConcurrent(t *testing.T) {
 		if j < len(fixtures) && len(newPIDs) <= len(fixtures) {
 			save.LocalPreParams = fixtures[j].LocalPreParams
 		}
-		P_, _ := NewLocalParty(params, save, outCh, endCh)
+		P_, _ := NewLocalParty(params, save, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		newCommittee = append(newCommittee, P)
 	}
@@ -174,7 +176,7 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, uint(len(signPIDs)), newThreshold)
-		P_, _ := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh)
+		P_, _ := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, sessionId)
 		P := P_.(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
@@ -243,10 +245,12 @@ func TestTooManyParties(t *testing.T) {
 	oldP2PCtx := tss.NewPeerContext(pIDs)
 	params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
 		uint(len(pIDs)), MaxParties/10)
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 
 	var err error
 	var void keygen.LocalPartySaveData
-	_, err = NewLocalParty(params, void, nil, nil)
+	_, err = NewLocalParty(params, void, nil, nil, sessionId)
 	if !assert.Error(t, err) {
 		t.FailNow()
 		return
@@ -256,7 +260,7 @@ func TestTooManyParties(t *testing.T) {
 		pIDs[0], MaxParties+1, MaxParties/10, uint(len(pIDs)), MaxParties/10)
 
 	err = nil
-	_, err = NewLocalParty(params, void, nil, nil)
+	_, err = NewLocalParty(params, void, nil, nil, sessionId)
 	if !assert.Error(t, err) {
 		t.FailNow()
 		return

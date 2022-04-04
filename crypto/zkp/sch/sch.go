@@ -37,8 +37,8 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy) // already on the curve.
 
 	// Fig 22.1
-	alpha := common.GetRandomPositiveInt(q)
-	A := crypto.ScalarBaseMult(ec, alpha)
+	𝛼 := common.GetRandomPositiveInt(q)
+	A := crypto.ScalarBaseMult(ec, 𝛼)
 
 	// Fig 22.2 e
 	var e *big.Int
@@ -49,13 +49,40 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 
 	// Fig 22.3
 	z := new(big.Int).Mul(e, x)
-	z = common.ModInt(q).Add(alpha, z)
+	z = common.ModInt(q).Add(𝛼, z)
 
 	return &ProofSch{A: A, Z: z}, nil
 }
 
 // NewProof implements proofsch
-func NewProofWithAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, aux *big.Int) (*ProofSch, error) {
+func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSch, error) {
+	if x == nil || X == nil || !X.ValidateBasic() {
+		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
+	}
+	ec := X.Curve()
+	q := ec.Params().N
+	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy) // already on the curve.
+
+	// Fig 22.1
+	𝛼 := common.GetRandomPositiveInt(q)
+	A := crypto.ScalarBaseMult(ec, 𝛼)
+
+	// Fig 22.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	// Fig 22.3
+	z := new(big.Int).Mul(e, x)
+	z = common.ModInt(q).Add(𝛼, z)
+
+	return &ProofSch{A: A, Z: z}, nil
+}
+
+// NewProof implements proofsch
+func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *big.Int) (*ProofSch, error) {
 	if x == nil || X == nil || !X.ValidateBasic() {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
@@ -69,7 +96,7 @@ func NewProofWithAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, aux *big.I
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), aux)
+		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -136,7 +163,7 @@ func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
 	return true
 }
 
-func (pf *ProofSch) VerifyWithAux(X *crypto.ECPoint, aux *big.Int) bool {
+func (pf *ProofSch) VerifyWithNonce(X *crypto.ECPoint, nonce *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() || X == nil {
 		return false
 	}
@@ -146,7 +173,7 @@ func (pf *ProofSch) VerifyWithAux(X *crypto.ECPoint, aux *big.Int) bool {
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y(), aux)
+		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y(), nonce)
 		e = common.RejectionSample(q, eHash)
 	}
 

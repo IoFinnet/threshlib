@@ -89,7 +89,7 @@ func (round *sign4) Start() *tss.Error {
 		round.AbortingSigning = true
 		round.setOK()
 		common.Logger.Debugf("party %v, aborting and NewSignRound4AbortingMessage going out (broadcast)", round.PartyID())
-		round.out <- NewSignRound4AbortingMessage(round.PartyID())
+		round.out <- NewSignRound4AbortingMessage(round.temp.sessionId, round.PartyID())
 		return nil
 	}
 	// compute the multiplicative inverse thelta mod q
@@ -101,7 +101,7 @@ func (round *sign4) Start() *tss.Error {
 	𝜎i := modN.Add(modN.Mul(round.temp.ki, round.temp.m), modN.Mul(r, round.temp.𝜒i))
 
 	common.Logger.Debugf("party %v, NewSignRound4Message going out (broadcast)", round.PartyID())
-	r4msg := NewSignRound4Message(round.PartyID(), 𝜎i)
+	r4msg := NewSignRound4Message(round.temp.sessionId, round.PartyID(), 𝜎i)
 	round.out <- r4msg
 
 	round.temp.BigR = BigR

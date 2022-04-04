@@ -35,6 +35,8 @@ message MessageWrapper {
     // Metadata optionally un-marshalled and used by the transport to route this message.
     repeated PartyID to = 4;
 
+    bytes sessionId = 6;
+
     // This field is actually what is sent through the wire and consumed on the other end by UpdateFromBytes.
     // An Any contains an arbitrary serialized message as bytes, along with a URL that
     // acts as a globally unique identifier for and resolves to that message's type.

@@ -56,6 +56,8 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	errCh := make(chan *tss.Error, len(pIDs))
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
 
@@ -66,9 +68,9 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 		var P *LocalParty
 		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], uint(len(pIDs)), threshold) // TODO
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
 		} else {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -230,7 +232,8 @@ func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 	errCh := make(chan *tss.Error, len(pIDs))
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	updater := test.SharedPartyUpdater
 
 	startGR := runtime.NumGoroutine()
@@ -240,9 +243,9 @@ func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 		var P *LocalParty
 		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], uint(len(pIDs)), threshold)
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
 		} else {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {

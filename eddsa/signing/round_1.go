@@ -48,7 +48,7 @@ func (round *round1) Start() *tss.Error {
 	round.ok[i] = true
 
 	// 4. broadcast commitment
-	r1msg2 := NewSignRound1Message(round.PartyID(), cmt.C)
+	r1msg2 := NewSignRound1Message(round.temp.sessionId, round.PartyID(), cmt.C)
 	round.temp.signRound1Messages[i] = r1msg2
 	round.out <- r1msg2
 

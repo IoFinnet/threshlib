@@ -45,15 +45,16 @@ type (
 
 	localTempData struct {
 		// temp data (thrown away after keygen)
-		ui     *big.Int // used for tests
-		ridi   *big.Int // used for tests
-		rid    *big.Int
-		shares vss.Shares
-		vs     vss.Vs
-		Ai     *crypto.ECPoint
-		Xi     *crypto.ECPoint
-		τ      *big.Int
-		𝜓i     *zkpprm.ProofPrm
+		ui        *big.Int // used for tests
+		ridi      *big.Int // used for tests
+		rid       *big.Int
+		shares    vss.Shares
+		vs        vss.Vs
+		Ai        *crypto.ECPoint
+		Xi        *crypto.ECPoint
+		τ         *big.Int
+		𝜓i        *zkpprm.ProofPrm
+		sessionId *big.Int
 
 		r1msgVHashs []*big.Int
 		r2msgVss    [][]*crypto.ECPoint
@@ -74,6 +75,7 @@ func NewLocalParty(
 	params *tss.Parameters,
 	out chan<- tss.Message,
 	end chan<- LocalPartySaveData,
+	sessionId *big.Int,
 	optionalPreParams ...LocalPreParams,
 ) (tss.Party, error) {
 	partyCount := params.PartyCount()
@@ -111,6 +113,7 @@ func NewLocalParty(
 	p.temp.r3msgpffac = make([]*zkpfac.ProofFac, partyCount)
 	p.temp.r3msgpfsch = make([]*zkpsch.ProofSch, partyCount)
 	p.temp.r4msgpf = make([]*zkpsch.ProofSch, partyCount)
+	p.temp.sessionId = sessionId
 	return p, nil
 }
 
@@ -126,8 +129,8 @@ func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 	return tss.BaseUpdate(p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
-	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
+func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool, sessionId *big.Int) (bool, *tss.Error) {
+	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast, sessionId)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
@@ -142,6 +145,10 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	if maxFromIdx := p.params.PartyCount() - 1; maxFromIdx < uint(msg.GetFrom().Index) {
 		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
 			p.params.PartyCount(), msg.GetFrom().Index), msg.GetFrom())
+	}
+	if p.temp.sessionId == nil || msg.GetSessionId() == nil || p.temp.sessionId.Cmp(msg.GetSessionId()) != 0 {
+		return false, p.WrapError(fmt.Errorf("wrong session in message (%s)",
+			msg.GetSessionId().String()), msg.GetFrom())
 	}
 	return true, nil
 }

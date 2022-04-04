@@ -58,15 +58,17 @@ func handleMessage(t *testing.T, msg tss.Message, parties []*LocalParty, updater
 }
 
 func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold uint, fixtures []LocalPartySaveData, outCh chan tss.Message, endCh chan LocalPartySaveData, parties []*LocalParty, errCh chan *tss.Error) ([]*LocalParty, chan *tss.Error) {
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
 		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], uint(len(pIDs)), threshold)
 		if i < len(fixtures) {
-			P_, _ := NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams)
+			P_, _ := NewLocalParty(params, outCh, endCh, sessionId, fixtures[i].LocalPreParams)
 			P, _ = P_.(*LocalParty)
 		} else {
-			P_, _ := NewLocalParty(params, outCh, endCh)
+			P_, _ := NewLocalParty(params, outCh, endCh, sessionId)
 			P, _ = P_.(*LocalParty)
 		}
 		parties = append(parties, P)
@@ -118,14 +120,15 @@ func TestStartRound1Paillier(t *testing.T) {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
-		lp_, _ := NewLocalParty(params, out, nil, fixtures[0].LocalPreParams)
+		lp_, _ := NewLocalParty(params, out, nil, sessionId, fixtures[0].LocalPreParams)
 		lp = lp_.(*LocalParty)
 	} else {
-		lp_, _ := NewLocalParty(params, out, nil)
+		lp_, _ := NewLocalParty(params, out, nil, sessionId)
 		lp = lp_.(*LocalParty)
 	}
 	if err := lp.Start(); err != nil {
@@ -160,14 +163,15 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
-		lp_, _ := NewLocalParty(params, out, nil, fixtures[0].LocalPreParams)
+		lp_, _ := NewLocalParty(params, out, nil, sessionId, fixtures[0].LocalPreParams)
 		lp = lp_.(*LocalParty)
 	} else {
-		lp_, _ := NewLocalParty(params, out, nil)
+		lp_, _ := NewLocalParty(params, out, nil, sessionId)
 		lp = lp_.(*LocalParty)
 	}
 	if err := lp.Start(); err != nil {
@@ -209,14 +213,15 @@ func TestBadMessageCulprits(t *testing.T) {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
-		lp_, _ := NewLocalParty(params, out, nil, fixtures[0].LocalPreParams)
+		lp_, _ := NewLocalParty(params, out, nil, sessionId, fixtures[0].LocalPreParams)
 		lp = lp_.(*LocalParty)
 	} else {
-		lp_, _ := NewLocalParty(params, out, nil)
+		lp_, _ := NewLocalParty(params, out, nil, sessionId)
 		lp = lp_.(*LocalParty)
 	}
 	if err := lp.Start(); err != nil {
@@ -224,7 +229,7 @@ func TestBadMessageCulprits(t *testing.T) {
 	}
 
 	// badMsg := NewKGRound1Message(pIDs[1], zero, &paillier.PublicKey{N: zero}, zero, zero, zero)
-	badMsg := NewKGRound1Message(pIDs[1], zero)
+	badMsg := NewKGRound1Message(sessionId, pIDs[1], zero)
 	ok, err2 := lp.Update(badMsg)
 	t.Log(err2)
 	assert.False(t, ok)
@@ -401,10 +406,11 @@ func TestTooManyParties(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], uint(len(pIDs)), MaxParties/100)
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	out := make(chan tss.Message, len(pIDs))
 	var err error
-	_, err = NewLocalParty(params, out, nil)
+	_, err = NewLocalParty(params, out, nil, sessionId)
 	if !assert.Error(t, err) {
 		t.FailNow()
 		return
