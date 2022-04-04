@@ -38,6 +38,7 @@ var (
 // ----- //
 
 func NewPreSignRound1Message(
+	sessionId *big.Int,
 	to, from *tss.PartyID,
 	K *big.Int,
 	G *big.Int,
@@ -54,7 +55,7 @@ func NewPreSignRound1Message(
 		G:        G.Bytes(),
 		EncProof: pfBz[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -80,6 +81,7 @@ func (m *PreSignRound1Message) Unmarshal𝜓0ij() (*zkpenc.ProofEnc, error) {
 // ----- //
 
 func NewPreSignRound2Message(
+	sessionId *big.Int,
 	to, from *tss.PartyID,
 	Γi *crypto.ECPoint,
 	DjiDelta *big.Int,
@@ -109,7 +111,7 @@ func NewPreSignRound2Message(
 		AffgProofChi:   AffgChiBz[:],
 		LogstarProof:   LogstarBz[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -160,6 +162,7 @@ func (m *PreSignRound2Message) UnmarshalLogstarProof(ec elliptic.Curve) (*zkplog
 // ----- //
 
 func NewPreSignRound3Message(
+	sessionId *big.Int,
 	to, from *tss.PartyID,
 	𝛿i *big.Int,
 	Δi *crypto.ECPoint,
@@ -177,7 +180,7 @@ func NewPreSignRound3Message(
 		BigDeltaShare: BigDeltaShareBzs[:],
 		ProofLogstar:  ProofBz[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -203,6 +206,7 @@ func (m *PreSignRound3Message) UnmarshalProofLogstar(ec elliptic.Curve) (*zkplog
 // ----- //
 
 func NewSignRound4AbortingMessage(
+	sessionId *big.Int,
 	from *tss.PartyID,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -210,7 +214,7 @@ func NewSignRound4AbortingMessage(
 		IsBroadcast: true,
 	}
 	content := &SignRound4AbortingMessage{}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -219,6 +223,7 @@ func (m *SignRound4AbortingMessage) ValidateBasic() bool {
 }
 
 func NewSignRound4Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	SigmaShare *big.Int,
 ) tss.ParsedMessage {
@@ -229,7 +234,7 @@ func NewSignRound4Message(
 	content := &SignRound4Message{
 		SigmaShare: SigmaShare.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -243,6 +248,7 @@ func (m *SignRound4Message) UnmarshalSigmaShare() *big.Int {
 }
 
 func NewIdentificationPrepRound5Message(
+	sessionId *big.Int,
 	to, from *tss.PartyID,
 	𝛾i *big.Int,
 	sji *big.Int,
@@ -258,7 +264,7 @@ func NewIdentificationPrepRound5Message(
 		Sji:       sji.Bytes(),
 		BetaNegji: 𝛽ʹji.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -284,6 +290,7 @@ func (m *IdentificationPrepRound5Message) UnmarshalBetaNegji() *big.Int {
 // ----- //
 
 func NewIdentificationRound6Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	H *big.Int,
 	MulProof *zkpmul.ProofMul,
@@ -303,7 +310,7 @@ func NewIdentificationRound6Message(
 		EncryptedValueSum: encryptedValueSum.Bytes(),
 		DecProof:          proofDeltaShareBzs[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -339,6 +346,7 @@ func (m *IdentificationRound6Message) UnmarshalProofDec() (*zkpdec.ProofDec, err
 // ----- //
 
 func NewTempDataDumpMessage(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	tempDump localTempData,
 	roundNum int,
@@ -357,7 +365,7 @@ func NewTempDataDumpMessage(
 		DataDump: buffer.Bytes(),
 		RoundNum: int32(roundNum),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 

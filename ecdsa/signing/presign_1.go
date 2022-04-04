@@ -66,7 +66,7 @@ func (round *presign1) Start() *tss.Error {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pj)
 				return
 			}
-			r1msg := NewPreSignRound1Message(Pj, round.PartyID(), Ki, Gi, proof)
+			r1msg := NewPreSignRound1Message(round.temp.sessionId, Pj, round.PartyID(), Ki, Gi, proof)
 			round.out <- r1msg
 		}(j, Pj)
 	}

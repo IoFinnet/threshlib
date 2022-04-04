@@ -55,6 +55,7 @@ type (
 		NewVs     vss.Vs
 		NewShares vss.Shares
 		VD        cmt.HashDeCommitment
+		sessionId *big.Int
 
 		// temporary storage of data that is persisted by the new party in round 5 if all "ACK" messages are received
 		newXi         *big.Int
@@ -73,6 +74,7 @@ func NewLocalParty(
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
 	end chan<- keygen.LocalPartySaveData,
+	sessionId *big.Int,
 ) (tss.Party, error) {
 	oldPartyCount := len(params.OldParties().IDs())
 	if oldPartyCount > MaxParties {
@@ -101,6 +103,7 @@ func NewLocalParty(
 	p.temp.dgRound3Message1s = make([]tss.ParsedMessage, oldPartyCount)          // from t+1 of Old Committee
 	p.temp.dgRound3Message2s = make([]tss.ParsedMessage, oldPartyCount)          // "
 	p.temp.dgRound4Messages = make([]tss.ParsedMessage, params.NewPartyCount())  // from n of New Committee
+	p.temp.sessionId = sessionId
 	// save data init
 	if key.LocalPreParams.ValidateWithProof() {
 		p.save.LocalPreParams = key.LocalPreParams
@@ -120,8 +123,8 @@ func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 	return tss.BaseUpdate(p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
-	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
+func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool, sessionId *big.Int) (bool, *tss.Error) {
+	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast, sessionId)
 	if err != nil {
 		return false, p.WrapError(err)
 	}

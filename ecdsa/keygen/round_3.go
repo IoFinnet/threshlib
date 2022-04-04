@@ -9,7 +9,7 @@ package keygen
 import (
 	"errors"
 	"math/big"
-	sync "sync"
+	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -109,7 +109,7 @@ func (round *round3) Start() *tss.Error {
 	}
 	xi := new(big.Int).Set(round.temp.shares[i].Share)
 	Xi := crypto.ScalarBaseMult(round.EC(), xi)
-	𝜓ij, err := zkpsch.NewProofWithAlpha(Xi, xi, round.temp.τ, rid)
+	𝜓ij, err := zkpsch.NewProofGivenAlpha(Xi, xi, round.temp.τ, rid)
 	if err != nil {
 		return round.WrapError(errors.New("create proofSch failed"))
 	}
@@ -130,7 +130,7 @@ func (round *round3) Start() *tss.Error {
 				return
 			}
 
-			r3msg := NewKGRound3Message(Pj, round.PartyID(), Cij, 𝜓i, 𝜙ji, 𝜓ij)
+			r3msg := NewKGRound3Message(round.temp.sessionId, Pj, round.PartyID(), Cij, 𝜓i, 𝜙ji, 𝜓ij)
 			round.out <- r3msg
 		}(j, Pj)
 	}

@@ -48,12 +48,14 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 	keys []keygen.LocalPartySaveData, keyDerivationDelta *big.Int, outCh chan tss.Message,
 	endCh chan common.SignatureData, parties []*LocalParty,
 	errCh chan *tss.Error) (*big.Int, []*LocalParty, chan *tss.Error) {
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	// init the parties
 	msg := common.GetRandomPrimeInt(256)
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
 
-		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh)
+		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -84,6 +86,8 @@ func TestE2EConcurrent(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	dumpCh := make(chan tss.Message, len(signPIDs))
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
 
@@ -92,7 +96,7 @@ func TestE2EConcurrent(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh)
+		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -202,6 +206,8 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	// dumpCh := make(chan tss.Message, len(signPIDs))
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
 
@@ -209,7 +215,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
 
-		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh)
+		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -292,7 +298,7 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 		errCh <- party.WrapError(err)
 		return
 	}
-	pMsg, err := tss.ParseWireMessage(bz, msg.GetFrom(), msg.IsBroadcast())
+	pMsg, err := tss.ParseWireMessage(bz, msg.GetFrom(), msg.IsBroadcast(), msg.GetSessionId())
 	if err != nil {
 		errCh <- party.WrapError(err)
 		return
@@ -359,9 +365,9 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 
 		verified := proof.Verify(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ, roundVictim.key.NTildej[j], roundVictim.key.H1j[j], roundVictim.key.H2j[j])
 		common.Logger.Debugf(" i: %v, j: %v, verified? %v", parties[i], parties[j], verified)
-		r3msg := NewPreSignRound3Message(msg.GetTo()[0], msg.GetFrom(), fake𝛿i, fakeΔi, proof)
+		r3msg := NewPreSignRound3Message(roundVictim.temp.sessionId, msg.GetTo()[0], msg.GetFrom(), fake𝛿i, fakeΔi, proof)
 		// repackaging the malicious message
-		pMsg = tss.NewMessage(meta, r3msg.Content(), tss.NewMessageWrapper(meta, r3msg.Content()))
+		pMsg = tss.NewMessage(meta, r3msg.Content(), tss.NewMessageWrapper(meta, r3msg.Content(), roundVictim.temp.sessionId))
 	}
 
 	common.Logger.Debugf("updater party:%v, pMsg: %v", party, pMsg)
@@ -395,7 +401,8 @@ func TestAbortIdentification(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	updater := identifiedAbortUpdater
 
 	// init the parties
@@ -403,7 +410,7 @@ func TestAbortIdentification(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh)
+		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -652,10 +659,11 @@ func TestTooManyParties(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], uint(len(pIDs)), MaxParties/100)
-
+	q := tss.EC().Params().N
+	sessionId := common.GetRandomPositiveInt(q)
 	var err error
 	var void keygen.LocalPartySaveData
-	_, err = NewLocalParty(big.NewInt(42), params, void, big.NewInt(0), nil, nil)
+	_, err = NewLocalParty(big.NewInt(42), params, void, big.NewInt(0), nil, nil, sessionId)
 	if !assert.Error(t, err) {
 		t.FailNow()
 		return

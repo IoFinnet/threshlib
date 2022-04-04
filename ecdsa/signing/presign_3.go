@@ -157,7 +157,7 @@ func (round *presign3) Start() *tss.Error {
 		}(j, Pj)
 
 		ψDoublePrimeji := <-ProofOut
-		r3msg := NewPreSignRound3Message(Pj, round.PartyID(), 𝛿i, Δi, ψDoublePrimeji)
+		r3msg := NewPreSignRound3Message(round.temp.sessionId, Pj, round.PartyID(), 𝛿i, Δi, ψDoublePrimeji)
 		common.Logger.Debugf("party %v r3, NewPreSignRound3Message is going out to Pj %v", round.PartyID(), Pj)
 		round.out <- r3msg
 	}

@@ -155,7 +155,7 @@ func (round *round4) Start() *tss.Error {
 	round.temp.newBigXjs = newBigXjs
 
 	// Send an "ACK" message to both committees to signal that we're ready to save our data
-	r4msg := NewDGRound4Message(round.OldAndNewParties(), Pi)
+	r4msg := NewDGRound4Message(round.temp.sessionId, round.OldAndNewParties(), Pi)
 	round.temp.dgRound4Messages[i] = r4msg
 	round.out <- r4msg
 

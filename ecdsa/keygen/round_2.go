@@ -30,8 +30,8 @@ func (round *round2) Start() *tss.Error {
 	{
 		xi := new(big.Int).Set(round.temp.shares[i].Share)
 		Xi := crypto.ScalarBaseMult(round.EC(), xi)
-		msg := NewKGRound2Message(round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey, round.save.NTildei,
-			round.save.H1i, round.save.H2i, round.temp.ridi, round.temp.Ai, Xi, round.temp.𝜓i)
+		msg := NewKGRound2Message(round.temp.sessionId, round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey,
+			round.save.NTildei, round.save.H1i, round.save.H2i, round.temp.ridi, round.temp.Ai, Xi, round.temp.𝜓i)
 		round.out <- msg
 	}
 

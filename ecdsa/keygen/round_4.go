@@ -148,7 +148,7 @@ func (round *round4) Start() *tss.Error {
 			if j == i {
 				continue
 			}
-			if ok := round.temp.r3msgpfsch[j].VerifyWithAux(round.temp.r2msgXj[j], round.temp.rid); !ok {
+			if ok := round.temp.r3msgpfsch[j].VerifyWithNonce(round.temp.r2msgXj[j], round.temp.rid); !ok {
 				culprits = append(culprits, Pj)
 			}
 		}
@@ -163,13 +163,15 @@ func (round *round4) Start() *tss.Error {
 		return round.WrapError(err)
 	}
 	round.save.ECDSAPub = ecdsaPubKey
-
-	proof, err := zkpsch.NewProof(round.save.BigXj[i], round.save.Xi)
+	if round.temp.sessionId == nil {
+		return round.WrapError(errors.New("sessionId not set"))
+	}
+	proof, err := zkpsch.NewProofGivenNonce(round.save.BigXj[i], round.save.Xi, round.temp.sessionId)
 	if err != nil {
 		return round.WrapError(err)
 	}
 
-	r4msg := NewKGRound4Message(round.PartyID(), proof)
+	r4msg := NewKGRound4Message(round.temp.sessionId, round.PartyID(), proof)
 	round.out <- r4msg
 
 	return nil

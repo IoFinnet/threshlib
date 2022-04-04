@@ -74,7 +74,7 @@ func (round *round1) Start() *tss.Error {
 
 	// BROADCAST commitments
 	{
-		msg := NewKGRound1Message(round.PartyID(), cmt.C)
+		msg := NewKGRound1Message(round.temp.sessionId, round.PartyID(), cmt.C)
 		round.temp.kgRound1Messages[i] = msg
 		round.out <- msg
 	}

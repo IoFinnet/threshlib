@@ -37,6 +37,7 @@ var (
 // ----- //
 
 func NewKGRound1Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	VHash *big.Int,
 ) tss.ParsedMessage {
@@ -47,7 +48,7 @@ func NewKGRound1Message(
 	content := &KGRound1Message{
 		VHash: VHash.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -63,6 +64,7 @@ func (m *KGRound1Message) UnmarshalVHash() *big.Int {
 // ----- //
 
 func NewKGRound2Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	vs vss.Vs,
 	paillierPK *paillier.PublicKey,
@@ -93,7 +95,7 @@ func NewKGRound2Message(
 		Xi:        XiBytes[:],
 		PrmProof:  𝜓iBytes[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -155,6 +157,7 @@ func (m *KGRound2Message) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
 // ----- //
 
 func NewKGRound3Message(
+	sessionId *big.Int,
 	to, from *tss.PartyID,
 	share *big.Int,
 	𝜓i *zkpmod.ProofMod,
@@ -175,7 +178,7 @@ func NewKGRound3Message(
 		FacProof:  proofFacBzs[:],
 		PsiiProof: proofPsiiBzs[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -206,6 +209,7 @@ func (m *KGRound3Message) UnmarshalProofSch(ec elliptic.Curve) (*zkpsch.ProofSch
 // ----- //
 
 func NewKGRound4Message(
+	sessionId *big.Int,
 	from *tss.PartyID,
 	proof *zkpsch.ProofSch,
 ) tss.ParsedMessage {
@@ -217,7 +221,7 @@ func NewKGRound4Message(
 	content := &KGRound4Message{
 		Proof: pfBzs[:],
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 

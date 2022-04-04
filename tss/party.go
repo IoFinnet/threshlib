@@ -9,6 +9,7 @@ package tss
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -18,7 +19,7 @@ type Party interface {
 	Start() *Error
 	// The main entry point when updating a party's state from the wire.
 	// isBroadcast should represent whether the message was received via a reliable broadcast
-	UpdateFromBytes(wireBytes []byte, from *PartyID, isBroadcast bool) (ok bool, err *Error)
+	UpdateFromBytes(wireBytes []byte, from *PartyID, isBroadcast bool, sessionId *big.Int) (ok bool, err *Error)
 	// You may use this entry point to update a party's state when running locally or in tests
 	Update(msg ParsedMessage) (ok bool, err *Error)
 	Running() bool

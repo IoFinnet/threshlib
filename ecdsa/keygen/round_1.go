@@ -86,7 +86,7 @@ func (round *round1) Start() *tss.Error {
 	}
 	VHash := common.SHA512_256i(listToHash...)
 	{
-		msg := NewKGRound1Message(round.PartyID(), VHash)
+		msg := NewKGRound1Message(round.temp.sessionId, round.PartyID(), VHash)
 		round.out <- msg
 	}
 

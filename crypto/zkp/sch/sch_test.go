@@ -20,7 +20,10 @@ func TestSchnorrProof(t *testing.T) {
 	q := tss.EC().Params().N
 	u := common.GetRandomPositiveInt(q)
 	uG := crypto.ScalarBaseMult(tss.EC(), u)
-	proof, _ := NewProof(uG, u)
+
+	proof, err := NewProof(uG, u)
+
+	assert.NoError(t, err, "there should be no error")
 
 	assert.True(t, proof.A.IsOnCurve())
 	assert.NotZero(t, proof.A.X())
@@ -32,9 +35,24 @@ func TestSchnorrProofVerify(t *testing.T) {
 	q := tss.EC().Params().N
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
+	nonce := common.GetRandomPositiveInt(q)
+	proof, err := NewProofGivenNonce(X, u, nonce)
+	assert.NoError(t, err, "there should be no error")
 
-	proof, _ := NewProof(X, u)
-	res := proof.Verify(X)
+	res := proof.VerifyWithNonce(X, nonce)
+
+	assert.True(t, res, "verify result must be true")
+}
+
+func TestSchnorrProofVerifyWithNonce(t *testing.T) {
+	q := tss.EC().Params().N
+	u := common.GetRandomPositiveInt(q)
+	X := crypto.ScalarBaseMult(tss.EC(), u)
+	nonce := common.GetRandomPositiveInt(q)
+	proof, err := NewProofGivenNonce(X, u, nonce)
+	assert.NoError(t, err, "there should be no error")
+
+	res := proof.VerifyWithNonce(X, nonce)
 
 	assert.True(t, res, "verify result must be true")
 }
@@ -46,7 +64,9 @@ func TestSchnorrProofVerifyBadX(t *testing.T) {
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	X2 := crypto.ScalarBaseMult(tss.EC(), u2)
 
-	proof, _ := NewProof(X2, u2)
+	proof, err := NewProof(X2, u2)
+	assert.NoError(t, err, "there should be no error")
+
 	res := proof.Verify(X)
 
 	assert.False(t, res, "verify result must be false")

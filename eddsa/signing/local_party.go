@@ -54,8 +54,9 @@ type (
 		deCommit cmt.HashDeCommitment
 
 		// round 2
-		cjs []*big.Int
-		si  big.Int
+		cjs       []*big.Int
+		si        big.Int
+		sessionId *big.Int
 
 		// round 3
 		r *big.Int
@@ -69,6 +70,7 @@ func NewLocalParty(
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
+	sessionId *big.Int,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -88,6 +90,7 @@ func NewLocalParty(
 	// temp data init
 	p.temp.m = msg
 	p.temp.cjs = make([]*big.Int, partyCount)
+	p.temp.sessionId = sessionId
 	return p
 }
 
@@ -112,8 +115,8 @@ func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 	return tss.BaseUpdate(p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
-	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
+func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool, sessionId *big.Int) (bool, *tss.Error) {
+	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast, sessionId)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
