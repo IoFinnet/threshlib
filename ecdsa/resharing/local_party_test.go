@@ -74,14 +74,14 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params, _ := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
 		P_, _ := NewLocalParty(params, oldKeys[j], outCh, endCh, sessionId) // discard old key data
 		P := P_.(*LocalParty)
 		oldCommittee = append(oldCommittee, P)
 	}
 	// init the new parties
 	for j, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params, _ := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		if j < len(fixtures) && len(newPIDs) <= len(fixtures) {
 			save.LocalPreParams = fixtures[j].LocalPreParams
@@ -175,7 +175,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold)
+		params, _ := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold)
 		P_, _ := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, sessionId)
 		P := P_.(*signing.LocalParty)
 		signParties = append(signParties, P)
@@ -243,7 +243,7 @@ func TestTooManyParties(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	oldP2PCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
+	params, _ := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
 		len(pIDs), MaxParties/10)
 	q := tss.EC().Params().N
 	sessionId := common.GetRandomPositiveInt(q)
@@ -256,7 +256,7 @@ func TestTooManyParties(t *testing.T) {
 		return
 	}
 
-	params = tss.NewReSharingParameters(tss.S256(), tss.NewPeerContext(tss.GenerateTestPartyIDs(MaxParties-1)), p2pCtx,
+	params, _ = tss.NewReSharingParameters(tss.S256(), tss.NewPeerContext(tss.GenerateTestPartyIDs(MaxParties-1)), p2pCtx,
 		pIDs[0], MaxParties+1, MaxParties/10, len(pIDs), MaxParties/10)
 
 	err = nil

@@ -76,6 +76,9 @@ func NewLocalParty(
 	end chan<- keygen.LocalPartySaveData,
 	sessionId *big.Int,
 ) (tss.Party, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
 	oldPartyCount := len(params.OldParties().IDs())
 	if oldPartyCount > MaxParties {
 		return nil, fmt.Errorf("resharing.NewLocalParty expected at most %d old parties", MaxParties)

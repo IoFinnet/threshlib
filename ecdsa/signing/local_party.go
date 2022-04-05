@@ -133,6 +133,9 @@ func NewLocalParty(
 	sessionId *big.Int,
 	startRndNums ...int,
 ) (tss.Party, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
 	partyCount := len(params.Parties().IDs())
 	if partyCount > MaxParties {
 		return nil, fmt.Errorf("signing.NewLocalParty expected at most %d parties", MaxParties)

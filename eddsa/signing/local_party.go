@@ -71,7 +71,10 @@ func NewLocalParty(
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
 	sessionId *big.Int,
-) tss.Party {
+) (tss.Party, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
@@ -91,7 +94,7 @@ func NewLocalParty(
 	p.temp.m = msg
 	p.temp.cjs = make([]*big.Int, partyCount)
 	p.temp.sessionId = sessionId
-	return p
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
