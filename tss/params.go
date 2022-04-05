@@ -37,21 +37,17 @@ const (
 	defaultSafePrimeGenTimeout = 5 * time.Minute
 )
 
-// Exported, used in `tss` client
-func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, optionalSafePrimeGenTimeout ...time.Duration) *Parameters {
+func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, optionalSafePrimeGenTimeout ...time.Duration) (*Parameters, error) {
 	var safePrimeGenTimeout time.Duration
-	if threshold >= partyCount {
-		panic(errors.New("NewParameters: t<n necessarily with the dishonest majority assumption"))
-	}
 	if 0 < len(optionalSafePrimeGenTimeout) {
 		if 1 < len(optionalSafePrimeGenTimeout) {
-			panic(errors.New("GeneratePreParams: expected 0 or 1 item in `optionalSafePrimeGenTimeout`"))
+			return nil, errors.New("GeneratePreParams: expected 0 or 1 item in `optionalSafePrimeGenTimeout`")
 		}
 		safePrimeGenTimeout = optionalSafePrimeGenTimeout[0]
 	} else {
 		safePrimeGenTimeout = defaultSafePrimeGenTimeout
 	}
-	return &Parameters{
+	params := &Parameters{
 		ec:                  ec,
 		parties:             ctx,
 		partyID:             partyID,
@@ -59,6 +55,20 @@ func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyC
 		threshold:           threshold,
 		safePrimeGenTimeout: safePrimeGenTimeout,
 	}
+	return params, params.Validate()
+}
+
+func (params *Parameters) Validate() error {
+	if params.threshold >= params.partyCount {
+		return errors.New("TSS Parameters: t<n necessarily with the dishonest majority assumption")
+	}
+	if params.partyCount < 2 {
+		return errors.New("TSS Parameters: partyCount < 2")
+	}
+	if params.threshold < 1 {
+		return errors.New("TSS Parameters: threshold < 1")
+	}
+	return nil
 }
 
 func (params *Parameters) EC() elliptic.Curve {
@@ -101,47 +111,61 @@ func (params *Parameters) UNSAFE_setKGIgnoreH1H2Dupes(unsafeKGIgnoreH1H2Dupes bo
 // ----- //
 
 // Exported, used in `tss` client
-func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int) *ReSharingParameters {
-	params := NewParameters(ec, ctx, partyID, partyCount, threshold)
-	return &ReSharingParameters{
+func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int) (*ReSharingParameters, error) {
+	params, _ := NewParameters(ec, ctx, partyID, partyCount, threshold)
+	rsParams := &ReSharingParameters{
 		Parameters:    params,
 		newParties:    newCtx,
 		newPartyCount: newPartyCount,
 		newThreshold:  newThreshold,
 	}
+	return rsParams, rsParams.Validate()
 }
 
-func (rgParams *ReSharingParameters) OldParties() *PeerContext {
-	return rgParams.Parties() // wr use the original method for old parties
+func (rsParams *ReSharingParameters) Validate() error {
+	if err := rsParams.Parameters.Validate(); err != nil {
+		return err
+	}
+	if rsParams.newPartyCount < 2 {
+		return errors.New("TSS ReSharingParameters: newPartyCount < 2")
+	}
+	if rsParams.newThreshold < 1 {
+		return errors.New("TSS ReSharingParameters: newThreshold < 1")
+	}
+	return nil
 }
 
-func (rgParams *ReSharingParameters) OldPartyCount() int {
-	return rgParams.partyCount
+func (rsParams *ReSharingParameters) OldParties() *PeerContext {
+	return rsParams.Parties() // wr use the original method for old parties
 }
 
-func (rgParams *ReSharingParameters) NewParties() *PeerContext {
-	return rgParams.newParties
+func (rsParams *ReSharingParameters) OldPartyCount() int {
+	return rsParams.partyCount
 }
 
-func (rgParams *ReSharingParameters) NewPartyCount() int {
-	return rgParams.newPartyCount
+func (rsParams *ReSharingParameters) NewParties() *PeerContext {
+	return rsParams.newParties
 }
 
-func (rgParams *ReSharingParameters) NewThreshold() int {
-	return rgParams.newThreshold
+func (rsParams *ReSharingParameters) NewPartyCount() int {
+	return rsParams.newPartyCount
 }
 
-func (rgParams *ReSharingParameters) OldAndNewParties() []*PartyID {
-	return append(rgParams.OldParties().IDs(), rgParams.NewParties().IDs()...)
+func (rsParams *ReSharingParameters) NewThreshold() int {
+	return rsParams.newThreshold
 }
 
-func (rgParams *ReSharingParameters) OldAndNewPartyCount() int {
-	return rgParams.OldPartyCount() + rgParams.NewPartyCount()
+func (rsParams *ReSharingParameters) OldAndNewParties() []*PartyID {
+	return append(rsParams.OldParties().IDs(), rsParams.NewParties().IDs()...)
 }
 
-func (rgParams *ReSharingParameters) IsOldCommittee() bool {
-	partyID := rgParams.partyID
-	for _, Pj := range rgParams.parties.IDs() {
+func (rsParams *ReSharingParameters) OldAndNewPartyCount() int {
+	return rsParams.OldPartyCount() + rsParams.NewPartyCount()
+}
+
+func (rsParams *ReSharingParameters) IsOldCommittee() bool {
+	partyID := rsParams.partyID
+	for _, Pj := range rsParams.parties.IDs() {
 		if partyID.KeyInt().Cmp(Pj.KeyInt()) == 0 {
 			return true
 		}
@@ -149,9 +173,9 @@ func (rgParams *ReSharingParameters) IsOldCommittee() bool {
 	return false
 }
 
-func (rgParams *ReSharingParameters) IsNewCommittee() bool {
-	partyID := rgParams.partyID
-	for _, Pj := range rgParams.newParties.IDs() {
+func (rsParams *ReSharingParameters) IsNewCommittee() bool {
+	partyID := rsParams.partyID
+	for _, Pj := range rsParams.newParties.IDs() {
 		if partyID.KeyInt().Cmp(Pj.KeyInt()) == 0 {
 			return true
 		}

@@ -61,7 +61,10 @@ func NewLocalParty(
 	out chan<- tss.Message,
 	end chan<- LocalPartySaveData,
 	sessionId *big.Int,
-) tss.Party {
+) (tss.Party, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
 	partyCount := params.PartyCount()
 	data := NewLocalPartySaveData(partyCount)
 	p := &LocalParty{
@@ -80,7 +83,7 @@ func NewLocalParty(
 	// temp data init
 	p.temp.KGCs = make([]cmt.HashCommitment, partyCount)
 	p.temp.sessionId = sessionId
-	return p
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {

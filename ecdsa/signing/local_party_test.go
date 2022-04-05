@@ -53,7 +53,7 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 	// init the parties
 	msg := common.GetRandomPrimeInt(256)
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params, _ := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
@@ -93,7 +93,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
 		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
@@ -213,7 +213,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
@@ -407,7 +407,7 @@ func TestAbortIdentification(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
 		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
@@ -658,7 +658,7 @@ func TestTooManyParties(t *testing.T) {
 
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
+	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
 	q := tss.EC().Params().N
 	sessionId := common.GetRandomPositiveInt(q)
 

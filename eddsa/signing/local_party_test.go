@@ -66,9 +66,10 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	msg := big.NewInt(200)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(edwards.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params, _ := tss.NewParameters(edwards.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh, sessionId).(*LocalParty)
+		tmp, _ := NewLocalParty(msg, params, keys[i], outCh, endCh, sessionId)
+		P := tmp.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -184,9 +185,10 @@ func TestE2EConcurrentS256Schnorr(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P := NewLocalParty(msgI, params, keys[i], outCh, endCh, sessionId).(*LocalParty)
+		tmp, _ := NewLocalParty(msgI, params, keys[i], outCh, endCh, sessionId)
+		P := tmp.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {

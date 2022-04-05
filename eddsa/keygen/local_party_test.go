@@ -66,11 +66,13 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold) // TODO
+		params, _ := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold) // TODO
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
+			tmp, _ := NewLocalParty(params, outCh, endCh, sessionId)
+			P = tmp.(*LocalParty)
 		} else {
-			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
+			tmp, _ := NewLocalParty(params, outCh, endCh, sessionId)
+			P = tmp.(*LocalParty)
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -241,11 +243,13 @@ func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold)
+		params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
+			tmp, _ := NewLocalParty(params, outCh, endCh, sessionId)
+			P = tmp.(*LocalParty)
 		} else {
-			P = NewLocalParty(params, outCh, endCh, sessionId).(*LocalParty)
+			tmp, _ := NewLocalParty(params, outCh, endCh, sessionId)
+			P = tmp.(*LocalParty)
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {

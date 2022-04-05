@@ -63,7 +63,7 @@ func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold)
+		params, _ := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
 			P_, _ := NewLocalParty(params, outCh, endCh, sessionId, fixtures[i].LocalPreParams)
 			P, _ = P_.(*LocalParty)
@@ -113,7 +113,7 @@ func TestStartRound1Paillier(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(2)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
+	params, _ := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -156,7 +156,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(2)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
+	params, _ := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold)
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -206,7 +206,7 @@ func TestBadMessageCulprits(t *testing.T) {
 
 	pIDs := tss.GenerateTestPartyIDs(2)
 	p2pCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), 1)
+	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), 1)
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -405,7 +405,7 @@ func TestTooManyParties(t *testing.T) {
 
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
+	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
 	q := tss.EC().Params().N
 	sessionId := common.GetRandomPositiveInt(q)
 	out := make(chan tss.Message, len(pIDs))

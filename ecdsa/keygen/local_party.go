@@ -78,6 +78,9 @@ func NewLocalParty(
 	sessionId *big.Int,
 	optionalPreParams ...LocalPreParams,
 ) (tss.Party, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
 	partyCount := params.PartyCount()
 	data := NewLocalPartySaveData(partyCount)
 	// when `optionalPreParams` is provided we'll use the pre-computed primes instead of generating them from scratch
