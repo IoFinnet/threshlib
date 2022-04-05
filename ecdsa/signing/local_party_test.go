@@ -44,7 +44,7 @@ func setUp(level string) {
 	}
 }
 
-func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold uint,
+func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold int,
 	keys []keygen.LocalPartySaveData, keyDerivationDelta *big.Int, outCh chan tss.Message,
 	endCh chan common.SignatureData, parties []*LocalParty,
 	errCh chan *tss.Error) (*big.Int, []*LocalParty, chan *tss.Error) {
@@ -53,7 +53,7 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 	// init the parties
 	msg := common.GetRandomPrimeInt(256)
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
@@ -69,7 +69,7 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
-	threshold := uint(testThreshold)
+	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
@@ -93,7 +93,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
 		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
@@ -176,7 +176,7 @@ signing:
 
 func TestE2EWithHDKeyDerivation(t *testing.T) {
 	setUp("info")
-	threshold := uint(testThreshold)
+	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
@@ -213,7 +213,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
@@ -385,7 +385,7 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 
 func TestAbortIdentification(t *testing.T) {
 	setUp("info")
-	threshold := uint(testThreshold)
+	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
@@ -407,7 +407,7 @@ func TestAbortIdentification(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
 		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
@@ -658,9 +658,10 @@ func TestTooManyParties(t *testing.T) {
 
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
-	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], uint(len(pIDs)), MaxParties/100)
+	params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
 	q := tss.EC().Params().N
 	sessionId := common.GetRandomPositiveInt(q)
+
 	var err error
 	var void keygen.LocalPartySaveData
 	_, err = NewLocalParty(big.NewInt(42), params, void, big.NewInt(0), nil, nil, sessionId)

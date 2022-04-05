@@ -42,7 +42,7 @@ func setUp(level string) {
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
 
-	threshold, newThreshold := uint(testThreshold), uint(testThreshold)
+	threshold, newThreshold := testThreshold, testThreshold
 
 	// PHASE: load keygen fixtures
 	firstPartyIdx, extraParties := 0, 1 // // extra can be 0 to N-first
@@ -55,7 +55,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the new parties; re-use the fixture pre-params for speed
 	newPIDs := tss.GenerateTestPartyIDs(testParticipants)
 	newP2PCtx := tss.NewPeerContext(newPIDs)
-	newPCount := uint(len(newPIDs))
+	newPCount := len(newPIDs)
 
 	oldCommittee := make([]*LocalParty, 0, len(oldPIDs))
 	newCommittee := make([]*LocalParty, 0, newPCount)
@@ -167,7 +167,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.Edwards(), signP2pCtx, signPID, uint(len(signPIDs)), newThreshold)
+		params := tss.NewParameters(tss.Edwards(), signP2pCtx, signPID, len(signPIDs), newThreshold)
 		P := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], signOutCh, signEndCh, sessionId).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {

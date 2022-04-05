@@ -144,8 +144,7 @@ func (round *round3) Start() *tss.Error {
 			}
 			// 11-12.
 			PjVs := vssResults[j].pjVs
-			var c uint
-			for c = 0; c <= round.Threshold(); c++ {
+			for c := 0; c <= round.Threshold(); c++ {
 				Vc[c], err = Vc[c].Add(PjVs[c])
 				if err != nil {
 					culprits = append(culprits, Pj)
@@ -163,14 +162,12 @@ func (round *round3) Start() *tss.Error {
 		modQ := common.ModInt(round.Params().EC().Params().N)
 		culprits := make([]*tss.PartyID, 0, len(Ps)) // who caused the error(s)
 		bigXj := round.save.BigXj
-		var j uint
-		for j = 0; j < round.PartyCount(); j++ {
+		for j := 0; j < round.PartyCount(); j++ {
 			Pj := round.Parties().IDs()[j]
 			kj := Pj.KeyInt()
 			BigXj := Vc[0]
 			z := new(big.Int).SetInt64(int64(1))
-			var c uint
-			for c = 1; c <= round.Threshold(); c++ {
+			for c := 1; c <= round.Threshold(); c++ {
 				z = modQ.Mul(z, kj)
 				BigXj, err = BigXj.Add(Vc[c].ScalarMult(z))
 				if err != nil {
