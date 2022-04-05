@@ -51,7 +51,7 @@ func (round *round4) Start() *tss.Error {
 		// 3. unpack flat "v" commitment content
 		vCmtDeCmt := commitments.HashCommitDecommit{C: vCj, D: vDj}
 		ok, flatVs := vCmtDeCmt.DeCommit()
-		if !ok || uint(len(flatVs)) != (round.NewThreshold()+1)*2 { // they're points so * 2
+		if !ok || len(flatVs) != (round.NewThreshold()+1)*2 { // they're points so * 2
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])
 		}
@@ -77,8 +77,7 @@ func (round *round4) Start() *tss.Error {
 	// 9-12.
 	var err error
 	Vc := make([]*crypto.ECPoint, round.NewThreshold()+1)
-	var c uint
-	for c = 0; c <= round.NewThreshold(); c++ {
+	for c := 0; c <= round.NewThreshold(); c++ {
 		Vc[c] = vjc[0][c]
 		for j := 1; j <= len(vjc)-1; j++ {
 			Vc[c], err = Vc[c].Add(vjc[j][c])
@@ -97,17 +96,15 @@ func (round *round4) Start() *tss.Error {
 	newKs := make([]*big.Int, 0, round.NewPartyCount())
 	newBigXjs := make([]*crypto.ECPoint, round.NewPartyCount())
 	culprits := make([]*tss.PartyID, 0, round.NewPartyCount()) // who caused the error(s)
-	var j uint
-	for j = 0; j < round.NewPartyCount(); j++ {
+	for j := 0; j < round.NewPartyCount(); j++ {
 		Pj := round.NewParties().IDs()[j]
 		kj := Pj.KeyInt()
 		newBigXj := Vc[0]
 		newKs = append(newKs, kj)
 		z := new(big.Int).SetInt64(int64(1))
-		var c2 uint
-		for c2 = 1; c2 <= round.NewThreshold(); c2++ {
+		for c := 1; c <= round.NewThreshold(); c++ {
 			z = modQ.Mul(z, kj)
-			newBigXj, err = newBigXj.Add(Vc[c2].ScalarMult(z))
+			newBigXj, err = newBigXj.Add(Vc[c].ScalarMult(z))
 			if err != nil {
 				culprits = append(culprits, Pj)
 			}

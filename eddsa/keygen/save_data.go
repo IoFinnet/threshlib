@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func NewLocalPartySaveData(partyCount uint) (saveData LocalPartySaveData) {
+func NewLocalPartySaveData(partyCount int) (saveData LocalPartySaveData) {
 	saveData.Ks = make([]*big.Int, partyCount)
 	saveData.BigXj = make([]*crypto.ECPoint, partyCount)
 	return
@@ -47,7 +47,7 @@ func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.Sorte
 	for j, kj := range sourceData.Ks {
 		keysToIndices[hex.EncodeToString(kj.Bytes())] = j
 	}
-	newData := NewLocalPartySaveData(uint(sortedIDs.Len()))
+	newData := NewLocalPartySaveData(sortedIDs.Len())
 	newData.LocalSecrets = sourceData.LocalSecrets
 	newData.EDDSAPub = sourceData.EDDSAPub
 	for j, id := range sortedIDs {

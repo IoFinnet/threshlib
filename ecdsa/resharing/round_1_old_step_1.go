@@ -43,7 +43,7 @@ func (round *round1) Start() *tss.Error {
 
 	// 1. PrepareForSigning() -> w_i
 	xi, ks, bigXj := round.input.Xi, round.input.Ks, round.input.BigXj
-	if round.Threshold()+1 > uint(len(ks)) {
+	if round.Threshold()+1 > len(ks) {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()

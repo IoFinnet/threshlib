@@ -42,7 +42,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// tss.SetCurve(elliptic.P256())
 
-	threshold, newThreshold := uint(testThreshold), uint(testThreshold)
+	threshold, newThreshold := testThreshold, testThreshold
 
 	// PHASE: load keygen fixtures
 	firstPartyIdx, extraParties := 0, 1 // extra can be 0 to N-first
@@ -58,7 +58,7 @@ func TestE2EConcurrent(t *testing.T) {
 	}
 	newPIDs := tss.GenerateTestPartyIDs(testParticipants)
 	newP2PCtx := tss.NewPeerContext(newPIDs)
-	newPCount := uint(len(newPIDs))
+	newPCount := len(newPIDs)
 
 	oldCommittee := make([]*LocalParty, 0, len(oldPIDs))
 	newCommittee := make([]*LocalParty, 0, newPCount)
@@ -175,7 +175,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, uint(len(signPIDs)), newThreshold)
+		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold)
 		P_, _ := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, sessionId)
 		P := P_.(*signing.LocalParty)
 		signParties = append(signParties, P)
@@ -244,7 +244,7 @@ func TestTooManyParties(t *testing.T) {
 	p2pCtx := tss.NewPeerContext(pIDs)
 	oldP2PCtx := tss.NewPeerContext(pIDs)
 	params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
-		uint(len(pIDs)), MaxParties/10)
+		len(pIDs), MaxParties/10)
 	q := tss.EC().Params().N
 	sessionId := common.GetRandomPositiveInt(q)
 
@@ -257,7 +257,7 @@ func TestTooManyParties(t *testing.T) {
 	}
 
 	params = tss.NewReSharingParameters(tss.S256(), tss.NewPeerContext(tss.GenerateTestPartyIDs(MaxParties-1)), p2pCtx,
-		pIDs[0], MaxParties+1, MaxParties/10, uint(len(pIDs)), MaxParties/10)
+		pIDs[0], MaxParties+1, MaxParties/10, len(pIDs), MaxParties/10)
 
 	err = nil
 	_, err = NewLocalParty(params, void, nil, nil, sessionId)

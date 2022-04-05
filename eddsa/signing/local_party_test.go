@@ -43,7 +43,7 @@ func setUp(level string) {
 func TestE2EConcurrentEdwards(t *testing.T) {
 	setUp("info")
 
-	threshold := uint(testThreshold)
+	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants, testSetIdEdwards)
@@ -66,7 +66,7 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	msg := big.NewInt(200)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(edwards.Edwards(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
+		params := tss.NewParameters(edwards.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P := NewLocalParty(msg, params, keys[i], outCh, endCh, sessionId).(*LocalParty)
 		parties = append(parties, P)
@@ -157,7 +157,7 @@ signing:
 func TestE2EConcurrentS256Schnorr(t *testing.T) {
 	setUp("info")
 
-	threshold := uint(testThreshold)
+	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
 
@@ -184,7 +184,7 @@ func TestE2EConcurrentS256Schnorr(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], uint(len(signPIDs)), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P := NewLocalParty(msgI, params, keys[i], outCh, endCh, sessionId).(*LocalParty)
 		parties = append(parties, P)
