@@ -33,6 +33,7 @@ var (
 // ----- //
 
 func NewDGRound1Message(
+	sessionId *big.Int,
 	to []*tss.PartyID,
 	from *tss.PartyID,
 	eddsaPub *crypto.ECPoint,
@@ -49,7 +50,7 @@ func NewDGRound1Message(
 		EddsaPubY:   eddsaPub.Y().Bytes(),
 		VCommitment: vct.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -74,6 +75,7 @@ func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {
 // ----- //
 
 func NewDGRound2Message(
+	sessionId *big.Int,
 	to []*tss.PartyID,
 	from *tss.PartyID,
 ) tss.ParsedMessage {
@@ -84,7 +86,7 @@ func NewDGRound2Message(
 		IsToOldCommittee: true,
 	}
 	content := &DGRound2Message{}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -95,6 +97,7 @@ func (m *DGRound2Message) ValidateBasic() bool {
 // ----- //
 
 func NewDGRound3Message1(
+	sessionId *big.Int,
 	to *tss.PartyID,
 	from *tss.PartyID,
 	share *vss.Share,
@@ -108,7 +111,7 @@ func NewDGRound3Message1(
 	content := &DGRound3Message1{
 		Share: share.Share.Bytes(),
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -120,6 +123,7 @@ func (m *DGRound3Message1) ValidateBasic() bool {
 // ----- //
 
 func NewDGRound3Message2(
+	sessionId *big.Int,
 	to []*tss.PartyID,
 	from *tss.PartyID,
 	vdct cmt.HashDeCommitment,
@@ -134,7 +138,7 @@ func NewDGRound3Message2(
 	content := &DGRound3Message2{
 		VDecommitment: vDctBzs,
 	}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
@@ -151,6 +155,7 @@ func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 // ----- //
 
 func NewDGRound4Message(
+	sessionId *big.Int,
 	to []*tss.PartyID,
 	from *tss.PartyID,
 ) tss.ParsedMessage {
@@ -161,7 +166,7 @@ func NewDGRound4Message(
 		IsToOldAndNewCommittees: true,
 	}
 	content := &DGRound4Message{}
-	msg := tss.NewMessageWrapper(meta, content)
+	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
