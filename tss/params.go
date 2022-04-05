@@ -60,7 +60,7 @@ func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyC
 
 func (params *Parameters) Validate() error {
 	if params.threshold >= params.partyCount {
-		return errors.New("TSS Parameters: t<n necessarily with the dishonest majority assumption")
+		return errors.New("TSS Parameters: threshold >= partyCount (dishonest majority assumption)")
 	}
 	if params.partyCount < 2 {
 		return errors.New("TSS Parameters: partyCount < 2")
@@ -125,6 +125,9 @@ func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID
 func (rsParams *ReSharingParameters) Validate() error {
 	if err := rsParams.Parameters.Validate(); err != nil {
 		return err
+	}
+	if rsParams.newThreshold >= rsParams.newPartyCount {
+		return errors.New("TSS Parameters: newThreshold >= newPartyCount (dishonest majority assumption)")
 	}
 	if rsParams.newPartyCount < 2 {
 		return errors.New("TSS ReSharingParameters: newPartyCount < 2")
