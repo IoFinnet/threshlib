@@ -22,6 +22,7 @@ import (
 
 const (
 	paillierModulusLen = 2048
+	NBitLen            = 2048
 )
 
 func (round *round3) Start() *tss.Error {
@@ -70,6 +71,15 @@ func (round *round3) Start() *tss.Error {
 			VjKeygen := common.SHA512_256i(keygenListToHash...)
 			if VjKeygen.Cmp(round.temp.r1msgVjKeygen[j]) != 0 {
 				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
+				return
+			}
+		}(j, Pj)
+
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+			if round.save.NTildej[j].BitLen() < NBitLen {
+				errChs <- round.WrapError(errors.New("N too small"), Pj)
 				return
 			}
 		}(j, Pj)
