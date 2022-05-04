@@ -43,7 +43,7 @@ func NewKGRound1Message(sessionId *big.Int, from *tss.PartyID, ct cmt.HashCommit
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound1Message) ValidateBasic() bool {
+func (m *KGRound1Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil && common.NonEmptyBytes(m.GetCommitment())
 }
 
@@ -70,7 +70,7 @@ func NewKGRound2Message1(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound2Message1) ValidateBasic() bool {
+func (m *KGRound2Message1) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetShare())
 }
@@ -101,7 +101,7 @@ func NewKGRound2Message2(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound2Message2) ValidateBasic() bool {
+func (m *KGRound2Message2) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.GetDeCommitment()) &&
 		common.NonEmptyMultiBytes(m.Proof, zkpsch.ProofSchBytesParts)

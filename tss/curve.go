@@ -10,6 +10,7 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"reflect"
+	"sync"
 
 	s256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
@@ -25,6 +26,7 @@ const (
 
 var (
 	ec       elliptic.Curve
+	ecMtx    sync.RWMutex
 	registry map[CurveName]elliptic.Curve
 )
 
@@ -39,37 +41,45 @@ func init() {
 }
 
 func RegisterCurve(name CurveName, curve elliptic.Curve) {
+	ecMtx.Lock()
+	defer ecMtx.Unlock()
 	registry[name] = curve
 }
 
 // return curve, exist(bool)
 func GetCurveByName(name CurveName) (elliptic.Curve, bool) {
+	ecMtx.RLock()
+	defer ecMtx.RUnlock()
 	if val, exist := registry[name]; exist {
 		return val, true
 	}
-
 	return nil, false
 }
 
 // return name, exist(bool)
 func GetCurveName(curve elliptic.Curve) (CurveName, bool) {
+	ecMtx.RLock()
+	defer ecMtx.RUnlock()
 	for name, e := range registry {
 		if reflect.TypeOf(curve) == reflect.TypeOf(e) {
 			return name, true
 		}
 	}
-
 	return "", false
 }
 
 // EC returns the current elliptic curve in use. The default is secp256k1
 func EC() elliptic.Curve {
+	ecMtx.RLock()
+	defer ecMtx.RUnlock()
 	return ec
 }
 
 // SetCurve sets the curve used by TSS. Must be called before Start. The default is secp256k1
 // Deprecated
 func SetCurve(curve elliptic.Curve) {
+	ecMtx.Lock()
+	defer ecMtx.Unlock()
 	if curve == nil {
 		panic(errors.New("SetCurve received a nil curve"))
 	}

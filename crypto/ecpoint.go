@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
@@ -233,6 +234,9 @@ func (p *ECPoint) Bytes() [2][]byte {
 }
 
 func NewECPointFromBytes(ec elliptic.Curve, bzs [][]byte) (*ECPoint, error) {
+	if !common.NonEmptyMultiBytes(bzs, 2) {
+		return nil, fmt.Errorf("NewECPointFromBytes expects 2 points in bzs, got %d", len(bzs))
+	}
 	point, err := NewECPoint(ec,
 		new(big.Int).SetBytes(bzs[0]),
 		new(big.Int).SetBytes(bzs[1]))

@@ -52,7 +52,7 @@ func NewKGRound1Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound1Message) ValidateBasic() bool {
+func (m *KGRound1Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetVHash())
 }
@@ -99,7 +99,13 @@ func NewKGRound2Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound2Message) ValidateBasic() bool {
+func (m *KGRound2Message) ValidateBasic(ec elliptic.Curve) bool {
+	if _, err := m.UnmarshalAi(ec); err != nil {
+		return false
+	}
+	if _, err := m.UnmarshalXi(ec); err != nil {
+		return false
+	}
 	return m != nil &&
 		common.NonEmptyBytes(m.GetPaillierN()) &&
 		common.NonEmptyBytes(m.GetNTilde()) &&
@@ -182,7 +188,7 @@ func NewKGRound3Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound3Message) ValidateBasic() bool {
+func (m *KGRound3Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetShare()) &&
 		common.AnyNonEmptyMultiByte(m.GetModProof(), zkpmod.ProofModBytesParts) &&
@@ -225,7 +231,7 @@ func NewKGRound4Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound4Message) ValidateBasic() bool {
+func (m *KGRound4Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.GetProof(), zkpsch.ProofSchBytesParts)
 }

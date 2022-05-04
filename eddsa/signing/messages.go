@@ -46,7 +46,7 @@ func NewSignRound1Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *SignRound1Message) ValidateBasic() bool {
+func (m *SignRound1Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m.Commitment != nil &&
 		common.NonEmptyBytes(m.GetCommitment())
 }
@@ -77,7 +77,7 @@ func NewSignRound2Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *SignRound2Message) ValidateBasic() bool {
+func (m *SignRound2Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.DeCommitment, 3) &&
 		common.NonEmptyMultiBytes(m.Proof, zkpsch.ProofSchBytesParts)
@@ -110,7 +110,7 @@ func NewSignRound3Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *SignRound3Message) ValidateBasic() bool {
+func (m *SignRound3Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.S)
 }

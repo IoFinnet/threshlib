@@ -7,6 +7,7 @@
 package tss
 
 import (
+	"crypto/elliptic"
 	"fmt"
 	"math/big"
 
@@ -43,13 +44,13 @@ type (
 	ParsedMessage interface {
 		Message
 		Content() MessageContent
-		ValidateBasic() bool
+		ValidateBasic(ec elliptic.Curve) bool
 	}
 
 	// MessageContent represents a ProtoBuf message with validation logic
 	MessageContent interface {
 		proto.Message
-		ValidateBasic() bool
+		ValidateBasic(ec elliptic.Curve) bool
 	}
 
 	// MessageRouting holds the full routing information for the message, consumed by the transport
@@ -160,8 +161,8 @@ func (mm *MessageImpl) Content() MessageContent {
 	return mm.content
 }
 
-func (mm *MessageImpl) ValidateBasic() bool {
-	return mm.content.ValidateBasic()
+func (mm *MessageImpl) ValidateBasic(ec elliptic.Curve) bool {
+	return mm.content.ValidateBasic(ec)
 }
 
 func (mm *MessageImpl) String() string {

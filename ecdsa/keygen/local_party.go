@@ -261,6 +261,10 @@ func (save LocalPartySaveData) OriginalIndex() (int, error) {
 	return index, nil
 }
 
+func (p *LocalParty) Params() *tss.Parameters {
+	return p.params
+}
+
 func (p *LocalParty) PartyID() *tss.PartyID {
 	return p.params.PartyID()
 }
