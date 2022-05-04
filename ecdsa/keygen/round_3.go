@@ -46,6 +46,7 @@ func (round *round3) Start() *tss.Error {
 
 	var err error
 
+	idG := crypto.ScalarBaseMult(round.EC(), big.NewInt(1))
 	𝜌 := round.temp.𝜌ᵢ
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -93,27 +94,18 @@ func (round *round3) Start() *tss.Error {
 			}
 		}(j, Pj)
 
-		wg.Add(1)
-		go func(j int, Pj *tss.PartyID) {
-			defer wg.Done()
-			𝜌 = big.NewInt(0).Add(𝜌, round.temp.rref2msg𝜌j[j])
-		}(j, Pj)
+		𝜌 = big.NewInt(0).Add(𝜌, round.temp.rref2msg𝜌j[j])
 
-		wg.Add(1)
-		go func(j int, Pj *tss.PartyID) {
-			defer wg.Done()
-			Xkj := round.temp.rref2msgXj[j]
-			idG := crypto.ScalarBaseMult(round.EC(), big.NewInt(1))
-			ᴨkXkj := crypto.NewECPointNoCurveCheck(round.EC(), idG.X(), idG.Y())
-			for _, X := range Xkj { // for each k
-				if ᴨkXkj, err = ᴨkXkj.Add(X); err != nil {
-					errChs <- round.WrapError(errors.New(" Xj product"), Pj)
-				}
+		Xkj := round.temp.rref2msgXj[j]
+		ᴨkXkj := crypto.NewECPointNoCurveCheck(round.EC(), idG.X(), idG.Y())
+		for _, X := range Xkj { // for each k
+			if ᴨkXkj, err = ᴨkXkj.Add(X); err != nil {
+				errChs <- round.WrapError(errors.New(" Xj product"), Pj)
 			}
-			if !idG.Equals(ᴨkXkj) {
-				errChs <- round.WrapError(errors.New("ᴨX must be G"), Pj)
-			}
-		}(j, Pj)
+		}
+		if !idG.Equals(ᴨkXkj) {
+			errChs <- round.WrapError(errors.New("ᴨX must be G"), Pj)
+		}
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
@@ -259,7 +251,6 @@ func (round *round3) Start() *tss.Error {
 			i, common.FormatBigInt(nonce),
 			common.FormatBigInt(round.temp.ssid), common.FormatBigInt(𝜌))
 			*/
-
 			r3msg := NewKGRound3Message(round.temp.sessionId, Pj, round.PartyID(), round.temp.sid, 𝜓Schi,
 				Cvssji, randomnessCvssji,
 				// refresh:

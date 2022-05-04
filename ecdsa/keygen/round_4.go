@@ -179,13 +179,14 @@ func (round *round4) Start() *tss.Error {
 			}
 
 			if ok := 𝜓ⁱⱼ.VerifyWithNonce(round.temp.rref2msgXj[j][i], noncej); !ok {
-				/* common.Logger.Debugf("party:%v r4, Pj: %v, 𝜓^[i=%v]_[j=%v]: %v, X^[i=%v]_[j=%v]: %v, nonce: %v"+
+				/* common.Logger.Debugf("party:%v r4, Pj: %v, 𝜓^[i=%v]_[j=%v]: %v, X^[i=%v]_[j=%v]: %v, nonce[%v]: %v"+
 				", ssid: %v, 𝜌: %v",
 				round.PartyID(), Pj,
 				i, j, zkpsch.FormatProofSch(𝜓ⁱⱼ),
 				i, j, crypto.FormatECPoint(round.temp.rref2msgXj[j][i]),
-				common.FormatBigInt(noncej),
-				common.FormatBigInt(round.temp.ssid), common.FormatBigInt(round.temp.𝜌)) */
+				j, common.FormatBigInt(noncej),
+				common.FormatBigInt(round.temp.rref3msgSsid[j]), common.FormatBigInt(round.temp.𝜌))
+				*/
 				errChs <- round.WrapError(errors.New("failed sch proof"), Pj)
 				return
 			}

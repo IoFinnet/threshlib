@@ -133,7 +133,7 @@ func TestFacPQNoSmallFactor(test *testing.T) {
 func TestGeneral(test *testing.T) {
 	ec := tss.EC()
 
-	preParams, err := generatePreParams(2 * time.Minute)
+	preParams, err := generatePreParams(10 * time.Minute)
 	if err != nil {
 		test.Error("pre-params generation failed")
 		test.Fail()
@@ -149,7 +149,7 @@ func TestGeneral(test *testing.T) {
 func TestGeneralNonce(test *testing.T) {
 	ec := tss.EC()
 	nonce := common.GetRandomPositiveInt(ec.Params().N)
-	preParams, err := generatePreParams(2 * time.Minute)
+	preParams, err := generatePreParams(10 * time.Minute)
 	if err != nil {
 		test.Error("pre-params generation failed")
 		test.Fail()
