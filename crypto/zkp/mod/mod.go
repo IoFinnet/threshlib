@@ -52,6 +52,29 @@ func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
 		Y[i] = common.RejectionSample(N, ei)
 	}
 
+	X, A, B, Z := proof(N, P, Q, Phi, Y, W)
+
+	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
+}
+
+func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
+	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
+	// Fig 16.1
+	W := common.GetRandomQuandraticNonResidue(N)
+
+	// Fig 16.2
+	Y := [Iterations]*big.Int{}
+	for i := range Y {
+		ei := common.SHA512_256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
+		Y[i] = common.RejectionSample(N, ei)
+	}
+
+	X, A, B, Z := proof(N, P, Q, Phi, Y, W)
+
+	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
+}
+
+func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *big.Int) ([13]*big.Int, [13]*big.Int, [13]*big.Int, [13]*big.Int) {
 	// Fig 16.3
 	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
 	NINV := new(big.Int).ModInverse(N, Phi)
@@ -80,8 +103,7 @@ func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
 			}
 		}
 	}
-
-	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
+	return X, A, B, Z
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
@@ -118,17 +140,44 @@ func (pf *ProofMod) Verify(N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
-	modN := common.ModInt(N)
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
 		ei := common.SHA512_256i(append([]*big.Int{pf.W, N}, Y[:i]...)...)
 		Y[i] = common.RejectionSample(N, ei)
 	}
 
+	b, done := verification(N, pf, Y)
+	if done {
+		return b
+	}
+
+	return true
+}
+
+func (pf *ProofMod) VerifyWithNonce(N, nonce *big.Int) bool {
+	if pf == nil || !pf.ValidateBasic() {
+		return false
+	}
+	Y := [Iterations]*big.Int{}
+	for i := range Y {
+		ei := common.SHA512_256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
+		Y[i] = common.RejectionSample(N, ei)
+	}
+
+	b, done := verification(N, pf, Y)
+	if done {
+		return b
+	}
+
+	return true
+}
+
+func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
+	modN := common.ModInt(N)
 	// Fig 16. Verification
 	{
 		if N.Bit(0) == 0 || N.ProbablyPrime(16) {
-			return false
+			return false, true
 		}
 	}
 
@@ -161,11 +210,10 @@ func (pf *ProofMod) Verify(N *big.Int) bool {
 
 	for i := 0; i < Iterations*2; i++ {
 		if !<-chs {
-			return false
+			return false, true
 		}
 	}
-
-	return true
+	return false, false
 }
 
 func (pf *ProofMod) ValidateBasic() bool {
@@ -211,4 +259,12 @@ func (pf *ProofMod) Bytes() [ProofModBytesParts][]byte {
 		bzs[Iterations*3+1+i] = pf.Z[i].Bytes()
 	}
 	return bzs
+}
+
+func FormatProofMod(pf *ProofMod) string {
+	return "(W:" + common.FormatBigInt(pf.W) + ", X:" + common.FormatBigInt(pf.X[0]) + "..." + common.FormatBigInt(pf.X[len(pf.X)-1]) +
+		", A:" + common.FormatBigInt(pf.A[0]) + "..." + common.FormatBigInt(pf.A[len(pf.A)-1]) +
+		", B:" + common.FormatBigInt(pf.B[0]) + "..." + common.FormatBigInt(pf.B[len(pf.B)-1]) +
+		", Z:" + common.FormatBigInt(pf.Z[0]) + "..." + common.FormatBigInt(pf.Z[len(pf.Z)-1]) +
+		")"
 }

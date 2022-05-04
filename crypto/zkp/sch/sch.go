@@ -201,3 +201,7 @@ func (pf *ProofSch) Bytes() [ProofSchBytesParts][]byte {
 		pf.Z.Bytes(),
 	}
 }
+
+func FormatProofSch(proof *ProofSch) string {
+	return "(A:" + crypto.FormatECPoint(proof.A) + ", Z:" + common.FormatBigInt(proof.Z) + ")"
+}

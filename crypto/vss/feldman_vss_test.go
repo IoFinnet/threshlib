@@ -70,6 +70,15 @@ func TestCreate(t *testing.T) {
 		assert.NotZero(t, vs[i].Y())
 	}
 }
+func TestCreateZeroSumRandomArray(t *testing.T) {
+	array := CreateZeroSumRandomArray(tss.EC().Params().N, 100)
+	sum := big.NewInt(0)
+	modN := common.ModInt(tss.EC().Params().N)
+	for _, a := range array {
+		sum = modN.Add(sum, a)
+	}
+	assert.Equal(t, int64(0), sum.Int64(), "must be zero")
+}
 
 func TestVerify(t *testing.T) {
 	num, threshold := 5, 3
@@ -113,4 +122,6 @@ func TestReconstruct(t *testing.T) {
 	secret4, err4 := shares[:num].ReConstruct(tss.EC())
 	assert.NoError(t, err4)
 	assert.NotZero(t, secret4)
+
+	assert.EqualValues(t, secret, secret4, "secrets must have equal values")
 }

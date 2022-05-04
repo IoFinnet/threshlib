@@ -229,7 +229,7 @@ func TestBadMessageCulprits(t *testing.T) {
 	}
 
 	// badMsg := NewKGRound1Message(pIDs[1], zero, &paillier.PublicKey{N: zero}, zero, zero, zero)
-	badMsg := NewKGRound1Message(sessionId, pIDs[1], zero)
+	badMsg := NewKGRound1Message(sessionId, pIDs[1], zero, zero, zero, zero)
 	ok, err2 := lp.Update(badMsg)
 	t.Log(err2)
 	assert.False(t, ok)
@@ -247,7 +247,7 @@ func TestBadMessageCulprits(t *testing.T) {
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
-	setUp("info")
+	setUp("debug")
 
 	// tss.SetCurve(elliptic.P256())
 
@@ -309,16 +309,16 @@ keygen:
 						}
 						// vssMsgs := P.temp.kgRound3Messages
 						// share := vssMsgs[j].Content().(*KGRound3Message).Share
-						share := P.temp.r3msgxij[j]
+						share := P.temp.rref3msgxij[j]
 						shareStruct := &vss.Share{
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
-							Share:     share, // new(big.Int).SetBytes(share),
+							Share:     new(big.Int).SetBytes(share.Bytes()),
 						}
 						pShares = append(pShares, shareStruct)
 					}
-					uj, err := pShares[:threshold+1].ReConstruct(tss.EC())
-					assert.NoError(t, err, "vss.ReConstruct should not throw error")
+					uj, errRec := pShares[:threshold+1].ReConstruct(tss.EC())
+					assert.NoError(t, errRec, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
 					assert.Equal(t, uj, Pj.temp.ui)

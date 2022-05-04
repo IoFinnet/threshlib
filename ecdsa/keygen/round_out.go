@@ -10,6 +10,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -37,8 +38,15 @@ func (round *roundout) Start() *tss.Error {
 			if round.temp.sessionId == nil {
 				errChs <- round.WrapError(errors.New("sessionId not set"))
 			}
-			if ok := round.temp.r4msgpf[j].VerifyWithNonce(round.save.BigXj[j], round.temp.sessionId); !ok {
-				errChs <- round.WrapError(errors.New("proof sch verify failed"), Pj)
+			if round.temp.r4msgAbortingj[j] {
+				common.Logger.Errorf("party %v, reporting party: %v, alleged culprit:%v, 𝜇: %v, C^i_j: %v"+
+					", x^i_j: %v",
+					round.PartyID(),
+					Pj, round.Parties().IDs()[round.temp.r4msgCulpritPj[j]], round.temp.r4msg𝜇j[j].String(),
+					round.temp.r4msgCji[j].String(), round.temp.r4msgxji[j].String(),
+				)
+				errChs <- round.WrapError(errors.New("g^(x^i_j) != X^i_j, equality required -- verify 𝜇"),
+					round.Parties().IDs()[round.temp.r4msgCulpritPj[j]])
 			}
 		}(j, Pj)
 	}
@@ -49,9 +57,9 @@ func (round *roundout) Start() *tss.Error {
 		culprits = append(culprits, err.Culprits()...)
 	}
 	if len(culprits) > 0 {
-		return round.WrapError(errors.New("round_out: proof sch verify failed"), culprits...)
+		return round.WrapError(errors.New("round_out: error"), culprits...)
 	}
-
+	round.save.ECDSAPub = round.temp.ecdsaPubKey
 	round.end <- *round.save
 
 	return nil

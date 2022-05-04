@@ -28,6 +28,57 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 		return nil, errors.New("ProveDec constructor received nil value(s)")
 	}
 
+	𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T := proofStart(ec, pk, NCap, s, t, p, q)
+
+	// Fig 29.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎)...)
+		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
+	}
+
+	z1, z2, w1, w2, v := proofEnd(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
+
+	return &ProofFac{P: P, Q: Q, A: A, B: B, T: T, Sigma: 𝜎, Z1: z1, Z2: z2, W1: w1, W2: w2, V: v}, nil
+}
+
+// NewProof implements prooffac
+func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q, nonce *big.Int) (*ProofFac, error) {
+	if ec == nil || pk == nil || NCap == nil || s == nil || t == nil || p == nil || q == nil {
+		return nil, errors.New("ProveDec constructor received nil value(s)")
+	}
+
+	𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T := proofStart(ec, pk, NCap, s, t, p, q)
+
+	// Fig 29.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, nonce)...)
+		common.Logger.Debugf("NewProofGivenNonce eHash: %v ", common.FormatBigInt(eHash)) // TODO
+		e = common.RejectionSample(ec.Params().N, eHash)                                  // Likely N and not secret input q
+	}
+
+	z1, z2, w1, w2, v := proofEnd(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
+
+	return &ProofFac{P: P, Q: Q, A: A, B: B, T: T, Sigma: 𝜎, Z1: z1, Z2: z2, W1: w1, W2: w2, V: v}, nil
+}
+
+func proofEnd(𝜎 *big.Int, 𝜈 *big.Int, p *big.Int, 𝛼 *big.Int, e *big.Int, 𝛽 *big.Int, q *big.Int,
+	x *big.Int, 𝜇 *big.Int, y *big.Int, r *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
+	// Fig 29.3
+	ŝ := new(big.Int).Sub(𝜎, new(big.Int).Mul(𝜈, p))
+
+	z1 := new(big.Int).Add(𝛼, new(big.Int).Mul(e, p))
+	z2 := new(big.Int).Add(𝛽, new(big.Int).Mul(e, q))
+	w1 := new(big.Int).Add(x, new(big.Int).Mul(e, 𝜇))
+	w2 := new(big.Int).Add(y, new(big.Int).Mul(e, 𝜈))
+	v := new(big.Int).Add(r, new(big.Int).Mul(e, ŝ))
+	return z1, z2, w1, w2, v
+}
+
+func proofStart(ec elliptic.Curve, pk *paillier.PublicKey, NCap *big.Int, s *big.Int,
+	t *big.Int, p *big.Int, q *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int,
+	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	Twol := ec.Params().N                                                                 // "q" (N) == "2^l"
 	N3 := new(big.Int).Mul(ec.Params().N, new(big.Int).Mul(ec.Params().N, ec.Params().N)) // "q3" == "2^(l+𝜀)
 	TwolPlus𝜀 := N3
@@ -51,24 +102,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 	A := modNCap.Mul(modNCap.Exp(s, 𝛼), modNCap.Exp(t, x))
 	B := modNCap.Mul(modNCap.Exp(s, 𝛽), modNCap.Exp(t, y))
 	T := modNCap.Mul(modNCap.Exp(Q, 𝛼), modNCap.Exp(t, r))
-
-	// Fig 29.2 e
-	var e *big.Int
-	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎)...)
-		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
-	}
-
-	// Fig 29.3
-	ŝ := new(big.Int).Sub(𝜎, new(big.Int).Mul(𝜈, p))
-
-	z1 := new(big.Int).Add(𝛼, new(big.Int).Mul(e, p))
-	z2 := new(big.Int).Add(𝛽, new(big.Int).Mul(e, q))
-	w1 := new(big.Int).Add(x, new(big.Int).Mul(e, 𝜇))
-	w2 := new(big.Int).Add(y, new(big.Int).Mul(e, 𝜈))
-	v := new(big.Int).Add(r, new(big.Int).Mul(e, ŝ))
-
-	return &ProofFac{P: P, Q: Q, A: A, B: B, T: T, Sigma: 𝜎, Z1: z1, Z2: z2, W1: w1, W2: w2, V: v}, nil
+	return 𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofFac, error) {
@@ -109,7 +143,6 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 	}
 
 	No := pk.N
-	modNCap := common.ModInt(NCap)
 
 	var e *big.Int
 	{
@@ -117,6 +150,38 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
 	}
 
+	b, done := verification(NCap, s, No, t, pf, e)
+	if done {
+		return b
+	}
+
+	return true
+}
+
+func (pf *ProofFac) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, nonce *big.Int) bool {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || NCap == nil || s == nil || t == nil {
+		return false
+	}
+
+	No := pk.N
+
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, nonce)...)
+		common.Logger.Debugf("VerifyWithNonce eHash: %v ", common.FormatBigInt(eHash)) // TODO
+		e = common.RejectionSample(ec.Params().N, eHash)                               // Likely N and not secret input q
+	}
+
+	b, done := verification(NCap, s, No, t, pf, e)
+	if done {
+		return b
+	}
+
+	return true
+}
+
+func verification(NCap, s *big.Int, No *big.Int, t *big.Int, pf *ProofFac, e *big.Int) (bool, bool) {
+	modNCap := common.ModInt(NCap)
 	R := new(big.Int).Mul(modNCap.Exp(s, No), modNCap.Exp(t, pf.Sigma))
 
 	// Fig 28. Equality Checks
@@ -124,7 +189,7 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 		left := modNCap.Mul(modNCap.Exp(s, pf.Z1), modNCap.Exp(t, pf.W1))
 		right := modNCap.Mul(pf.A, modNCap.Exp(pf.P, e))
 		if left.Cmp(right) != 0 {
-			return false
+			return false, true
 		}
 	}
 
@@ -132,7 +197,7 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 		left := modNCap.Mul(modNCap.Exp(s, pf.Z2), modNCap.Exp(t, pf.W2))
 		right := modNCap.Mul(pf.B, modNCap.Exp(pf.Q, e))
 		if left.Cmp(right) != 0 {
-			return false
+			return false, true
 		}
 	}
 
@@ -140,11 +205,10 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 		left := modNCap.Mul(modNCap.Exp(pf.Q, pf.Z1), modNCap.Exp(t, pf.V))
 		right := modNCap.Mul(pf.T, modNCap.Exp(R, e))
 		if left.Cmp(right) != 0 {
-			return false
+			return false, true
 		}
 	}
-
-	return true
+	return false, false
 }
 
 func (pf *ProofFac) Bytes() [ProofFacBytesParts][]byte {
@@ -161,4 +225,11 @@ func (pf *ProofFac) Bytes() [ProofFacBytesParts][]byte {
 		pf.W2.Bytes(),
 		pf.V.Bytes(),
 	}
+}
+
+func FormatProofFac(pf *ProofFac) string {
+	return "(P:" + common.FormatBigInt(pf.P) + ", Q:" + common.FormatBigInt(pf.Q) + ", A:" + common.FormatBigInt(pf.A) +
+		", B:" + common.FormatBigInt(pf.B) + ", T:" + common.FormatBigInt(pf.T) + ", Si:" + common.FormatBigInt(pf.Sigma) +
+		", Z1:" + common.FormatBigInt(pf.Z1) + ", Z2:" + common.FormatBigInt(pf.Z2) + ", W1:" + common.FormatBigInt(pf.W1) +
+		", W2:" + common.FormatBigInt(pf.W2) + ", V:" + common.FormatBigInt(pf.V) + ")"
 }

@@ -158,7 +158,7 @@ func samplePolynomial(ec elliptic.Curve, threshold int, secret *big.Int) []*big.
 	return v
 }
 
-// Evauluates a polynomial with coefficients such that:
+// Evaluates a polynomial with coefficients such that:
 // evaluatePolynomial([a, b, c, d], x):
 // 		returns a + bx + cx^2 + dx^3
 //
@@ -174,4 +174,20 @@ func evaluatePolynomial(ec elliptic.Curve, threshold int, v []*big.Int, id *big.
 		result = modQ.Add(result, aiXi)
 	}
 	return
+}
+
+// CreateZeroSumRandomArray - Create an array such that the sum of its elements is zero mod N
+func CreateZeroSumRandomArray(N *big.Int, n int) []*big.Int {
+	array := make([]*big.Int, n)
+	mod := common.ModInt(N)
+	sum := big.NewInt(0)
+	for i := 0; i < n-1; i++ {
+		x := common.GetRandomPositiveInt(N)
+		array[i] = x
+		sum = mod.Add(sum, x)
+	}
+	remainder := big.NewInt(0).Neg(sum)
+	remainder = mod.Add(big.NewInt(0), remainder)
+	array[n-1] = remainder
+	return array
 }

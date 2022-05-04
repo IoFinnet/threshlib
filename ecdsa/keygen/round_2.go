@@ -10,6 +10,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -26,12 +27,24 @@ func (round *round2) Start() *tss.Error {
 	i := Pi.Index
 	round.ok[i] = true
 
-	// Fig 5. Round 2. / Fig 6. Round 2.
 	{
 		xi := new(big.Int).Set(round.temp.shares[i].Share)
-		Xi := crypto.ScalarBaseMult(round.EC(), xi)
-		msg := NewKGRound2Message(round.temp.sessionId, round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey,
-			round.save.NTildei, round.save.H1i, round.save.H2i, round.temp.ridi, round.temp.Ai, Xi, round.temp.𝜓i)
+		XiKeygen := crypto.ScalarBaseMult(round.EC(), xi)
+		sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), tss.EC().Params().N, tss.EC().Params().P,
+			tss.EC().Params().B, tss.EC().Params().Gx, tss.EC().Params().Gy)...)
+		msg, err := NewKGRound2Message(round.temp.sessionId, round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey,
+			sid, round.temp.ridi, XiKeygen, round.temp.AiKeygen, round.temp.ui,
+			// key refresh:
+			round.temp.ssid,
+			round.temp.XiRefreshList,
+			round.temp.AiRefreshList, round.temp.Yᵢ,
+			round.temp.Bᵢ,
+			round.save.LocalPreParams.NTildei, round.save.LocalPreParams.H1i, round.save.LocalPreParams.H2i,
+			round.temp.𝜓ᵢ,
+			round.temp.𝜌ᵢ)
+		if err != nil {
+			return round.WrapError(errors.New("msg error"))
+		}
 		round.out <- msg
 	}
 
@@ -46,7 +59,7 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round2) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r2msgVss {
+	for j, msg := range round.temp.rref2msg𝜌j {
 		if round.ok[j] {
 			continue
 		}

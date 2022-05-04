@@ -45,28 +45,75 @@ type (
 
 	localTempData struct {
 		// temp data (thrown away after keygen)
-		ui        *big.Int // used for tests
-		ridi      *big.Int // used for tests
-		rid       *big.Int
-		shares    vss.Shares
-		vs        vss.Vs
-		Ai        *crypto.ECPoint
-		Xi        *crypto.ECPoint
-		τ         *big.Int
-		𝜓i        *zkpprm.ProofPrm
-		sessionId *big.Int
+		ui                   *big.Int // used for tests
+		ridi                 *big.Int
+		sid                  *big.Int
+		rid                  *big.Int
+		shares               vss.Shares
+		vs                   vss.Vs
+		AiKeygen             *crypto.ECPoint
+		XiKeygen             *crypto.ECPoint
+		τKeygen, 𝜏KeyRefresh *big.Int
+		sessionId            *big.Int
+		ecdsaPubKey          *crypto.ECPoint
 
-		r1msgVHashs []*big.Int
-		r2msgVss    [][]*crypto.ECPoint
-		r2msgAj     []*crypto.ECPoint
-		r2msgXj     []*crypto.ECPoint
-		r2msgRidj   []*big.Int
-		r2msg𝜓j     []*zkpprm.ProofPrm
-		r3msgxij    []*big.Int
-		r3msgpfmod  []*zkpmod.ProofMod
-		r3msgpffac  []*zkpfac.ProofFac
-		r3msgpfsch  []*zkpsch.ProofSch
-		r4msgpf     []*zkpsch.ProofSch
+		// key refresh:
+		xⁿᵢ           []*big.Int
+		𝜏js           []*big.Int
+		AiRefreshList []*crypto.ECPoint
+		XiRefreshList []*crypto.ECPoint
+		Yᵢ            *crypto.ECPoint
+		yᵢ            *big.Int
+		𝜓ᵢ            *zkpprm.ProofPrm
+		𝜌ᵢ            *big.Int
+		Bᵢ            *crypto.ECPoint
+		ssid          *big.Int
+		𝜌             *big.Int
+
+		r1msgVjKeygen []*big.Int
+
+		// Refresh:
+		rref1msgVjKeyRefresh []*big.Int
+		rref1msgSid          []*big.Int
+		rref1msgSsid         []*big.Int
+
+		// Keygen:
+		r2msgSid      []*big.Int
+		r2msgRidj     []*big.Int
+		r2msgUj       []*big.Int
+		r2msgVss      [][]*crypto.ECPoint
+		r2msgAKeygenj []*crypto.ECPoint
+		r2msgXKeygenj []*crypto.ECPoint
+
+		// Refresh:
+		rref2msgSsid                       []*big.Int
+		rref2msgXj                         [][]*crypto.ECPoint // first index: owner. Second index: recipient.
+		rref2msgAj                         [][]*crypto.ECPoint
+		rref2msgYj                         []*crypto.ECPoint
+		rref2msgBj                         []*crypto.ECPoint
+		rref2msgNj, rref2msgsj, rref2msgtj []*big.Int
+		rref2msgpf𝜓j                       []*zkpprm.ProofPrm
+		rref2msg𝜌j                         []*big.Int
+
+		// Keygen:
+		r3msgSid  []*big.Int
+		r3msgpf𝜓j []*zkpsch.ProofSch
+
+		// Refresh:
+		rref3msgSsid                       []*big.Int
+		rref3msgpf𝜓j                       []*zkpmod.ProofMod
+		rref3msgpf𝜙ji                      []*zkpfac.ProofFac
+		rref3msgpfᴨᵢ                       []*zkpsch.ProofSch
+		rref3msgxij                        []*big.Int
+		rref3msgCji, rref3msgRandomnessCji []*big.Int
+		rref3msgpf𝜓ⁱⱼ                      []*zkpsch.ProofSch
+
+		r4msgSid       []*big.Int
+		r4msg𝜇j        []*big.Int
+		r4msgAbortingj []bool
+		r4msgCulpritPj []int // alleged
+		r4msgCji       []*big.Int
+		r4msgxji       []*big.Int
 	}
 )
 
@@ -105,17 +152,54 @@ func NewLocalParty(
 		end:       end,
 	}
 	// msgs data init
-	p.temp.r1msgVHashs = make([]*big.Int, partyCount)
+	p.temp.rref1msgSid = make([]*big.Int, partyCount)
+	p.temp.r1msgVjKeygen = make([]*big.Int, partyCount)
+	// Refresh:
+	p.temp.rref1msgVjKeyRefresh = make([]*big.Int, partyCount)
+	p.temp.rref1msgSsid = make([]*big.Int, partyCount)
+
 	p.temp.r2msgVss = make([][]*crypto.ECPoint, partyCount)
-	p.temp.r2msgAj = make([]*crypto.ECPoint, partyCount)
-	p.temp.r2msgXj = make([]*crypto.ECPoint, partyCount)
+	p.temp.r2msgAKeygenj = make([]*crypto.ECPoint, partyCount)
+	p.temp.r2msgXKeygenj = make([]*crypto.ECPoint, partyCount)
 	p.temp.r2msgRidj = make([]*big.Int, partyCount)
-	p.temp.r2msg𝜓j = make([]*zkpprm.ProofPrm, partyCount)
-	p.temp.r3msgxij = make([]*big.Int, partyCount)
-	p.temp.r3msgpfmod = make([]*zkpmod.ProofMod, partyCount)
-	p.temp.r3msgpffac = make([]*zkpfac.ProofFac, partyCount)
-	p.temp.r3msgpfsch = make([]*zkpsch.ProofSch, partyCount)
-	p.temp.r4msgpf = make([]*zkpsch.ProofSch, partyCount)
+	p.temp.r2msgSid = make([]*big.Int, partyCount)
+	p.temp.r2msgUj = make([]*big.Int, partyCount)
+
+	// Refresh:
+	p.temp.rref2msgSsid = make([]*big.Int, partyCount)
+	p.temp.rref2msgXj = make([][]*crypto.ECPoint, partyCount)
+	p.temp.rref2msgAj = make([][]*crypto.ECPoint, partyCount)
+	p.temp.rref2msgYj = make([]*crypto.ECPoint, partyCount)
+	p.temp.rref2msgBj = make([]*crypto.ECPoint, partyCount)
+	p.temp.rref2msgNj = make([]*big.Int, partyCount)
+	p.temp.rref2msgsj = make([]*big.Int, partyCount)
+	p.temp.rref2msgtj = make([]*big.Int, partyCount)
+	p.temp.rref2msgpf𝜓j = make([]*zkpprm.ProofPrm, partyCount)
+	p.temp.rref2msg𝜌j = make([]*big.Int, partyCount)
+
+	// Keygen:
+	p.temp.r3msgSid = make([]*big.Int, partyCount)
+	p.temp.r3msgpf𝜓j = make([]*zkpsch.ProofSch, partyCount)
+
+	// Refresh:
+	p.temp.rref3msgSsid = make([]*big.Int, partyCount)
+	p.temp.rref3msgpf𝜓j = make([]*zkpmod.ProofMod, partyCount)
+	p.temp.rref3msgpf𝜙ji = make([]*zkpfac.ProofFac, partyCount)
+	p.temp.rref3msgpfᴨᵢ = make([]*zkpsch.ProofSch, partyCount)
+	p.temp.rref3msgCji = make([]*big.Int, partyCount)
+	p.temp.rref3msgxij = make([]*big.Int, partyCount)
+	p.temp.rref3msgRandomnessCji = make([]*big.Int, partyCount)
+	p.temp.rref3msgpf𝜓ⁱⱼ = make([]*zkpsch.ProofSch, partyCount)
+
+	p.temp.r4msgSid = make([]*big.Int, partyCount)
+	p.temp.r4msg𝜇j = make([]*big.Int, partyCount)
+	p.temp.r4msgAbortingj = make([]bool, partyCount)
+	for j := 0; j < partyCount; j++ {
+		p.temp.r4msgAbortingj[j] = false
+	}
+	p.temp.r4msgCulpritPj = make([]int, partyCount)
+	p.temp.r4msgCji = make([]*big.Int, partyCount)
+	p.temp.r4msgxji = make([]*big.Int, partyCount)
 	p.temp.sessionId = sessionId
 	return p, nil
 }
@@ -169,73 +253,104 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *KGRound1Message:
 		// p.temp.kgRound1Messages[fromPIdx] = msg // TODO remove
 		r1msg := msg.Content().(*KGRound1Message)
-		p.temp.r1msgVHashs[fromPIdx] = r1msg.UnmarshalVHash()
+		p.temp.r1msgVjKeygen[fromPIdx] = r1msg.UnmarshalViKeygen()
+		p.temp.rref1msgVjKeyRefresh[fromPIdx] = r1msg.UnmarshalViKeyRefresh()
+		p.temp.rref1msgSid[fromPIdx] = r1msg.UnmarshalSid()
+		p.temp.rref1msgSsid[fromPIdx] = r1msg.UnmarshalSsid()
 	case *KGRound2Message:
 		// p.temp.kgRound2Messages[fromPIdx] = msg
+		var err error
 		r2msg, ok := msg.Content().(*KGRound2Message)
+		p.temp.r2msgSid[fromPIdx] = r2msg.UnmarshalSid()
+		p.temp.r2msgRidj[fromPIdx] = r2msg.UnmarshalRidi()
+		p.temp.r2msgUj[fromPIdx] = r2msg.UnmarshalUi()
 		if !ok {
 			return false, p.WrapError(fmt.Errorf("error with KGRound2Message (%d)", fromPIdx))
 		}
-		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
-		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNTilde()
-		p.data.H1j[fromPIdx], p.data.H2j[fromPIdx] = r2msg.UnmarshalH1(), r2msg.UnmarshalH2()
-		var err error
 		p.temp.r2msgVss[fromPIdx], err = r2msg.UnmarshalVs(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err)
 		}
-		p.temp.r2msgAj[fromPIdx], err = r2msg.UnmarshalAi(p.params.EC())
+		p.temp.r2msgAKeygenj[fromPIdx], err = r2msg.UnmarshalAiKeygen(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err)
 		}
-		p.temp.r2msgXj[fromPIdx], err = r2msg.UnmarshalXi(p.params.EC())
+		p.temp.r2msgXKeygenj[fromPIdx], err = r2msg.UnmarshalXiKeygen(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err)
 		}
-		p.temp.r2msgRidj[fromPIdx] = r2msg.UnmarshalRidi()
-		p.temp.r2msg𝜓j[fromPIdx], err = r2msg.UnmarshalProofPrm()
+		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
+
+		// Refresh:
+		p.temp.rref2msgSsid[fromPIdx] = r2msg.UnmarshalSsid()
+		p.temp.rref2msgXj[fromPIdx], err = r2msg.UnmarshalXiRefresh(p.params.EC())
 		if err != nil {
-			return false, p.WrapError(err)
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
+		p.temp.rref2msgAj[fromPIdx], err = r2msg.UnmarshalAiRefresh(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.rref2msgYj[fromPIdx], err = r2msg.UnmarshalYi(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.rref2msgBj[fromPIdx], err = r2msg.UnmarshalBi(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.rref2msgNj[fromPIdx] = r2msg.UnmarshalNi()
+		p.temp.rref2msgsj[fromPIdx] = r2msg.UnmarshalSi()
+		p.temp.rref2msgtj[fromPIdx] = r2msg.UnmarshalTi()
+		p.temp.rref2msgpf𝜓j[fromPIdx], err = r2msg.Unmarshal𝜓i()
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.rref2msg𝜌j[fromPIdx] = r2msg.Unmarshal𝜌i()
 	case *KGRound3Message:
 		// p.temp.kgRound3Messages[fromPIdx] = msg
 		r3msg := msg.Content().(*KGRound3Message)
-		xij, err := p.data.PaillierSK.Decrypt(r3msg.UnmarshalShare())
+		// Keygen:
+		p.temp.r3msgSid[fromPIdx] = r3msg.UnmarshalSid()
+		𝜓Schj, err := r3msg.Unmarshal𝜓SchProof(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
-		p.temp.r3msgxij[fromPIdx] = xij
-		proofMod, err := r3msg.UnmarshalProofMod()
-		if err != nil {
-			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
-		}
-		p.temp.r3msgpfmod[fromPIdx] = proofMod
-		// if ok := proofMod.Verify(p.data.NTildej[fromPIdx]); !ok {
-		// 	return false, p.WrapError(errors.New("proofMod verify failed"), p.params.Parties().IDs()[fromPIdx])
-		// }
+		p.temp.r3msgpf𝜓j[fromPIdx] = 𝜓Schj
 
-		proofFac, err := r3msg.UnmarshalProofFac()
+		// Refresh:
+		p.temp.rref3msgSsid[fromPIdx] = r3msg.UnmarshalSsid()
+		p.temp.rref3msgpf𝜓j[fromPIdx], err = r3msg.Unmarshal𝜓ModProof()
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
-		// if ok := proofPrm.Verify(p.data.H1j[fromPIdx], p.data.H2j[fromPIdx], p.data.NTildej[fromPIdx]); !ok {
-		// 	return false, p.WrapError(errors.New("proofPrm verify failed"), p.params.Parties().IDs()[fromPIdx])
-		// }
-		p.temp.r3msgpffac[fromPIdx] = proofFac
-
-		proofSch, err := r3msg.UnmarshalProofSch(p.params.EC())
+		p.temp.rref3msgpf𝜙ji[fromPIdx], err = r3msg.Unmarshal𝜙ji()
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
-		p.temp.r3msgpfsch[fromPIdx] = proofSch
+		p.temp.rref3msgpfᴨᵢ[fromPIdx], err = r3msg.Unmarshalᴨi(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.rref3msgxij[fromPIdx], err = p.data.PaillierSK.Decrypt(r3msg.UnmarshalCji())
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.rref3msgCji[fromPIdx] = r3msg.UnmarshalCji()
+		p.temp.rref3msgRandomnessCji[fromPIdx] = r3msg.UnmarshalRandomnessCji()
+		p.temp.rref3msgpf𝜓ⁱⱼ[fromPIdx], err = r3msg.Unmarshal𝜓ji(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
 	case *KGRound4Message:
 		// p.temp.kgRound4Messages[fromPIdx] = msg
 		r4msg := msg.Content().(*KGRound4Message)
-		proof, err := r4msg.UnmarshalProof(p.params.EC())
-		if err != nil {
-			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
-		}
-		p.temp.r4msgpf[fromPIdx] = proof
+		p.temp.r4msgSid[fromPIdx] = r4msg.UnmarshalSid()
+		p.temp.r4msg𝜇j[fromPIdx] = r4msg.UnmarshalMu()
+		p.temp.r4msgAbortingj[fromPIdx] = r4msg.GetAbort()
+		p.temp.r4msgCulpritPj[fromPIdx] = int(r4msg.GetCulpritPj())
+		p.temp.r4msgCji[fromPIdx] = r4msg.UnmarshalCji()
+		p.temp.r4msgxji[fromPIdx] = r4msg.UnmarshalXji()
 
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
