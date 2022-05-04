@@ -54,7 +54,7 @@ func NewDGRound1Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound1Message) ValidateBasic() bool {
+func (m *DGRound1Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.EddsaPubX) &&
 		common.NonEmptyBytes(m.EddsaPubY) &&
@@ -90,7 +90,7 @@ func NewDGRound2Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound2Message) ValidateBasic() bool {
+func (m *DGRound2Message) ValidateBasic(_ elliptic.Curve) bool {
 	return true
 }
 
@@ -115,7 +115,7 @@ func NewDGRound3Message1(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound3Message1) ValidateBasic() bool {
+func (m *DGRound3Message1) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.Share)
 }
@@ -142,7 +142,7 @@ func NewDGRound3Message2(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound3Message2) ValidateBasic() bool {
+func (m *DGRound3Message2) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.VDecommitment)
 }
@@ -170,6 +170,6 @@ func NewDGRound4Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound4Message) ValidateBasic() bool {
+func (m *DGRound4Message) ValidateBasic(_ elliptic.Curve) bool {
 	return true
 }

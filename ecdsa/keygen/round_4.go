@@ -13,7 +13,7 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
+	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -43,10 +43,10 @@ func (round *round4) Start() *tss.Error {
 		}
 		// Keygen: Fig 5. Output 1.
 		noncej := modQ.Add(modQ.Add(round.temp.rref3msgSsid[j], round.temp.𝜌), big.NewInt(int64(j)))
-		common.Logger.Debugf("party %v r4 j: %v, ssid[%v]: %v, 𝜌: %v, nonce[j=%v]: %v", round.PartyID(),
+		/* common.Logger.Debugf("party %v r4 j: %v, ssid[%v]: %v, 𝜌: %v, nonce[j=%v]: %v", round.PartyID(),
 			j, j, common.FormatBigInt(round.temp.rref3msgSsid[j]), common.FormatBigInt(round.temp.𝜌),
 			j, common.FormatBigInt(noncej),
-		)
+		) */
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
@@ -63,11 +63,23 @@ func (round *round4) Start() *tss.Error {
 			sidjrid := modQ.Add(modQ.Add(sid, big.NewInt(int64(j))), round.temp.rid)
 			nonceKG := modQ.Add(sidjrid, round.temp.sessionId)
 			if ok := round.temp.r3msgpf𝜓j[j].VerifyWithNonce(round.temp.r2msgXKeygenj[j], nonceKG); !ok {
-				common.Logger.Debugf("party %v r4 KG err sch 𝜓[j=%v]: %v, nonceKG: %v", round.PartyID(),
+				/* common.Logger.Debugf("party %v r4 KG err sch 𝜓[j=%v]: %v, nonceKG: %v", round.PartyID(),
 					j, zkpsch.FormatProofSch(round.temp.r3msgpf𝜓j[j]), common.FormatBigInt(nonceKG),
-				)
-
+				) */
 				errChs <- round.WrapError(errors.New("verification of 𝜓j failed"), Pj)
+			}
+		}(j, Pj)
+
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+			share := vss.Share{
+				Threshold: round.Threshold(),
+				ID:        round.PartyID().KeyInt(),
+				Share:     round.temp.r3msgxij[j],
+			}
+			if ok := share.Verify(round.EC(), round.Threshold(), round.temp.r2msgVss[j]); !ok {
+				errChs <- round.WrapError(errors.New("vss verify failed"), Pj)
 			}
 		}(j, Pj)
 
@@ -76,12 +88,12 @@ func (round *round4) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			xⁱⱼ, randomnessCⁱⱼ, err := round.save.PaillierSK.DecryptAndRecoverRandomness(round.temp.rref3msgCji[j])
+			xⁱⱼ, randomnessCⁱⱼ, err := round.save.PaillierSK.DecryptAndRecoverRandomness(round.temp.rref3msgCzeroji[j])
 			if err != nil {
 				errChs <- round.WrapError(errors.New("error decrypting C"), Pj)
 			}
 
-			if same := round.temp.rref3msgRandomnessCji[j].Cmp(randomnessCⁱⱼ) == 0; !same {
+			if same := round.temp.rref3msgRandomnessCzeroji[j].Cmp(randomnessCⁱⱼ) == 0; !same {
 				errChs <- round.WrapError(errors.New("error decrypting C"), Pj)
 			}
 			Xⁱⱼ := crypto.ScalarBaseMult(round.EC(), xⁱⱼ)
@@ -93,11 +105,11 @@ func (round *round4) Start() *tss.Error {
 				a := big.NewInt(0).Exp(onePlusNi, minusxⁱⱼ, nil)
 				oneOverN := big.NewInt(0).Div(big.NewInt(1), N)
 				N2 := big.NewInt(0).Mul(N, N)
-				𝜇 := big.NewInt(0).Exp(big.NewInt(0).Mul(round.temp.rref3msgCji[j], a), oneOverN, N2)
+				𝜇 := big.NewInt(0).Exp(big.NewInt(0).Mul(round.temp.rref3msgCzeroji[j], a), oneOverN, N2)
 				common.Logger.Error("g^(x^i_j) != X^i_j, equality required -- verify 𝜇.")
 				common.Logger.Errorf("Reporting party:%v, culprit: %v", round.PartyID(), Pj)
 				r4msg := NewKGRound4Message(round.temp.sessionId, round.PartyID(), sid, true, 𝜇, Pj.Index,
-					round.temp.rref3msgCji[j], xⁱⱼ)
+					round.temp.rref3msgCzeroji[j], xⁱⱼ)
 				round.out <- r4msg
 				return
 			}
@@ -189,13 +201,12 @@ func (round *round4) Start() *tss.Error {
 		return round.WrapError(errors.New("round4: failed to verify proofs"), culprits...)
 	}
 
-	// Fig 5. Output 2. / Fig 6. Output 2.
 	xi := new(big.Int).Set(round.temp.shares[i].Share)
 	for j := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
-		xi = new(big.Int).Add(xi, round.temp.rref3msgxij[j])
+		xi = new(big.Int).Add(xi, round.temp.r3msgxij[j])
 	}
 	round.save.Xi = new(big.Int).Mod(xi, round.EC().Params().N)
 
@@ -256,7 +267,7 @@ func (round *round4) Start() *tss.Error {
 	}
 	round.temp.ecdsaPubKey = ecdsaPubKey
 	r4msg := NewKGRound4Message(round.temp.sessionId, round.PartyID(), sid, false, big.NewInt(1),
-		-1, big.NewInt(0), big.NewInt(0))
+		-1, big.NewInt(1), big.NewInt(1))
 	round.out <- r4msg
 
 	return nil

@@ -340,6 +340,10 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	return true, nil
 }
 
+func (p *LocalParty) Params() *tss.Parameters {
+	return p.params
+}
+
 func (p *LocalParty) PartyID() *tss.PartyID {
 	return p.params.PartyID()
 }

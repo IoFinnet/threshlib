@@ -55,9 +55,11 @@ message KGRound3Message {
   repeated bytes psii_mod_proof = 4;
   repeated bytes phiji_proof = 5;
   repeated bytes pii_proof = 6;
-  bytes Cji = 7;
-  bytes randCji = 8;
-  repeated bytes psiji_proof = 9;
+  bytes Cvssji = 7;
+  bytes randCvssji = 8;
+  bytes Czeroji = 9;
+  bytes randCzeroji = 10;
+  repeated bytes psiji_proof = 11;
 }
 
 /*

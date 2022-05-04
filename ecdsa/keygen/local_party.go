@@ -98,15 +98,16 @@ type (
 		// Keygen:
 		r3msgSid  []*big.Int
 		r3msgpf𝜓j []*zkpsch.ProofSch
+		r3msgxij  []*big.Int
 
 		// Refresh:
-		rref3msgSsid                       []*big.Int
-		rref3msgpf𝜓j                       []*zkpmod.ProofMod
-		rref3msgpf𝜙ji                      []*zkpfac.ProofFac
-		rref3msgpfᴨᵢ                       []*zkpsch.ProofSch
-		rref3msgxij                        []*big.Int
-		rref3msgCji, rref3msgRandomnessCji []*big.Int
-		rref3msgpf𝜓ⁱⱼ                      []*zkpsch.ProofSch
+		rref3msgSsid  []*big.Int
+		rref3msgpf𝜓j  []*zkpmod.ProofMod
+		rref3msgpf𝜙ji []*zkpfac.ProofFac
+		rref3msgpfᴨᵢ  []*zkpsch.ProofSch
+
+		rref3msgCzeroji, rref3msgRandomnessCzeroji []*big.Int
+		rref3msgpf𝜓ⁱⱼ                              []*zkpsch.ProofSch
 
 		r4msgSid       []*big.Int
 		r4msg𝜇j        []*big.Int
@@ -180,15 +181,16 @@ func NewLocalParty(
 	// Keygen:
 	p.temp.r3msgSid = make([]*big.Int, partyCount)
 	p.temp.r3msgpf𝜓j = make([]*zkpsch.ProofSch, partyCount)
+	p.temp.r3msgxij = make([]*big.Int, partyCount)
 
 	// Refresh:
 	p.temp.rref3msgSsid = make([]*big.Int, partyCount)
 	p.temp.rref3msgpf𝜓j = make([]*zkpmod.ProofMod, partyCount)
 	p.temp.rref3msgpf𝜙ji = make([]*zkpfac.ProofFac, partyCount)
 	p.temp.rref3msgpfᴨᵢ = make([]*zkpsch.ProofSch, partyCount)
-	p.temp.rref3msgCji = make([]*big.Int, partyCount)
-	p.temp.rref3msgxij = make([]*big.Int, partyCount)
-	p.temp.rref3msgRandomnessCji = make([]*big.Int, partyCount)
+	p.temp.rref3msgCzeroji = make([]*big.Int, partyCount)
+
+	p.temp.rref3msgRandomnessCzeroji = make([]*big.Int, partyCount)
 	p.temp.rref3msgpf𝜓ⁱⱼ = make([]*zkpsch.ProofSch, partyCount)
 
 	p.temp.r4msgSid = make([]*big.Int, partyCount)
@@ -267,6 +269,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		if !ok {
 			return false, p.WrapError(fmt.Errorf("error with KGRound2Message (%d)", fromPIdx))
 		}
+		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
+		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNi()
+		p.data.H1j[fromPIdx], p.data.H2j[fromPIdx] = r2msg.UnmarshalSi(), r2msg.UnmarshalTi()
 		p.temp.r2msgVss[fromPIdx], err = r2msg.UnmarshalVs(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err)
@@ -317,6 +322,8 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
 		p.temp.r3msgpf𝜓j[fromPIdx] = 𝜓Schj
+		xij, err := p.data.PaillierSK.Decrypt(r3msg.UnmarshalCvssji())
+		p.temp.r3msgxij[fromPIdx] = xij
 
 		// Refresh:
 		p.temp.rref3msgSsid[fromPIdx] = r3msg.UnmarshalSsid()
@@ -332,12 +339,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
-		p.temp.rref3msgxij[fromPIdx], err = p.data.PaillierSK.Decrypt(r3msg.UnmarshalCji())
-		if err != nil {
-			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
-		}
-		p.temp.rref3msgCji[fromPIdx] = r3msg.UnmarshalCji()
-		p.temp.rref3msgRandomnessCji[fromPIdx] = r3msg.UnmarshalRandomnessCji()
+
+		p.temp.rref3msgCzeroji[fromPIdx] = r3msg.UnmarshalCzeroji()
+		p.temp.rref3msgRandomnessCzeroji[fromPIdx] = r3msg.UnmarshalRandomnessCzeroji()
 		p.temp.rref3msgpf𝜓ⁱⱼ[fromPIdx], err = r3msg.Unmarshal𝜓ji(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
@@ -374,6 +378,10 @@ func (save LocalPartySaveData) OriginalIndex() (int, error) {
 		return -1, errors.New("a party index could not be recovered from Ks")
 	}
 	return index, nil
+}
+
+func (p *LocalParty) Params() *tss.Parameters {
+	return p.params
 }
 
 func (p *LocalParty) PartyID() *tss.PartyID {

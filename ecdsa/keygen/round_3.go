@@ -73,6 +73,15 @@ func (round *round3) Start() *tss.Error {
 			}
 		}(j, Pj)
 
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+			if round.save.PaillierPKs[j].N.BitLen() < paillierModulusLen {
+				errChs <- round.WrapError(errors.New("paillier modulus too small"), Pj)
+				return
+			}
+		}(j, Pj)
+
 		// Refresh:
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
@@ -225,8 +234,15 @@ func (round *round3) Start() *tss.Error {
 				i, common.FormatBigInt(nonce),
 				common.FormatBigInt(round.temp.ssid), common.FormatBigInt(𝜌), verif) */
 
-			Cji, randomnessCji, errE := round.save.PaillierPKs[j].EncryptAndReturnRandomness(round.temp.xⁿᵢ[j])
-			if errE != nil {
+			// "vss" as in Feldman's verifiable secret sharing
+			Cvssji, randomnessCvssji, errEv := round.save.PaillierPKs[j].EncryptAndReturnRandomness(round.temp.shares[j].Share)
+			if errEv != nil {
+				errChs <- round.WrapError(errors.New("encryption error"), Pj)
+				return
+			}
+			// "zero" as un zero sum, per Figure 6, Round 1.
+			Czeroji, randomnessCzeroji, errE0 := round.save.PaillierPKs[j].EncryptAndReturnRandomness(round.temp.xⁿᵢ[j])
+			if errE0 != nil {
 				errChs <- round.WrapError(errors.New("encryption error"), Pj)
 				return
 			}
@@ -245,8 +261,9 @@ func (round *round3) Start() *tss.Error {
 			*/
 
 			r3msg := NewKGRound3Message(round.temp.sessionId, Pj, round.PartyID(), round.temp.sid, 𝜓Schi,
+				Cvssji, randomnessCvssji,
 				// refresh:
-				round.temp.ssid, 𝜓Modi, 𝜙ji, ᴨi, Cji, randomnessCji, 𝜓jᵢ)
+				round.temp.ssid, 𝜓Modi, 𝜙ji, ᴨi, Czeroji, randomnessCzeroji, 𝜓jᵢ)
 			round.out <- r3msg
 		}(j, Pj)
 	}
@@ -268,7 +285,7 @@ func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round3) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.rref3msgpf𝜓ⁱⱼ {
+	for j, msg := range round.temp.r3msgxij {
 		if round.ok[j] {
 			continue
 		}

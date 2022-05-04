@@ -213,7 +213,7 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 			return false, true
 		}
 	}
-	return false, false
+	return true, true
 }
 
 func (pf *ProofMod) ValidateBasic() bool {

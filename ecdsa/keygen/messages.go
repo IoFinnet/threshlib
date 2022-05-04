@@ -59,7 +59,7 @@ func NewKGRound1Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound1Message) ValidateBasic() bool {
+func (m *KGRound1Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetViKeygen()) &&
 		common.NonEmptyBytes(m.GetViKeyRefresh()) &&
@@ -156,7 +156,19 @@ func NewKGRound2Message(
 	return tss.NewMessage(meta, content, msg), nil
 }
 
-func (m *KGRound2Message) ValidateBasic() bool {
+func (m *KGRound2Message) ValidateBasic(ec elliptic.Curve) bool {
+	if _, err := m.UnmarshalAiKeygen(ec); err != nil {
+		return false
+	}
+	if _, err := m.UnmarshalAiRefresh(ec); err != nil {
+		return false
+	}
+	if _, err := m.UnmarshalXiKeygen(ec); err != nil {
+		return false
+	}
+	if _, err := m.UnmarshalXiRefresh(ec); err != nil {
+		return false
+	}
 	return m != nil &&
 		common.NonEmptyBytes(m.GetSid()) &&
 		common.NonEmptyBytes(m.GetRidi()) &&
@@ -280,11 +292,12 @@ func NewKGRound3Message(
 	to, from *tss.PartyID,
 	sid *big.Int,
 	𝜓Schi *zkpsch.ProofSch,
+	Cvssji, randomnessCvssji *big.Int,
 	// refresh:
 	ssid *big.Int,
 	𝜓Modi *zkpmod.ProofMod, 𝜙ji *zkpfac.ProofFac,
 	ᴨi *zkpsch.ProofSch,
-	Cji, randomnessCji *big.Int, 𝜓ji *zkpsch.ProofSch,
+	Czeroji, randomnessCzeroji *big.Int, 𝜓ji *zkpsch.ProofSch,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -299,20 +312,22 @@ func NewKGRound3Message(
 	content := &KGRound3Message{
 		Sid:          sid.Bytes(),
 		PsiiSchProof: 𝜓SchiBytes[:],
+		Cvssji:       Cvssji.Bytes(),
+		RandCvssji:   randomnessCvssji.Bytes(),
 		// Refresh:
 		Ssid:         ssid.Bytes(),
 		PsiiModProof: 𝜓ModiBytes[:],
 		PhijiProof:   𝜙jiBytes[:],
 		PiiProof:     ᴨiBytes[:],
-		Cji:          Cji.Bytes(),
-		RandCji:      randomnessCji.Bytes(),
+		Czeroji:      Czeroji.Bytes(),
+		RandCzeroji:  randomnessCzeroji.Bytes(),
 		PsijiProof:   𝜓jiBytes[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content, sessionId)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound3Message) ValidateBasic() bool {
+func (m *KGRound3Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetSid()) &&
 		common.NonEmptyMultiBytes(m.PsiiSchProof, zkpsch.ProofSchBytesParts) &&
@@ -321,8 +336,10 @@ func (m *KGRound3Message) ValidateBasic() bool {
 		common.AnyNonEmptyMultiByte(m.GetPsiiModProof(), zkpmod.ProofModBytesParts) &&
 		common.NonEmptyMultiBytes(m.GetPhijiProof(), zkpfac.ProofFacBytesParts) &&
 		common.NonEmptyMultiBytes(m.GetPiiProof(), zkpsch.ProofSchBytesParts) &&
-		common.NonEmptyBytes(m.GetCji()) &&
-		common.NonEmptyBytes(m.GetRandCji()) &&
+		common.NonEmptyBytes(m.GetCvssji()) &&
+		common.NonEmptyBytes(m.GetRandCvssji()) &&
+		common.NonEmptyBytes(m.GetCzeroji()) &&
+		common.NonEmptyBytes(m.GetRandCzeroji()) &&
 		common.NonEmptyMultiBytes(m.GetPsijiProof(), zkpsch.ProofSchBytesParts)
 }
 
@@ -350,12 +367,20 @@ func (m *KGRound3Message) Unmarshalᴨi(ec elliptic.Curve) (*zkpsch.ProofSch, er
 	return zkpsch.NewProofFromBytes(ec, m.GetPiiProof())
 }
 
-func (m *KGRound3Message) UnmarshalCji() *big.Int {
-	return new(big.Int).SetBytes(m.GetCji())
+func (m *KGRound3Message) UnmarshalCzeroji() *big.Int {
+	return new(big.Int).SetBytes(m.GetCzeroji())
 }
 
-func (m *KGRound3Message) UnmarshalRandomnessCji() *big.Int {
-	return new(big.Int).SetBytes(m.GetRandCji())
+func (m *KGRound3Message) UnmarshalRandomnessCzeroji() *big.Int {
+	return new(big.Int).SetBytes(m.GetRandCzeroji())
+}
+
+func (m *KGRound3Message) UnmarshalCvssji() *big.Int {
+	return new(big.Int).SetBytes(m.GetCvssji())
+}
+
+func (m *KGRound3Message) UnmarshalRandomnessCvssji() *big.Int {
+	return new(big.Int).SetBytes(m.GetRandCvssji())
 }
 
 func (m *KGRound3Message) Unmarshal𝜓ji(ec elliptic.Curve) (*zkpsch.ProofSch, error) {
@@ -390,7 +415,7 @@ func NewKGRound4Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *KGRound4Message) ValidateBasic() bool {
+func (m *KGRound4Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetSid()) &&
 		common.NonEmptyBytes(m.GetMu()) &&

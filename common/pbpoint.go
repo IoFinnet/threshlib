@@ -6,6 +6,15 @@
 
 package common
 
-func (x *ECPoint) ValidateBasic() bool {
-	return x != nil && NonEmptyBytes(x.GetX()) && NonEmptyBytes(x.GetY())
+import (
+	"crypto/elliptic"
+	"math/big"
+)
+
+func (x *ECPoint) ValidateBasic(ec elliptic.Curve) bool {
+	return x != nil &&
+		NonEmptyBytes(x.GetX()) &&
+		NonEmptyBytes(x.GetY()) &&
+		ec.IsOnCurve(
+			new(big.Int).SetBytes(x.GetX()), new(big.Int).SetBytes(x.GetY()))
 }

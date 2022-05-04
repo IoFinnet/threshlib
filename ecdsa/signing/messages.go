@@ -59,7 +59,7 @@ func NewPreSignRound1Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *PreSignRound1Message) ValidateBasic() bool {
+func (m *PreSignRound1Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.K) &&
 		common.NonEmptyBytes(m.G) &&
@@ -115,7 +115,10 @@ func NewPreSignRound2Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *PreSignRound2Message) ValidateBasic() bool {
+func (m *PreSignRound2Message) ValidateBasic(ec elliptic.Curve) bool {
+	if _, err := m.UnmarshalBigGammaShare(ec); err != nil {
+		return false
+	}
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.BigGammaShare, 2) &&
 		common.NonEmptyBytes(m.DjiDelta) &&
@@ -184,7 +187,10 @@ func NewPreSignRound3Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *PreSignRound3Message) ValidateBasic() bool {
+func (m *PreSignRound3Message) ValidateBasic(ec elliptic.Curve) bool {
+	if _, err := m.UnmarshalBigDeltaShare(ec); err != nil {
+		return false
+	}
 	return m != nil &&
 		common.NonEmptyBytes(m.DeltaShare) &&
 		common.NonEmptyMultiBytes(m.BigDeltaShare, 2) &&
@@ -218,7 +224,7 @@ func NewSignRound4AbortingMessage(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *SignRound4AbortingMessage) ValidateBasic() bool {
+func (m *SignRound4AbortingMessage) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil
 }
 
@@ -238,7 +244,7 @@ func NewSignRound4Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *SignRound4Message) ValidateBasic() bool {
+func (m *SignRound4Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.SigmaShare)
 }
@@ -268,7 +274,7 @@ func NewIdentificationPrepRound5Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *IdentificationPrepRound5Message) ValidateBasic() bool {
+func (m *IdentificationPrepRound5Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.Gamma) &&
 		common.NonEmptyBytes(m.Sji) &&
@@ -314,7 +320,7 @@ func NewIdentificationRound6Message(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *IdentificationRound6Message) ValidateBasic() bool {
+func (m *IdentificationRound6Message) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.H) &&
 		common.NonEmptyBytes(m.DeltaShareEnc) &&
@@ -369,7 +375,7 @@ func NewTempDataDumpMessage(
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *TempDataDumpMessage) ValidateBasic() bool {
+func (m *TempDataDumpMessage) ValidateBasic(_ elliptic.Curve) bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.DataDump)
 }

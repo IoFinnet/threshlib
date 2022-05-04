@@ -7,6 +7,7 @@
 package tss
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"math/big"
@@ -22,12 +23,13 @@ type Party interface {
 	UpdateFromBytes(wireBytes []byte, from *PartyID, isBroadcast bool, sessionId *big.Int) (ok bool, err *Error)
 	// You may use this entry point to update a party's state when running locally or in tests
 	Update(msg ParsedMessage) (ok bool, err *Error)
-	Running() bool
-	WaitingFor() []*PartyID
 	ValidateMessage(msg ParsedMessage) (bool, *Error)
 	StoreMessage(msg ParsedMessage) (bool, *Error)
 	FirstRound() Round
 	WrapError(err error, culprits ...*PartyID) *Error
+	Running() bool
+	WaitingFor() []*PartyID
+	Params() *Parameters
 	PartyID() *PartyID
 	String() string
 
@@ -41,6 +43,7 @@ type Party interface {
 
 type BaseParty struct {
 	mtx        sync.Mutex
+	rndMtx     sync.RWMutex
 	rnd        Round
 	FirstRound Round
 }
@@ -73,7 +76,17 @@ func (p *BaseParty) ValidateMessage(msg ParsedMessage) (bool, *Error) {
 	if msg.GetFrom() == nil || !msg.GetFrom().ValidateBasic() {
 		return false, p.WrapError(fmt.Errorf("received msg with an invalid sender: %s", msg))
 	}
-	if !msg.ValidateBasic() {
+	var curve elliptic.Curve
+	round := p.Round()
+	if round == nil {
+		round = p.FirstRound
+	}
+	if round == nil {
+		curve = EC()
+	} else {
+		curve = round.Params().EC()
+	}
+	if !msg.ValidateBasic(curve) {
 		return false, p.WrapError(fmt.Errorf("message failed ValidateBasic: %s", msg), msg.GetFrom())
 	}
 	return true, nil
@@ -86,7 +99,15 @@ func (p *BaseParty) String() string {
 // -----
 // Private lifecycle methods
 
+func (p *BaseParty) advance() {
+	p.rndMtx.Lock()
+	defer p.rndMtx.Unlock()
+	p.rnd = p.rnd.NextRound()
+}
+
 func (p *BaseParty) setRound(round Round) *Error {
+	p.rndMtx.Lock()
+	defer p.rndMtx.Unlock()
 	if p.rnd != nil {
 		return p.WrapError(errors.New("a round is already set on this party"))
 	}
@@ -95,11 +116,9 @@ func (p *BaseParty) setRound(round Round) *Error {
 }
 
 func (p *BaseParty) Round() Round {
+	p.rndMtx.RLock()
+	defer p.rndMtx.RUnlock()
 	return p.rnd
-}
-
-func (p *BaseParty) advance() {
-	p.rnd = p.rnd.NextRound()
 }
 
 func (p *BaseParty) Lock() {
