@@ -30,13 +30,11 @@ func (round *round4) Start() *tss.Error {
 
 	//
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
-	xIntChannel := make(chan *big.Int, len(round.Parties().IDs())-1)
 
 	wg := sync.WaitGroup{}
 	modQ := common.ModInt(round.EC().Params().N)
 	sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), tss.EC().Params().N, tss.EC().Params().P, tss.EC().Params().B,
 		tss.EC().Params().Gx, tss.EC().Params().Gy)...)
-
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -113,7 +111,6 @@ func (round *round4) Start() *tss.Error {
 				round.out <- r4msg
 				return
 			}
-			xIntChannel <- xⁱⱼ
 		}(j, Pj)
 
 		wg.Add(1)
