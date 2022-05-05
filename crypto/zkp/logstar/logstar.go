@@ -39,13 +39,15 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
-	q3NCap := new(big.Int).Mul(q3, NCap)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀NCap := new(big.Int).Mul(TwolPlus𝜀, NCap)
 
 	// Fig 25.1 sample
 	alpha := common.GetRandomPositiveInt(q3)
 	mu := common.GetRandomPositiveInt(qNCap)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
-	gamma := common.GetRandomPositiveInt(q3NCap)
+	gamma := common.GetRandomPositiveInt(TwolPlus𝜀NCap)
 
 	// Fig 25.1 compute
 	modNCap := common.ModInt(NCap)
@@ -111,9 +113,11 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
 
 	// Fig 25. range check
-	if pf.Z1.Cmp(q3) == 1 {
+	if pf.Z1.Cmp(TwolPlus𝜀) == 1 {
 		return false
 	}
 

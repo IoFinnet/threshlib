@@ -36,15 +36,17 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rh
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
-	q3NCap := new(big.Int).Mul(q3, NCap)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀NCap := new(big.Int).Mul(TwolPlus𝜀, NCap)
 
-	// Fig 29.1 sample
+	// Fig 30.1 sample
 	alpha := common.GetRandomPositiveInt(q3)
 	mu := common.GetRandomPositiveInt(qNCap)
-	v := common.GetRandomPositiveInt(q3NCap)
+	v := common.GetRandomPositiveInt(TwolPlus𝜀NCap)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
 
-	// Fig 29.1 compute
+	// Fig 30.1 compute
 	modNCap := common.ModInt(NCap)
 	S := modNCap.Exp(s, y)
 	S = modNCap.Mul(S, modNCap.Exp(t, mu))
@@ -58,7 +60,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rh
 
 	gamma := new(big.Int).Mod(alpha, q)
 
-	// Fig 29.2 e
+	// Fig 30.2 e
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i(append(pk.AsInts(), C, x, NCap, s, t, A, gamma)...)
@@ -109,7 +111,7 @@ func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap
 		e = common.RejectionSample(q, eHash)
 	}
 
-	// Fig 29. Equality Check
+	// Fig 30. Equality Check
 	{
 		modNSquare := common.ModInt(pk.NSquare())
 		Np1EXPz1 := modNSquare.Exp(pk.Gamma(), pf.Z1)
