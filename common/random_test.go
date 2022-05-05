@@ -53,6 +53,6 @@ func TestGetRandomQuadraticNonResidue(t *testing.T) {
 	for N.Bit(0) == 0 {
 		N = common.GetRandomPositiveRelativelyPrimeInt(rnd)
 	}
-	w := common.GetRandomQuandraticNonResidue(N)
+	w := common.GetRandomQuadraticNonResidue(N)
 	assert.Equal(t, big.Jacobi(w, N), -1, "must get quandratic non residue")
 }

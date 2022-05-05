@@ -36,7 +36,7 @@ func TestMod(test *testing.T) {
 	assert.True(test, ok, "proof must verify")
 }
 
-func TestBadZ(test *testing.T) {
+func TestBadW(test *testing.T) {
 	preParams, err := keygen.GeneratePreParams(time.Minute*20, 8)
 	assert.NoError(test, err)
 
@@ -53,4 +53,8 @@ func TestBadZ(test *testing.T) {
 	pr.W = big.NewInt(-1)
 	ok2 := pr.Verify(N)
 	assert.False(test, ok2, "proof must not verify")
+
+	pr.W = GetRandomNonQuadraticNonResidue(N)
+	ok3 := pr.Verify(N)
+	assert.False(test, ok3, "proof must not verify")
 }

@@ -33,7 +33,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 	// Fig 29.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N)...)
 		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
 	}
 
@@ -53,7 +53,7 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p
 	// Fig 29.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, nonce)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N, nonce)...)
 		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
 	}
 
@@ -145,7 +145,7 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N)...)
 		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
 	}
 
@@ -166,7 +166,7 @@ func (pf *ProofFac) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, N
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, nonce)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N, nonce)...)
 		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
 	}
 

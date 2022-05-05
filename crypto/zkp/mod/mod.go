@@ -32,8 +32,8 @@ type (
 	}
 )
 
-// isQuandraticResidue checks Euler criterion
-func isQuandraticResidue(X, N *big.Int) bool {
+// isQuadraticResidue checks Euler criterion
+func isQuadraticResidue(X, N *big.Int) bool {
 	modN := common.ModInt(N)
 	XEXP := modN.Exp(X, new(big.Int).Rsh(N, 1))
 	ok := XEXP.Cmp(big.NewInt(1)) == 0
@@ -43,7 +43,7 @@ func isQuandraticResidue(X, N *big.Int) bool {
 func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
-	W := common.GetRandomQuandraticNonResidue(N)
+	W := common.GetRandomQuadraticNonResidue(N)
 
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
@@ -60,7 +60,7 @@ func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
 func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
-	W := common.GetRandomQuandraticNonResidue(N)
+	W := common.GetRandomQuadraticNonResidue(N)
 
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
@@ -93,7 +93,7 @@ func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *
 			if b > 0 {
 				Yi = modN.Mul(W, Yi)
 			}
-			if isQuandraticResidue(Yi, P) && isQuandraticResidue(Yi, Q) {
+			if isQuadraticResidue(Yi, P) && isQuadraticResidue(Yi, Q) {
 				e := new(big.Int).Add(Phi, big.NewInt(4))
 				e = new(big.Int).Rsh(e, 3)
 				e = modPhi.Mul(e, e)
@@ -137,7 +137,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
 }
 
 func (pf *ProofMod) Verify(N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() || pf.W == nil || big.NewInt(0).Cmp(pf.W) == +1 {
+	if pf == nil || !pf.ValidateBasic() || pf.W == nil || big.NewInt(0).Cmp(pf.W) == +1 || big.Jacobi(pf.W, N) != -1 {
 		return false
 	}
 	Y := [Iterations]*big.Int{}
@@ -259,6 +259,16 @@ func (pf *ProofMod) Bytes() [ProofModBytesParts][]byte {
 		bzs[Iterations*3+1+i] = pf.Z[i].Bytes()
 	}
 	return bzs
+}
+
+// GetRandomNonQuadraticNonResidue Not quadratic non residue.
+func GetRandomNonQuadraticNonResidue(n *big.Int) *big.Int {
+	for {
+		w := common.GetRandomPositiveInt(n)
+		if big.Jacobi(w, n) != -1 {
+			return w
+		}
+	}
 }
 
 func FormatProofMod(pf *ProofMod) string {

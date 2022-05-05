@@ -64,7 +64,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y())...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -119,7 +119,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y())...)
 		e = common.RejectionSample(q, eHash)
 	}
 
