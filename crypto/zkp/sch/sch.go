@@ -29,7 +29,7 @@ type (
 
 // NewProof implements proofsch
 func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
-	if x == nil || X == nil || !X.ValidateBasic() {
+	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
@@ -56,7 +56,7 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 
 // NewProof implements proofsch
 func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSch, error) {
-	if x == nil || X == nil || !X.ValidateBasic() {
+	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
@@ -83,7 +83,7 @@ func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSc
 
 // NewProof implements proofsch
 func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *big.Int) (*ProofSch, error) {
-	if x == nil || X == nil || !X.ValidateBasic() {
+	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 || big.NewInt(0).Cmp(alpha) == 0 {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
@@ -108,7 +108,7 @@ func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *bi
 }
 
 func NewProofCommitment(X *crypto.ECPoint, x *big.Int) (*crypto.ECPoint, *big.Int, error) {
-	if x == nil || X == nil || !X.ValidateBasic() {
+	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 {
 		return nil, nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
@@ -137,7 +137,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 }
 
 func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
-	if pf == nil || !pf.ValidateBasic() || X == nil {
+	if pf == nil || !pf.ValidateBasic() || X == nil || pf.Z == nil || big.NewInt(0).Cmp(pf.Z) == 0 {
 		return false
 	}
 	ec := X.Curve()
@@ -164,7 +164,7 @@ func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
 }
 
 func (pf *ProofSch) VerifyWithNonce(X *crypto.ECPoint, nonce *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() || X == nil {
+	if pf == nil || !pf.ValidateBasic() || X == nil || pf.Z == nil || big.NewInt(0).Cmp(pf.Z) == 0 {
 		return false
 	}
 	ec := X.Curve()

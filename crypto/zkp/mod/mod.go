@@ -137,7 +137,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
 }
 
 func (pf *ProofMod) Verify(N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() {
+	if pf == nil || !pf.ValidateBasic() || pf.W == nil || big.NewInt(0).Cmp(pf.W) == +1 {
 		return false
 	}
 	Y := [Iterations]*big.Int{}
