@@ -116,7 +116,7 @@ func (share *Share) Verify(ec elliptic.Curve, threshold int, vs Vs) bool {
 }
 
 func (shares Shares) ReConstruct(ec elliptic.Curve) (secret *big.Int, err error) {
-	if shares != nil && shares[0].Threshold > len(shares) {
+	if shares != nil && shares[0].Threshold >= len(shares) {
 		return nil, ErrNumSharesBelowThreshold
 	}
 	modN := common.ModInt(ec.Params().N)
