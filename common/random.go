@@ -101,7 +101,7 @@ func GetRandomGeneratorOfTheQuadraticResidue(n *big.Int) *big.Int {
 	return fSq.Mod(fSq, n)
 }
 
-func GetRandomQuandraticNonResidue(n *big.Int) *big.Int {
+func GetRandomQuadraticNonResidue(n *big.Int) *big.Int {
 	for {
 		w := GetRandomPositiveInt(n)
 		if big.Jacobi(w, n) == -1 {

@@ -92,7 +92,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofPrm, error) {
 }
 
 func (pf *ProofPrm) Verify(s, t, N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() {
+	if pf == nil || !pf.ValidateBasic() || !pf.ValidateANotOne() {
 		return false
 	}
 	modN := common.ModInt(N)
@@ -112,7 +112,7 @@ func (pf *ProofPrm) Verify(s, t, N *big.Int) bool {
 }
 
 func (pf *ProofPrm) VerifyWithNonce(s, t, N, nonce *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() {
+	if pf == nil || !pf.ValidateBasic() || !pf.ValidateANotOne() {
 		return false
 	}
 	modN := common.ModInt(N)
@@ -139,6 +139,16 @@ func (pf *ProofPrm) ValidateBasic() bool {
 	}
 	for i := range pf.Z {
 		if pf.Z[i] == nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (pf *ProofPrm) ValidateANotOne() bool {
+	one := big.NewInt(1)
+	for i := range pf.A {
+		if pf.A[i] == nil || one.Cmp(pf.A[i]) == 0 {
 			return false
 		}
 	}

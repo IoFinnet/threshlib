@@ -7,6 +7,7 @@
 package zkpsch
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,4 +71,31 @@ func TestSchnorrProofVerifyBadX(t *testing.T) {
 	res := proof.Verify(X)
 
 	assert.False(t, res, "verify result must be false")
+}
+
+func TestZeros(t *testing.T) {
+	zero := big.NewInt(0)
+	idG := crypto.ScalarBaseMult(tss.EC(), big.NewInt(1))
+	proof, err := NewProof(idG, zero)
+	assert.Error(t, err, "when x is zero there must be an error")
+	assert.Nil(t, proof, "the proof must be nil with the error")
+
+	p2, err2 := NewProofGivenAlpha(idG, zero, zero, zero)
+	assert.Error(t, err2, "when alpha is zero there must be an error")
+	assert.Nil(t, p2, "the proof must be nil with the error")
+}
+
+func TestBadVerify(t *testing.T) {
+	q := tss.EC().Params().N
+	u := common.GetRandomPositiveInt(q)
+	X := crypto.ScalarBaseMult(tss.EC(), u)
+	nonce := common.GetRandomPositiveInt(q)
+	proof, _ := NewProof(X, u)
+	proof.Z = big.NewInt(0)
+	res := proof.Verify(X)
+	assert.False(t, res, "verify result must be false")
+
+	proof.Z = nil
+	res2 := proof.VerifyWithNonce(X, nonce)
+	assert.False(t, res2, "verify result must be false")
 }
