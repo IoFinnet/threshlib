@@ -111,17 +111,22 @@ func TestReconstruct(t *testing.T) {
 	_, shares, err := Create(tss.EC(), threshold, secret, ids)
 	assert.NoError(t, err)
 
-	secret2, err2 := shares[:threshold-1].ReConstruct(tss.EC())
+	secretError2, err2 := shares[:threshold-1].ReConstruct(tss.EC())
 	assert.Error(t, err2) // not enough shares to satisfy the threshold
-	assert.Nil(t, secret2)
+	assert.Nil(t, secretError2)
 
-	secret3, err3 := shares[:threshold].ReConstruct(tss.EC())
-	assert.NoError(t, err3)
-	assert.NotZero(t, secret3)
+	secretError3, err3 := shares[:threshold].ReConstruct(tss.EC())
+	assert.Error(t, err3)
+	assert.Nil(t, secretError3)
 
-	secret4, err4 := shares[:num].ReConstruct(tss.EC())
+	secret4, err4 := shares[:threshold+1].ReConstruct(tss.EC())
 	assert.NoError(t, err4)
 	assert.NotZero(t, secret4)
 
-	assert.EqualValues(t, secret, secret4, "secrets must have equal values")
+	secret5, err5 := shares[:num].ReConstruct(tss.EC())
+	assert.NoError(t, err5)
+	assert.NotZero(t, secret5)
+
+	assert.EqualValues(t, secret, secret4, "secrets must be the same")
+	assert.EqualValues(t, secret4, secret5, "secrets must be the same")
 }
