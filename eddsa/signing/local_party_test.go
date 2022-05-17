@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/agl/ed25519/edwards25519"
+	"github.com/binance-chain/tss-lib/crypto/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
@@ -110,14 +111,15 @@ signing:
 				R := parties[0].temp.r
 
 				// BEGIN check s correctness
-				sumS := bigIntToEncodedBytes(&parties[0].temp.si)
+				sumS := ed25519.BigIntToEncodedBytes(&parties[0].temp.si)
 				for i, p := range parties {
 					if i == 0 {
 						continue
 					}
 
 					var tmpSumS [32]byte
-					edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), bigIntToEncodedBytes(&p.temp.si))
+					edwards25519.ScMulAdd(&tmpSumS, sumS, ed25519.BigIntToEncodedBytes(big.NewInt(1)),
+						ed25519.BigIntToEncodedBytes(&p.temp.si))
 					sumS = &tmpSumS
 				}
 				// END check s correctness
@@ -130,7 +132,7 @@ signing:
 					Y:     pkY,
 				}
 
-				sBytes := copyBytes(parties[0].data.Signature[32:64])
+				sBytes := ed25519.CopyBytes(parties[0].data.Signature[32:64])
 				sEncodedBigInt := encodedBytesToBigInt(sBytes)
 
 				newSig, err := edwards.ParseSignature(parties[0].data.Signature)

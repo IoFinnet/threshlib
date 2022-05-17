@@ -15,6 +15,7 @@ import (
 
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/crypto/ed25519"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	errors2 "github.com/pkg/errors"
@@ -36,16 +37,16 @@ func (round *finalization) Start() *tss.Error {
 	isSecp256k1Curve := strings.Compare("secp256k1", round.Params().EC().Params().Name) == 0
 
 	if isTwistedEdwardsCurve {
-		sumS = bigIntToEncodedBytes(&round.temp.si)
+		sumS = ed25519.BigIntToEncodedBytes(&round.temp.si)
 		for j := range round.Parties().IDs() {
 			round.ok[j] = true
 			if j == round.PartyID().Index {
 				continue
 			}
 			r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
-			sjBytes := bigIntToEncodedBytes(r3msg.UnmarshalS())
+			sjBytes := ed25519.BigIntToEncodedBytes(r3msg.UnmarshalS())
 			var tmpSumS [32]byte
-			edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), sjBytes)
+			edwards25519.ScMulAdd(&tmpSumS, sumS, ed25519.BigIntToEncodedBytes(big.NewInt(1)), sjBytes)
 
 			sumS = &tmpSumS
 		}
@@ -68,9 +69,9 @@ func (round *finalization) Start() *tss.Error {
 	// save the signature for final output
 	signature := new(common.ECSignature)
 	if isTwistedEdwardsCurve {
-		signature.Signature = append(bigIntToEncodedBytes(round.temp.r)[:], sumS[:]...)
-		signature.R = bigIntToEncodedBytes(round.temp.r)[:]
-		signature.S = bigIntToEncodedBytes(s)[:]
+		signature.Signature = append(ed25519.BigIntToEncodedBytes(round.temp.r)[:], sumS[:]...)
+		signature.R = ed25519.BigIntToEncodedBytes(round.temp.r)[:]
+		signature.S = ed25519.BigIntToEncodedBytes(s)[:]
 	} else if isSecp256k1Curve {
 		var r32b, s32b [32]byte
 		encode32bytes(round.temp.r, &r32b)

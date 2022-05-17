@@ -188,3 +188,10 @@ func (pf *ProofLogstar) Bytes() [ProofLogstarBytesParts][]byte {
 		pf.Z3.Bytes(),
 	}
 }
+
+func FormatProofLogstar(proof *ProofLogstar) string {
+	return "(S:" + common.FormatBigInt(proof.S) + ", A:" + common.FormatBigInt(proof.A) +
+		", Y:" + crypto.FormatECPoint(proof.Y) +
+		", D:" + common.FormatBigInt(proof.D) + ", Z1:" + common.FormatBigInt(proof.Z1) +
+		", Z2:" + common.FormatBigInt(proof.Z2) + ", Z3:" + common.FormatBigInt(proof.Z3) + ")"
+}

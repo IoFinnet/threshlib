@@ -147,6 +147,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
+					xj = common.ModInt(tss.Edwards().Params().N).Add(xj, big.NewInt(0))
 					gXj := crypto.ScalarBaseMult(tss.Edwards(), xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")

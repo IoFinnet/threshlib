@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -51,6 +52,26 @@ func TestSchnorrProofVerifyWithNonce(t *testing.T) {
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	nonce := common.GetRandomPositiveInt(q)
 	proof, err := NewProofGivenNonce(X, u, nonce)
+	assert.NoError(t, err, "there should be no error")
+
+	res := proof.VerifyWithNonce(X, nonce)
+
+	assert.True(t, res, "verify result must be true")
+}
+
+func TestSchnorrProofVerifyWithNonceEdwards(t *testing.T) {
+	if err := log.SetLogLevel("tss-lib", "debug"); err != nil {
+		panic(err)
+	}
+	curve := tss.Edwards()
+
+	u := big.NewInt(11)
+	X := crypto.ScalarBaseMult(curve, u)
+	nonce := big.NewInt(10101)
+	alpha := big.NewInt(90909)
+	proof, err := NewProofGivenAlpha(X, u, alpha, nonce)
+
+	// t.Logf("u: %v, X: %v, proof: %v", common.FormatBigInt(u), crypto.FormatECPoint(X), FormatProofSch(proof))
 	assert.NoError(t, err, "there should be no error")
 
 	res := proof.VerifyWithNonce(X, nonce)

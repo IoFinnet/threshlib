@@ -307,6 +307,7 @@ keygen:
 						if j2 == j {
 							continue
 						}
+						P.Lock()
 						// vssMsgs := P.temp.kgRound3Messages
 						// share := vssMsgs[j].Content().(*KGRound3Message).Share
 						share := P.temp.r3msgxij[j]
@@ -316,7 +317,9 @@ keygen:
 							Share:     share, // new(big.Int).SetBytes(share),
 						}
 						pShares = append(pShares, shareStruct)
+						P.Unlock()
 					}
+					Pj.Lock()
 					uj, errRec := pShares[:threshold+1].ReConstruct(tss.EC())
 					assert.NoError(t, errRec, "vss.ReConstruct should not throw error")
 
@@ -351,6 +354,7 @@ keygen:
 						assert.NotEqual(t, BigXjY, V_0.Y())
 					}
 					u = new(big.Int).Add(u, uj)
+					Pj.Unlock()
 				}
 
 				// build ecdsa key pair

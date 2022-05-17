@@ -58,6 +58,7 @@ func TestShareProtocol(t *testing.T) {
 }
 
 func TestShareProtocolWC(t *testing.T) {
+	tss.RegisterCurve("secp256k1", tss.EC())
 	q := tss.EC().Params().N
 
 	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
@@ -65,7 +66,8 @@ func TestShareProtocolWC(t *testing.T) {
 
 	a := common.GetRandomPositiveInt(q)
 	b := common.GetRandomPositiveInt(q)
-	gBX, gBY := tss.EC().ScalarBaseMult(b.Bytes())
+	P := crypto.ScalarBaseMult(tss.S256(), b)
+	gBX, gBY := P.X(), P.Y()
 
 	NTildei, h1i, h2i, err := keygen.ConstantTestNTildeH1H2(0)
 	assert.NoError(t, err)

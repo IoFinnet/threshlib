@@ -3,6 +3,7 @@ module github.com/binance-chain/tss-lib
 go 1.17
 
 require (
+	filippo.io/edwards25519 v1.0.0-rc.1
 	github.com/agl/ed25519 v0.0.0-20200305024217-f36fc4b53d43
 	github.com/btcsuite/btcd v0.22.0-beta.0.20220201204404-81fbd9b67e54
 	github.com/btcsuite/btcd/btcec/v2 v2.1.0

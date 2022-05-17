@@ -149,11 +149,11 @@ func (round *presign3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			ψDoublePrimeji, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, Δi, Γ, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.ki, round.temp.𝜌i)
+			ψʺji, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, Δi, Γ, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.ki, round.temp.𝜌i)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proof generation failed"))
 			}
-			ProofOut <- ψDoublePrimeji
+			ProofOut <- ψʺji
 		}(j, Pj)
 
 		ψDoublePrimeji := <-ProofOut
