@@ -61,9 +61,9 @@ func ParseSecrets(secrets []*big.Int) ([][]*big.Int, error) {
 		return nil, errors.New("ParseSecrets: secrets == nil or is too small")
 	}
 	var el, nextPartLen int64
+	inLen := int64(len(secrets))
 	parts := make([][]*big.Int, 0, PartsCap)
 	isLenEl := true // are we looking at a length prefix element? (first one is)
-	inLen := int64(len(secrets))
 	for el < inLen {
 		if el < 0 {
 			return nil, errors.New("ParseSecrets: `el` overflow")
@@ -78,8 +78,8 @@ func ParseSecrets(secrets []*big.Int) ([][]*big.Int, error) {
 			}
 			el += 1
 		} else {
-			if PartsCap <= len(parts) {
-				return nil, fmt.Errorf("ParseSecrets: commitment has too many parts: part %d, max %d", len(parts), PartsCap)
+			if len(parts)+1 > PartsCap {
+				return nil, fmt.Errorf("ParseSecrets: parts (%d) > PartsCap (%d)", len(parts)+1, PartsCap)
 			}
 			if inLen < el+nextPartLen {
 				return nil, errors.New("ParseSecrets: not enough data to consume stated data length")
