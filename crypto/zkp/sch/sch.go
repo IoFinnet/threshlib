@@ -10,9 +10,11 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 )
 
@@ -33,8 +35,8 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
-	q := ec.Params().N
-	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy) // already on the curve.
+	q := big.Wrap(ec.Params().N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy)) // already on the curve.
 
 	// Fig 22.1
 	𝛼 := common.GetRandomPositiveInt(q)
@@ -49,7 +51,7 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 
 	// Fig 22.3
 	z := new(big.Int).Mul(e, x)
-	z = common.ModInt(q).Add(𝛼, z)
+	z = int2.ModInt(q).Add(𝛼, z)
 
 	return &ProofSch{A: A, Z: z}, nil
 }
@@ -60,8 +62,8 @@ func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSc
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
-	q := ec.Params().N
-	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy) // already on the curve.
+	q := big.Wrap(ec.Params().N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy)) // already on the curve.
 
 	// Fig 22.1
 	𝛼 := common.GetRandomPositiveInt(q)
@@ -76,7 +78,7 @@ func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSc
 
 	// Fig 22.3
 	z := new(big.Int).Mul(e, x)
-	z = common.ModInt(q).Add(𝛼, z)
+	z = int2.ModInt(q).Add(𝛼, z)
 
 	return &ProofSch{A: A, Z: z}, nil
 }
@@ -87,8 +89,8 @@ func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *bi
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
-	q := ec.Params().N
-	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy) // already on the curve.
+	q := big.Wrap(ec.Params().N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy)) // already on the curve.
 
 	// Fig 22.1
 	A := crypto.ScalarBaseMult(ec, alpha)
@@ -102,7 +104,7 @@ func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *bi
 
 	// Fig 22.3
 	z := new(big.Int).Mul(e, x)
-	z = common.ModInt(q).Add(alpha, z)
+	z = int2.ModInt(q).Add(alpha, z)
 
 	return &ProofSch{A: A, Z: z}, nil
 }
@@ -112,7 +114,7 @@ func NewProofCommitment(X *crypto.ECPoint, x *big.Int) (*crypto.ECPoint, *big.In
 		return nil, nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 
 	// Fig 22.1
 	alpha := common.GetRandomPositiveInt(q)
@@ -141,8 +143,8 @@ func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
 		return false
 	}
 	ec := X.Curve()
-	q := ec.Params().N
-	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
+	q := big.Wrap(ec.Params().N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy))
 
 	var e *big.Int
 	{
@@ -168,8 +170,8 @@ func (pf *ProofSch) VerifyWithNonce(X *crypto.ECPoint, nonce *big.Int) bool {
 		return false
 	}
 	ec := X.Curve()
-	q := ec.Params().N
-	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
+	q := big.Wrap(ec.Params().N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy))
 
 	var e *big.Int
 	{

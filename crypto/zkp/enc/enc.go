@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
@@ -32,7 +33,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *
 		return nil, errors.New("ProveEnc constructor received nil value(s)")
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
@@ -45,11 +46,11 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *
 	gamma := common.GetRandomPositiveInt(q3NCap)
 
 	// Fig 14.1 compute
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 	S := modNCap.Exp(s, k)
 	S = modNCap.Mul(S, modNCap.Exp(t, mu))
 
-	modNSquared := common.ModInt(pk.NSquare())
+	modNSquared := int2.ModInt(pk.NSquare())
 	A := modNSquared.Exp(pk.Gamma(), alpha)
 	A = modNSquared.Mul(A, modNSquared.Exp(r, pk.N))
 
@@ -67,7 +68,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *
 	z1 := new(big.Int).Mul(e, k)
 	z1 = new(big.Int).Add(z1, alpha)
 
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
 	z2 := modN.Exp(rho, e)
 	z2 = modN.Mul(z2, r)
 
@@ -96,7 +97,7 @@ func (pf *ProofEnc) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 
@@ -113,7 +114,7 @@ func (pf *ProofEnc) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 
 	// Fig 14. Equality Check
 	{
-		modNSquare := common.ModInt(pk.NSquare())
+		modNSquare := int2.ModInt(pk.NSquare())
 		Np1EXPz1 := modNSquare.Exp(pk.Gamma(), pf.Z1)
 		z2EXPN := modNSquare.Exp(pf.Z2, pk.N)
 		left := modNSquare.Mul(Np1EXPz1, z2EXPN)
@@ -127,7 +128,7 @@ func (pf *ProofEnc) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 	}
 
 	{
-		modNCap := common.ModInt(NCap)
+		modNCap := int2.ModInt(NCap)
 		sEXPz1 := modNCap.Exp(s, pf.Z1)
 		tEXPz3 := modNCap.Exp(t, pf.Z3)
 		left := modNCap.Mul(sEXPz1, tEXPz3)

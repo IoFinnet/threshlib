@@ -8,9 +8,12 @@ package zkpmod
 
 import (
 	"fmt"
-	"math/big"
+	mathbig "math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 )
 
 const (
@@ -34,7 +37,7 @@ type (
 
 // isQuadraticResidue checks Euler criterion
 func isQuadraticResidue(X, N *big.Int) bool {
-	modN := common.ModInt(N)
+	modN := int2.ModInt(N)
 	XEXP := modN.Exp(X, new(big.Int).Rsh(N, 1))
 	ok := XEXP.Cmp(big.NewInt(1)) == 0
 	return ok
@@ -76,7 +79,7 @@ func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
 
 func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *big.Int) ([13]*big.Int, [13]*big.Int, [13]*big.Int, [13]*big.Int) {
 	// Fig 16.3
-	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
+	modN, modPhi := int2.ModInt(N), int2.ModInt(Phi)
 	NINV := new(big.Int).ModInverse(N, Phi)
 	X := [Iterations]*big.Int{}
 	A := [Iterations]*big.Int{}
@@ -88,7 +91,7 @@ func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *
 			a, b := j&1, j&2>>1
 			Yi := new(big.Int).SetBytes(Y[i].Bytes()) // TODO use bool instead
 			if a > 0 {
-				Yi = modN.Mul(big.NewInt(-1), Yi)
+				Yi = modN.Mul(big.NewInt(1).SetNeg(), Yi)
 			}
 			if b > 0 {
 				Yi = modN.Mul(W, Yi)
@@ -99,7 +102,7 @@ func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *
 				e = modPhi.Mul(e, e)
 				Xi := modN.Exp(Yi, e)
 				Zi := modN.Exp(Y[i], NINV)
-				X[i], A[i], B[i], Z[i] = Xi, big.NewInt(int64(a)), big.NewInt(int64(b)), Zi
+				X[i], A[i], B[i], Z[i] = Xi, big.NewInt(uint64(a)), big.NewInt(uint64(b)), Zi
 			}
 		}
 	}
@@ -137,7 +140,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
 }
 
 func (pf *ProofMod) Verify(N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() || pf.W == nil || big.NewInt(0).Cmp(pf.W) == +1 || big.Jacobi(pf.W, N) != -1 {
+	if pf == nil || !pf.ValidateBasic() || pf.W == nil || big.NewInt(0).Cmp(pf.W) == +1 || mathbig.Jacobi(pf.W.Big(), N.Big()) != -1 {
 		return false
 	}
 	Y := [Iterations]*big.Int{}
@@ -173,7 +176,6 @@ func (pf *ProofMod) VerifyWithNonce(N, nonce *big.Int) bool {
 }
 
 func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
-	modN := common.ModInt(N)
 	// Fig 16. Verification
 	{
 		if N.Bit(0) == 0 || N.ProbablyPrime(16) {
@@ -184,7 +186,8 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 	chs := make(chan bool, Iterations*2)
 	for i := 0; i < Iterations; i++ {
 		go func(i int) {
-			left := modN.Exp(pf.Z[i], N)
+			modN := int2.ModInt(N)
+			left := new(big.Int).Set(modN.Exp(pf.Z[i], N))
 			if left.Cmp(Y[i]) != 0 {
 				chs <- false
 			}
@@ -192,11 +195,12 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 		}(i)
 
 		go func(i int) {
+			modN := int2.ModInt(N)
 			a, b := pf.A[i].Int64(), pf.B[i].Int64()
 			left := modN.Exp(pf.X[i], big.NewInt(4))
 			right := Y[i]
 			if a > 0 {
-				right = modN.Mul(big.NewInt(-1), right)
+				right = modN.Mul(big.NewInt(1).SetNeg(), right)
 			}
 			if b > 0 {
 				right = modN.Mul(pf.W, right)
@@ -265,7 +269,7 @@ func (pf *ProofMod) Bytes() [ProofModBytesParts][]byte {
 func GetRandomNonQuadraticNonResidue(n *big.Int) *big.Int {
 	for {
 		w := common.GetRandomPositiveInt(n)
-		if big.Jacobi(w, n) != -1 {
+		if mathbig.Jacobi(w.Big(), n.Big()) != -1 {
 			return w
 		}
 	}

@@ -8,9 +8,10 @@ package zkp
 
 import (
 	"errors"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -37,8 +38,8 @@ func NewTProof(TI, h *crypto.ECPoint, sigmaI, lI *big.Int) (*TProof, error) {
 	}
 	ec := tss.EC()
 	ecParams := ec.Params()
-	q := ecParams.N
-	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
+	q := big.Wrap(ecParams.N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ecParams.Gx), big.Wrap(ecParams.Gy))
 
 	a, b := common.GetRandomPositiveInt(q), common.GetRandomPositiveInt(q)
 	aG, bH := crypto.ScalarBaseMult(ec, a), h.ScalarMult(b)
@@ -60,8 +61,8 @@ func (pf *TProof) Verify(TI, h *crypto.ECPoint) bool {
 	}
 	ec := tss.EC()
 	ecParams := ec.Params()
-	q := ecParams.N
-	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
+	q := big.Wrap(ecParams.N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ecParams.Gx), big.Wrap(ecParams.Gy))
 
 	var c *big.Int
 	{
@@ -99,8 +100,8 @@ func NewSTProof(TI, R, h *crypto.ECPoint, sigmaI, lI *big.Int) (*STProof, error)
 	}
 	ec := tss.EC()
 	ecParams := ec.Params()
-	q := ecParams.N
-	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
+	q := big.Wrap(ecParams.N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ecParams.Gx), big.Wrap(ecParams.Gy))
 
 	a, b := common.GetRandomPositiveInt(q), common.GetRandomPositiveInt(q)
 
@@ -123,8 +124,8 @@ func (pf *STProof) Verify(SI, TI, R, h *crypto.ECPoint) bool {
 	}
 	ec := tss.EC()
 	ecParams := ec.Params()
-	q := ecParams.N
-	g := crypto.NewECPointNoCurveCheck(ec, ecParams.Gx, ecParams.Gy)
+	q := big.Wrap(ecParams.N)
+	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ecParams.Gx), big.Wrap(ecParams.Gy))
 
 	var c *big.Int
 	{
@@ -163,7 +164,7 @@ func (pf *STProof) ValidateBasic() bool {
 // ----- //
 
 func calculateTAndU(q, a, c, sigmaI, b, lI *big.Int) (t, u *big.Int) {
-	modQ := common.ModInt(q)
+	modQ := int2.ModInt(q)
 	t = modQ.Add(a, new(big.Int).Mul(c, sigmaI))
 	u = modQ.Add(b, new(big.Int).Mul(c, lI))
 	return

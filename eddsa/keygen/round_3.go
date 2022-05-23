@@ -8,8 +8,10 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/hashicorp/go-multierror"
 	errors2 "github.com/pkg/errors"
 
@@ -41,7 +43,7 @@ func (round *round3) Start() *tss.Error {
 		share := r2msg1.UnmarshalShare()
 		xi = new(big.Int).Add(xi, share)
 	}
-	round.save.Xi = new(big.Int).Mod(xi, round.Params().EC().Params().N)
+	round.save.Xi = new(big.Int).Mod(xi, big.Wrap(round.Params().EC().Params().N))
 
 	// 2-3.
 	Vc := make(vss.Vs, round.Threshold()+1)
@@ -159,7 +161,7 @@ func (round *round3) Start() *tss.Error {
 	// 13-17. compute Xj for each Pj
 	{
 		var err error
-		modQ := common.ModInt(round.Params().EC().Params().N)
+		modQ := int2.ModInt(big.Wrap(round.Params().EC().Params().N))
 		culprits := make([]*tss.PartyID, 0, len(Ps)) // who caused the error(s)
 		bigXj := round.save.BigXj
 		for j := 0; j < round.PartyCount(); j++ {

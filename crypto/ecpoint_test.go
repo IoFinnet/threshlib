@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"encoding/hex"
 	"encoding/json"
-	"math/big"
 	"reflect"
 	"testing"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/btcsuite/btcd/btcec/v2"
@@ -131,7 +132,7 @@ func TestS256EcpointJsonSerialization(t *testing.T) {
 	pbk, err := btcec.ParsePubKey(pubKeyBytes)
 	assert.NoError(t, err)
 
-	point, err := NewECPoint(ec, pbk.X(), pbk.Y())
+	point, err := NewECPoint(ec, big.Wrap(pbk.X()), big.Wrap(pbk.Y()))
 	assert.NoError(t, err)
 	bz, err := json.Marshal(point)
 	assert.NoError(t, err)
@@ -154,7 +155,7 @@ func TestEdwardsEcpointJsonSerialization(t *testing.T) {
 	pbk, err := edwards.ParsePubKey(pubKeyBytes)
 	assert.NoError(t, err)
 
-	point, err := NewECPoint(ec, pbk.X, pbk.Y)
+	point, err := NewECPoint(ec, big.Wrap(pbk.X), big.Wrap(pbk.Y))
 	assert.NoError(t, err)
 	bz, err := json.Marshal(point)
 	assert.NoError(t, err)
@@ -173,7 +174,7 @@ func TestMult(t *testing.T) {
 	one := big.NewInt(1)
 	for _, ec := range curves {
 		{
-			gen := NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
+			gen := NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy))
 			gen1 := gen.ScalarMult(one)
 
 			assert.True(t, gen.Equals(gen1), "current implementation - must be the same generator point "+ec.Params().Name)
@@ -186,18 +187,18 @@ func TestMult(t *testing.T) {
 
 		{
 			for a := 0; a < 50; a++ {
-				rand := common.GetRandomPositiveInt(ec.Params().N)
+				rand := common.GetRandomPositiveInt(big.Wrap(ec.Params().N))
 				Q := ScalarBaseMult(ec, rand)
 				x, y := ec.ScalarBaseMult(rand.Bytes())
-				Qʹ, err := NewECPoint(ec, x, y)
+				Qʹ, err := NewECPoint(ec, big.Wrap(x), big.Wrap(y))
 				assert.NoError(t, err, "there should be no error")
 				assert.True(t, Q.Equals(Qʹ), "must be the same point")
 			}
 			var Q *ECPoint
-			rand := common.GetRandomPositiveInt(ec.Params().N)
+			rand := common.GetRandomPositiveInt(big.Wrap(ec.Params().N))
 			Q = ScalarBaseMult(ec, rand)
 			x, y := ec.ScalarBaseMult(rand.Bytes())
-			Qʹ, err := NewECPoint(ec, x, y)
+			Qʹ, err := NewECPoint(ec, big.Wrap(x), big.Wrap(y))
 			assert.True(t, Q.Equals(Qʹ), "must be the same point")
 			for a := 0; a < 50 && rand.Cmp(big.NewInt(1)) == +1; rand = big.NewInt(0).Sub(rand, big.NewInt(1)) {
 				Q = ScalarMult(ec, Q, rand)
@@ -211,10 +212,10 @@ func TestMult(t *testing.T) {
 			}
 		}
 
-		for _, k := range []int{2, 10, 21, 101, 1003} {
-			P := ScalarBaseMult(ec, big.NewInt(int64(k)))
-			x, y := ec.ScalarBaseMult(big.NewInt(int64(k)).Bytes())
-			Pʹ, err := NewECPoint(ec, x, y)
+		for _, k := range []uint64{2, 10, 21, 101, 1003} {
+			P := ScalarBaseMult(ec, big.NewInt(k))
+			x, y := ec.ScalarBaseMult(big.NewInt(k).Bytes())
+			Pʹ, err := NewECPoint(ec, big.Wrap(x), big.Wrap(y))
 			assert.NoError(t, err, "there should be no error")
 			assert.EqualValues(t, P.X(), Pʹ.X(), "must be the same point")
 			assert.EqualValues(t, P.Y(), Pʹ.Y(), "must be the same point")
@@ -224,14 +225,14 @@ func TestMult(t *testing.T) {
 
 func TestMultEd(t *testing.T) {
 	curve := tss.Edwards()
-	xx, _ := new(big.Int).SetString("14e528b1154be417b6cf078dd6712438d381a5b2c593d552ff2fd2c1207cf3cb", 16)
-	xy, _ := new(big.Int).SetString("2d9082313f21ab975a6f7ce340ff0fce1258591c3c9c58d4308f2dc36a033713", 16)
+	xx, _ := big.SetString("14e528b1154be417b6cf078dd6712438d381a5b2c593d552ff2fd2c1207cf3cb", 16)
+	xy, _ := big.SetString("2d9082313f21ab975a6f7ce340ff0fce1258591c3c9c58d4308f2dc36a033713", 16)
 	X, _ := NewECPoint(curve, xx, xy)
-	e, _ := new(big.Int).SetString("fad46d13fe8ce132c7f55c3caf1c2254217ce7538db37ef6cd058aec825c094", 16)
+	e, _ := big.SetString("fad46d13fe8ce132c7f55c3caf1c2254217ce7538db37ef6cd058aec825c094", 16)
 	XEXPeNew := X.ScalarMult(e)
 	multOld := func(p *ECPoint, k *big.Int) *ECPoint {
-		x, y := p.Curve().ScalarMult(p.X(), p.Y(), k.Bytes())
-		newP, err := NewECPoint(curve, x, y)
+		x, y := p.Curve().ScalarMult(p.X().Big(), p.Y().Big(), k.Bytes())
+		newP, err := NewECPoint(curve, big.Wrap(x), big.Wrap(y))
 		assert.NoError(t, err)
 		return newP
 	}

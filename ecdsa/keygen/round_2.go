@@ -8,7 +8,8 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -30,8 +31,9 @@ func (round *round2) Start() *tss.Error {
 	{
 		xi := new(big.Int).Set(round.temp.shares[i].Share)
 		XiKeygen := crypto.ScalarBaseMult(round.EC(), xi)
-		sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), tss.EC().Params().N, tss.EC().Params().P,
-			tss.EC().Params().B, tss.EC().Params().Gx, tss.EC().Params().Gy)...)
+		sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
+			big.Wrap(tss.EC().Params().P),
+			big.Wrap(tss.EC().Params().B), big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 		msg, err := NewKGRound2Message(round.temp.sessionId, round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey,
 			sid, round.temp.ridi, XiKeygen, round.temp.AiKeygen, round.temp.ui,
 			// key refresh:

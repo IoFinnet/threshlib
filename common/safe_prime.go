@@ -12,10 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 )
 
 const (
@@ -48,8 +49,8 @@ func (sgp *GermainSafePrime) Validate() bool {
 func PrimeToSafePrime(q *big.Int) *big.Int {
 	// p = 2q + 1
 	p := new(big.Int)
-	p.Mul(q, two)
-	p.Add(p, one)
+	p.Mul(q, big.NewInt(2))
+	p.Add(p, big.NewInt(1))
 	return p
 }
 

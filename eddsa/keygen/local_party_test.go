@@ -9,13 +9,15 @@ package keygen
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	"runtime"
 	"sync/atomic"
 	"testing"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/test"
@@ -56,7 +58,7 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	errCh := make(chan *tss.Error, len(pIDs))
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.Edwards().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
@@ -66,7 +68,7 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params, _ := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold) // TODO
+		params, _ := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
 			tmp, _ := NewLocalParty(params, outCh, endCh, sessionId)
 			P = tmp.(*LocalParty)
@@ -122,14 +124,15 @@ keygen:
 				t.Logf("Done. Received save data from %d participants", ended)
 
 				// combine shares for each Pj to get u
-				u := new(big.Int)
-				modQ := common.ModInt(tss.Edwards().Params().N)
+				u := big.NewInt(0)
+				modQ := int2.ModInt(int2.Wrap(tss.Edwards().Params().N))
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
 						if j2 == j {
 							continue
 						}
+						P.Lock()
 						vssMsgs := P.temp.kgRound2Message1s
 						share := vssMsgs[j].Content().(*KGRound2Message1).Share
 						shareStruct := &vss.Share{
@@ -138,12 +141,14 @@ keygen:
 							Share:     new(big.Int).SetBytes(share),
 						}
 						pShares = append(pShares, shareStruct)
+						P.Unlock()
 					}
+					Pj.Lock()
 					uj, err := pShares[:threshold+1].ReConstruct(tss.Edwards())
 					assert.NoError(t, err, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
-					assert.Equal(t, uj, Pj.temp.ui)
+					assert.Equal(t, uj.Cmp(Pj.temp.ui), 0)
 					uG := crypto.ScalarBaseMult(tss.Edwards(), uj)
 					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
 
@@ -165,31 +170,32 @@ keygen:
 						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
 					}
 					u = modQ.Add(u, uj)
+					Pj.Unlock()
 				}
-				scalar := make([]byte, 0, 32)
-				copy(scalar, u.Bytes())
 
 				// build eddsa key pair
 				pkX, pkY := save.EDDSAPub.X(), save.EDDSAPub.Y()
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
 				t.Logf("u len: %v", len(u.Bytes()))
+				t.Logf("u: %v", common.FormatBigInt(u))
 				uBytes := common.PadToLengthBytesInPlace(u.Bytes(), edwards.PrivScalarSize)
 				sk, _, err := edwards.PrivKeyFromScalar(uBytes)
 				assert.NoError(t, err, "error loading private key")
 				// fmt.Println("err: ", err.Error())
 
 				// test pub key, should be on curve and match pkX, pkY
-				assert.True(t, pk.IsOnCurve(pkX, pkY), "public key must be on curve")
+				assert.True(t, pk.IsOnCurve(pkX.Big(), pkY.Big()), "public key must be on curve")
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.Edwards().ScalarBaseMult(u.Bytes())
-				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
-				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
+				// uprime := new(big.Int).SetBytes(u.Bytes())
+				ourPk := crypto.ScalarBaseMult(tss.Edwards(), u)
+				assert.Equal(t, pkX.Cmp(ourPk.X()), 0, "pkX should match expected pk derived from u")
+				assert.Equal(t, pkY.Cmp(ourPk.Y()), 0, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")
 
 				// make sure everyone has the same EdDSA public key
@@ -234,7 +240,7 @@ func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 	errCh := make(chan *tss.Error, len(pIDs))
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	updater := test.SharedPartyUpdater
 
@@ -299,7 +305,7 @@ keygen:
 				t.Logf("Done. Received save data from %d participants", ended)
 
 				// combine shares for each Pj to get u
-				u := new(big.Int)
+				u := big.NewInt(0)
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
@@ -351,11 +357,8 @@ keygen:
 					}
 					u = new(big.Int).Add(u, uj)
 				}
-				u = new(big.Int).Mod(u, tss.S256().Params().N)
+				u = new(big.Int).Mod(u, int2.Wrap(tss.S256().Params().N))
 				t.Logf("u len: %v", len(u.Bytes()))
-
-				scalar := make([]byte, 0, 32)
-				copy(scalar, u.Bytes())
 
 				// build eddsa key pair
 				pkX, pkY := save.EDDSAPub.X(), save.EDDSAPub.Y()
@@ -368,9 +371,10 @@ keygen:
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.S256().ScalarBaseMult(u.Bytes())
-				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
-				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
+				ourPk := crypto.ScalarBaseMult(tss.EC(), u)
+
+				assert.Equal(t, pkX, ourPk.X(), "pkX should match expected pk derived from u")
+				assert.Equal(t, pkY, ourPk.Y(), "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")
 
 				// make sure everyone has the same EdDSA public key

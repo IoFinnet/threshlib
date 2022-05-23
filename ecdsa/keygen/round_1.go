@@ -8,7 +8,8 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -71,19 +72,20 @@ func (round *round1) Start() *tss.Error {
 		}
 	}
 	Ni, si, ti := preParams.NTildei, preParams.H1i, preParams.H2i
-	sid := common.SHA512_256i(append(ids, tss.EC().Params().N, tss.EC().Params().P, tss.EC().Params().B,
-		tss.EC().Params().Gx, tss.EC().Params().Gy)...)
+	sid := common.SHA512_256i(append(ids, big.Wrap(tss.EC().Params().N),
+		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
+		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 
 	𝜑Nᵢ := preParams.PaillierSK.PhiN
 	𝜆 := preParams.Beta
-	yi := common.GetRandomPositiveInt(round.EC().Params().N)
+	yi := common.GetRandomPositiveInt(big.Wrap(round.EC().Params().N))
 	Yi := crypto.ScalarBaseMult(round.EC(), yi)
 
 	Bᵢ, 𝜏KeyRefresh, err := zkpsch.NewProofCommitment(Yi, yi) // Bᵢ, 𝜏
 	if err != nil {
 		return round.WrapError(errors.New("zkpsch failed"), Pi)
 	}
-	xⁿᵢ := vss.CreateZeroSumRandomArray(round.EC().Params().N, len(round.Parties().IDs()))
+	xⁿᵢ := vss.CreateZeroSumRandomArray(big.Wrap(round.EC().Params().N), len(round.Parties().IDs()))
 	XᵢKeyRefresh := make([]*crypto.ECPoint, len(round.Parties().IDs()))
 	𝜌ᵢ := common.GetRandomPositiveInt(twoTo255)
 
@@ -97,7 +99,7 @@ func (round *round1) Start() *tss.Error {
 	}
 
 	ssid := common.SHA512_256i([]*big.Int{sid /* round.temp.rid,*/, Ni, si, ti, round.temp.sessionId}...)
-	nonce := big.NewInt(0).Add(ssid, big.NewInt(int64(i)))
+	nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(i)))
 	𝜓ᵢ, err := zkpprm.NewProofWithNonce(si, ti, Ni, 𝜑Nᵢ, 𝜆, nonce)
 	if err != nil {
 		return round.WrapError(err, Pi)
@@ -132,10 +134,10 @@ func (round *round1) Start() *tss.Error {
 	if errF != nil {
 		return round.WrapError(errF, Pi)
 	}
-	keygenListToHash = append(keygenListToHash, []*big.Int{sid, big.NewInt(int64(i)), ridi, XiKeygen.X(), XiKeygen.Y(), AiKeygen.X(), AiKeygen.Y(), ui}...)
+	keygenListToHash = append(keygenListToHash, []*big.Int{sid, big.NewInt(uint64(i)), ridi, XiKeygen.X(), XiKeygen.Y(), AiKeygen.X(), AiKeygen.Y(), ui}...)
 
 	𝜓array := 𝜓ᵢ.ToIntArray()
-	keyRefreshListToHash := append([]*big.Int{ssid, big.NewInt(int64(i)), Yi.X(), Yi.Y(),
+	keyRefreshListToHash := append([]*big.Int{ssid, big.NewInt(uint64(i)), Yi.X(), Yi.Y(),
 		Bᵢ.X(), Bᵢ.Y(), Ni, si, ti, 𝜌ᵢ, ui}, 𝜓array...)
 	keyRefreshListToHash = append(keyRefreshListToHash, XiPoints...)
 	keyRefreshListToHash = append(keyRefreshListToHash, AiPoints...)
@@ -170,7 +172,7 @@ func (round *round1) Start() *tss.Error {
 	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
 
 	round.temp.𝜌ᵢ = 𝜌ᵢ
-	round.temp.𝜏js = 𝜏js // TODO -- shared with Pj ?
+	round.temp.𝜏js = 𝜏js
 	round.temp.ssid = ssid
 	round.temp.Bᵢ = Bᵢ
 	round.temp.XiRefreshList = XᵢKeyRefresh

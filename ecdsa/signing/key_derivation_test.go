@@ -5,11 +5,13 @@ package signing
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"math/big"
 	"runtime"
 	"sync/atomic"
 	"testing"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -44,7 +46,7 @@ func TestHDKeyDerivation(t *testing.T) {
 	chainCode := make([]byte, 32)
 	max32b := new(big.Int).Lsh(new(big.Int).SetUint64(1), 256)
 	max32b = new(big.Int).Sub(max32b, new(big.Int).SetUint64(1))
-	common.GetRandomPositiveInt(max32b).FillBytes(chainCode)
+	common.GetRandomPositiveInt(max32b).Big().FillBytes(chainCode)
 
 	extendedParentPk := &ckd.ExtendedKey{
 		PublicKey:  pk,
@@ -55,7 +57,7 @@ func TestHDKeyDerivation(t *testing.T) {
 
 	// Using an arbitrary path of indices. In the common notation, this would be "m/13/209/3".
 	il, extendedChildPk, errorDerivation := ckd.DeriveChildKeyFromHierarchy([]uint32{13, 209, 3}, extendedParentPk,
-		tss.EC().Params().N, tss.EC())
+		big.Wrap(tss.EC().Params().N), tss.EC())
 	assert.NoErrorf(t, errorDerivation, "there should not be an error deriving the child public key")
 
 	keyDerivationDelta := il
@@ -113,7 +115,7 @@ signing:
 
 				// fmt.Printf("sign result: R(%s, %s), r=%s\n", bigR.X().String(), bigR.Y().String(), r.String())
 
-				modN := common.ModInt(tss.EC().Params().N)
+				modN := int2.ModInt(big.Wrap(tss.EC().Params().N))
 
 				// BEGIN check s correctness
 				sumS := big.NewInt(0)
@@ -128,7 +130,7 @@ signing:
 					X:     extendedChildPk.X(),
 					Y:     extendedChildPk.Y(),
 				}
-				ok := ecdsa.Verify(ecdsaPK, msg.Bytes(), bigR.X(), sumS)
+				ok := ecdsa.Verify(ecdsaPK, msg.Bytes(), bigR.X().Big(), sumS.Big())
 				assert.True(t, ok, "ecdsa verify must pass")
 
 				t.Log("ECDSA signing test done.")

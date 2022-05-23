@@ -8,7 +8,7 @@ package keygen
 
 import (
 	"encoding/hex"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"

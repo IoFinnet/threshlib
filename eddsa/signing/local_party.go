@@ -9,7 +9,7 @@ package signing
 import (
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"

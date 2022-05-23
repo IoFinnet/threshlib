@@ -12,9 +12,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"hash"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcutil/base58"
@@ -70,7 +72,7 @@ func (k *ExtendedKey) String() string {
 	serializedBytes = append(serializedBytes, k.ParentFP...)
 	serializedBytes = append(serializedBytes, childNumBytes[:]...)
 	serializedBytes = append(serializedBytes, k.ChainCode...)
-	pubKeyBytes := serializeCompressed(k.PublicKey.X(), k.PublicKey.Y())
+	pubKeyBytes := serializeCompressed(big.Wrap(k.PublicKey.X()), big.Wrap(k.PublicKey.Y()))
 	serializedBytes = append(serializedBytes, pubKeyBytes...)
 
 	checkSum := doubleHashB(serializedBytes)[:4]
@@ -183,7 +185,7 @@ func DeriveChildKeyFromHierarchy(indicesHierarchy []uint32, pk *ExtendedKey, mod
 	if pk == nil {
 		return nil, nil, errors.New("pubkey cannot be nil")
 	}
-	mod_ := common.ModInt(mod)
+	mod_ := int2.ModInt(mod)
 	ilNum := big.NewInt(0)
 	for index := range indicesHierarchy {
 		ilNumOld := ilNum
@@ -210,13 +212,13 @@ func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.I
 		return nil, nil, errors.New("cannot derive key beyond max depth")
 	}
 
-	cryptoPk, err := crypto.NewECPoint(curve, pk.X(), pk.Y())
+	cryptoPk, err := crypto.NewECPoint(curve, big.Wrap(pk.X()), big.Wrap(pk.Y()))
 	if err != nil {
 		common.Logger.Error("error getting pubkey from extendedkey")
 		return nil, nil, err
 	}
 
-	pkPublicKeyBytes := serializeCompressed(pk.X(), pk.Y())
+	pkPublicKeyBytes := serializeCompressed(big.Wrap(pk.X()), big.Wrap(pk.Y()))
 
 	data := make([]byte, 37)
 	copy(data, pkPublicKeyBytes)
@@ -230,7 +232,7 @@ func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.I
 	childChainCode := ilr[32:]
 	ilNum := new(big.Int).SetBytes(il)
 
-	if ilNum.Cmp(curve.Params().N) >= 0 || ilNum.Sign() == 0 {
+	if ilNum.Cmp(big.Wrap(curve.Params().N)) >= 0 || ilNum.Sign() == 0 {
 		// falling outside of the valid range for curve private keys
 		err = errors.New("invalid derived key")
 		common.Logger.Error("error deriving child key")

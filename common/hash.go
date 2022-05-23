@@ -10,7 +10,7 @@ import (
 	"crypto"
 	_ "crypto/sha512"
 	"encoding/binary"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"strconv"
 )
 

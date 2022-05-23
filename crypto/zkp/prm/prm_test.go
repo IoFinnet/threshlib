@@ -7,9 +7,10 @@
 package zkpprm_test
 
 import (
-	"math/big"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/tss"
@@ -20,7 +21,7 @@ import (
 )
 
 func TestPrm(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	preParams, err := keygen.GeneratePreParams(time.Minute*20, 8)
 	assert.NoError(test, err)
 
 	s, t, lambda, P, Q, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P, preParams.Q, preParams.NTildei
@@ -41,7 +42,7 @@ func TestPrm(test *testing.T) {
 func TestPrmWithNonce(test *testing.T) {
 	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
 	assert.NoError(test, err)
-	secret := common.GetRandomPositiveInt(tss.EC().Params().N)
+	secret := common.GetRandomPositiveInt(big.Wrap(tss.EC().Params().N))
 
 	s, t, lambda, P, Q, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P, preParams.Q, preParams.NTildei
 	P2, Q2 := new(big.Int).Lsh(P, 1), new(big.Int).Lsh(Q, 1)

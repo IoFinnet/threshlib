@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
@@ -31,14 +32,14 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.I
 	if pk == nil || X == nil || Y == nil || C == nil || rhox == nil {
 		return nil, errors.New("ProveMul constructor received nil value(s)")
 	}
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 
 	// Fig 28.1 sample
 	alpha := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
 	s := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
 
-	modNSquared := common.ModInt(pk.NSquare())
+	modNSquared := int2.ModInt(pk.NSquare())
 	A := modNSquared.Exp(Y, alpha)
 	A = modNSquared.Mul(A, modNSquared.Exp(r, pk.N))
 
@@ -56,7 +57,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.I
 	z := new(big.Int).Mul(e, x)
 	z = new(big.Int).Add(z, alpha)
 
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
 	// u := modN.Exp(rho, e)
 	// u = modN.Mul(u, r)
 
@@ -84,7 +85,7 @@ func (pf *ProofMul) Verify(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *b
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 
 	var e *big.Int
 	{
@@ -93,7 +94,7 @@ func (pf *ProofMul) Verify(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *b
 	}
 
 	// Fig 14. Equality Check
-	modNSquare := common.ModInt(pk.NSquare())
+	modNSquare := int2.ModInt(pk.NSquare())
 	{
 		YEXPz := modNSquare.Exp(Y, pf.Z)
 		uEXPN := modNSquare.Exp(pf.U, pk.N)

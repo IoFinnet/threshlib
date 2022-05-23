@@ -4,7 +4,7 @@ package signing
 
 import (
 	"crypto/elliptic"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -19,7 +19,7 @@ func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.Lo
 	var err error
 	gDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
 	for k := range keys {
-		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X(), extendedChildPk.Y())
+		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, big.Wrap(extendedChildPk.X()), big.Wrap(extendedChildPk.Y()))
 		if err != nil {
 			common.Logger.Errorf("error creating new extended child public key")
 			return err
@@ -49,5 +49,5 @@ func derivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []
 		ParentFP:   []byte{0x00, 0x00, 0x00, 0x00},
 		Version:    net.HDPrivateKeyID[:],
 	}
-	return ckd.DeriveChildKeyFromHierarchy(path, extendedParentPk, ec.Params().N, ec)
+	return ckd.DeriveChildKeyFromHierarchy(path, extendedParentPk, big.Wrap(ec.Params().N), ec)
 }

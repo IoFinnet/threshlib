@@ -10,7 +10,7 @@
 package commitments
 
 import (
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 )

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -24,7 +25,7 @@ const (
 
 func TestMul(test *testing.T) {
 	ec := tss.EC()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 
 	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
 	assert.NoError(test, err)

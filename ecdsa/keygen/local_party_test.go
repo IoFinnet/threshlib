@@ -11,11 +11,12 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	"runtime"
 	"sync/atomic"
 	"testing"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +59,7 @@ func handleMessage(t *testing.T, msg tss.Message, parties []*LocalParty, updater
 }
 
 func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold int, fixtures []LocalPartySaveData, outCh chan tss.Message, endCh chan LocalPartySaveData, parties []*LocalParty, errCh chan *tss.Error) ([]*LocalParty, chan *tss.Error) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
@@ -120,7 +121,7 @@ func TestStartRound1Paillier(t *testing.T) {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
@@ -163,7 +164,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
@@ -213,7 +214,7 @@ func TestBadMessageCulprits(t *testing.T) {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
@@ -300,7 +301,7 @@ keygen:
 				t.Logf("Done. Received save data from %d participants", ended)
 
 				// combine shares for each Pj to get u
-				u := new(big.Int)
+				u := big.NewInt(0)
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
@@ -324,7 +325,7 @@ keygen:
 					assert.NoError(t, errRec, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
-					assert.Equal(t, uj, Pj.temp.ui)
+					assert.Equal(t, uj.Cmp(Pj.temp.ui), 0)
 					uG := crypto.ScalarBaseMult(tss.EC(), uj)
 					V0 := Pj.temp.vs[0]
 					if Pj.temp.r2msgVss[j] != nil {
@@ -361,21 +362,22 @@ keygen:
 				pkX, pkY := save.ECDSAPub.X(), save.ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
 				sk := ecdsa.PrivateKey{
 					PublicKey: pk,
-					D:         u,
+					D:         u.Big(),
 				}
 				// test pub key, should be on curve and match pkX, pkY
-				assert.True(t, sk.IsOnCurve(pkX, pkY), "public key must be on curve")
+				assert.True(t, sk.IsOnCurve(pkX.Big(), pkY.Big()), "public key must be on curve")
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.EC().ScalarBaseMult(u.Bytes())
-				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
-				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
+				ourPk := crypto.ScalarBaseMult(tss.EC(), u)
+
+				assert.Equal(t, pkX, ourPk.X(), "pkX should match expected pk derived from u")
+				assert.Equal(t, pkY, ourPk.Y(), "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")
 
 				// make sure everyone has the same ECDSA public key
@@ -410,7 +412,7 @@ func TestTooManyParties(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	out := make(chan tss.Message, len(pIDs))
 	var err error

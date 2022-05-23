@@ -9,9 +9,11 @@ package signing
 import (
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
 	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -34,21 +36,21 @@ func (round *identification6) Start() *tss.Error {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
-	q := round.EC().Params().N
+	q := big.Wrap(round.EC().Params().N)
 	/* var modMul = func(N, a, b *big.Int) *big.Int {
 		_N := common.ModInt(big.NewInt(0).Set(N))
 		return _N.Mul(a, b)
 	} */
 	var modQ3Mul = func(a, b *big.Int) *big.Int {
-		q3 := common.ModInt(new(big.Int).Mul(q, new(big.Int).Mul(q, q)))
+		q3 := int2.ModInt(new(big.Int).Mul(q, new(big.Int).Mul(q, q)))
 		return q3.Mul(a, b)
 	}
 	var modN = func(a *big.Int) *big.Int {
-		m := common.ModInt(round.EC().Params().N)
+		m := int2.ModInt(big.Wrap(round.EC().Params().N))
 		return m.Add(zero, a)
 	}
 	var modMul = func(N, a, b *big.Int) *big.Int {
-		_N := common.ModInt(big.NewInt(0).Set(N))
+		_N := int2.ModInt(big.NewInt(0).Set(N))
 		return _N.Mul(a, b)
 	}
 	var q3Add = func(a, b *big.Int) *big.Int {
@@ -125,12 +127,12 @@ func (round *identification6) Start() *tss.Error {
 			common.FormatBigInt(𝜌𝛾sr)) */
 
 			proof, errP := zkpdec.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, DF,
-				common.ModInt(round.EC().Params().N).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i, round.key.H2i, 𝛾k𝛽ʹ𝛽, 𝜌𝛾sr)
+				int2.ModInt(big.Wrap(round.EC().Params().N)).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i, round.key.H2i, 𝛾k𝛽ʹ𝛽, 𝜌𝛾sr)
 			if errP != nil {
 				return round.WrapError(fmt.Errorf("identification of aborts - error with zk proof"), Pj)
 			}
 			if ok := proof.Verify(round.EC(), &round.key.PaillierSK.PublicKey, DF,
-				common.ModInt(round.EC().Params().N).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i, round.key.H2i); !ok {
+				int2.ModInt(big.Wrap(round.EC().Params().N)).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i, round.key.H2i); !ok {
 				return round.WrapError(fmt.Errorf("identification of aborts - error with zk proof"), Pj)
 			}
 

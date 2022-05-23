@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/binance-chain/tss-lib/common"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/eddsa/keygen"
@@ -33,7 +34,7 @@ func (round *round1) Start() *tss.Error {
 	round.resetOK()
 
 	// 1. select ri
-	ri := common.GetRandomPositiveInt(round.Params().EC().Params().N)
+	ri := common.GetRandomPositiveInt(big.Wrap(round.Params().EC().Params().N))
 
 	// 2. make commitment
 	pointRi := crypto.ScalarBaseMult(round.Params().EC(), ri)

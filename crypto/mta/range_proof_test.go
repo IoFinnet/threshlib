@@ -7,9 +7,10 @@
 package mta
 
 import (
-	"math/big"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/stretchr/testify/assert"
 
@@ -25,7 +26,7 @@ const (
 )
 
 func TestProveRangeAlice(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 
 	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(t, err)

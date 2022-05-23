@@ -8,8 +8,9 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
 	"sync"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -32,15 +33,16 @@ func (round *round4) Start() *tss.Error {
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 
 	wg := sync.WaitGroup{}
-	modQ := common.ModInt(round.EC().Params().N)
-	sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), tss.EC().Params().N, tss.EC().Params().P, tss.EC().Params().B,
-		tss.EC().Params().Gx, tss.EC().Params().Gy)...)
+	modQ := big.ModInt(big.Wrap(round.EC().Params().N))
+	sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
+		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
+		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
 		// Keygen: Fig 5. Output 1.
-		noncej := modQ.Add(modQ.Add(round.temp.rref3msgSsid[j], round.temp.𝜌), big.NewInt(int64(j)))
+		noncej := modQ.Add(modQ.Add(round.temp.rref3msgSsid[j], round.temp.𝜌), big.NewInt(uint64(j)))
 		/* common.Logger.Debugf("party %v r4 j: %v, ssid[%v]: %v, 𝜌: %v, nonce[j=%v]: %v", round.PartyID(),
 			j, j, common.FormatBigInt(round.temp.rref3msgSsid[j]), common.FormatBigInt(round.temp.𝜌),
 			j, common.FormatBigInt(noncej),
@@ -58,7 +60,7 @@ func (round *round4) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			sidjrid := modQ.Add(modQ.Add(sid, big.NewInt(int64(j))), round.temp.rid)
+			sidjrid := modQ.Add(modQ.Add(sid, big.NewInt(uint64(j))), round.temp.rid)
 			nonceKG := modQ.Add(sidjrid, round.temp.sessionId)
 			if ok := round.temp.r3msgpf𝜓j[j].VerifyWithNonce(round.temp.r2msgXKeygenj[j], nonceKG); !ok {
 				/* common.Logger.Debugf("party %v r4 KG err sch 𝜓[j=%v]: %v, nonceKG: %v", round.PartyID(),
@@ -97,7 +99,7 @@ func (round *round4) Start() *tss.Error {
 			Xⁱⱼ := crypto.ScalarBaseMult(round.EC(), xⁱⱼ)
 			if !round.temp.rref2msgXj[j][i].Equals(Xⁱⱼ) {
 				// errChs <- round.WrapError(errors.New("different X"), Pj)
-				N := round.EC().Params().N
+				N := big.Wrap(round.EC().Params().N)
 				onePlusNi := big.NewInt(0).Add(big.NewInt(1), round.save.LocalPreParams.NTildei)
 				minusxⁱⱼ := big.NewInt(0).Neg(xⁱⱼ)
 				a := big.NewInt(0).Exp(onePlusNi, minusxⁱⱼ, nil)
@@ -206,7 +208,7 @@ func (round *round4) Start() *tss.Error {
 		}
 		xi = new(big.Int).Add(xi, round.temp.r3msgxij[j])
 	}
-	round.save.Xi = new(big.Int).Mod(xi, round.EC().Params().N)
+	round.save.Xi = new(big.Int).Mod(xi, big.Wrap(round.EC().Params().N))
 
 	Vc := make([]*crypto.ECPoint, round.Threshold()+1)
 	for c := range Vc {

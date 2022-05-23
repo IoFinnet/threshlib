@@ -7,7 +7,7 @@
 package zkpaffg
 
 import (
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
 
@@ -27,7 +27,7 @@ const (
 
 func TestAffg(test *testing.T) {
 	ec := tss.EC()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	// q6 := new(big.Int).Mul(q3, q3)

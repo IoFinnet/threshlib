@@ -4,11 +4,13 @@ package zkpfac
 
 import (
 	"errors"
-	"math/big"
 	"runtime"
 	"testing"
 	"time"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/stretchr/testify/assert"
@@ -74,10 +76,10 @@ func generatePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 	lambdaN := new(big.Int).Div(phiN, gcd)
 	paiSK := &paillier.PrivateKey{PublicKey: *paiPK, LambdaN: lambdaN, PhiN: phiN}
 	NTildei := new(big.Int).Mul(P, Q)
-	modNTildeI := common.ModInt(NTildei)
+	modNTildeI := big.ModInt(NTildei)
 
 	p, q := sgps[0].Prime(), sgps[1].Prime()
-	modPQ := common.ModInt(new(big.Int).Mul(p, q))
+	modPQ := big.ModInt(new(big.Int).Mul(p, q))
 	f1 := common.GetRandomPositiveRelativelyPrimeInt(NTildei)
 	alpha := common.GetRandomPositiveRelativelyPrimeInt(NTildei)
 	beta := modPQ.Inverse(alpha)
@@ -99,11 +101,11 @@ func generatePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 
 func TestFacPQNoSmallFactor(test *testing.T) {
 	ec := tss.EC()
-	Twol := ec.Params().N
+	Twol := big.Wrap(ec.Params().N)
 
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 
 	pqOk := false
 
@@ -148,7 +150,7 @@ func TestGeneral(test *testing.T) {
 
 func TestGeneralNonce(test *testing.T) {
 	ec := tss.EC()
-	nonce := common.GetRandomPositiveInt(ec.Params().N)
+	nonce := common.GetRandomPositiveInt(big.Wrap(ec.Params().N))
 	preParams, err := generatePreParams(10 * time.Minute)
 	if err != nil {
 		test.Error("pre-params generation failed")

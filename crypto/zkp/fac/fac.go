@@ -6,9 +6,11 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
@@ -34,7 +36,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N)...)
-		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
+		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	z1, z2, w1, w2, v := proofEnd(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
@@ -54,7 +56,7 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N, nonce)...)
-		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
+		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	z1, z2, w1, w2, v := proofEnd(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
@@ -78,7 +80,7 @@ func proofEnd(𝜎 *big.Int, 𝜈 *big.Int, p *big.Int, 𝛼 *big.Int, e *big.In
 func proofStart(ec elliptic.Curve, pk *paillier.PublicKey, NCap *big.Int, s *big.Int,
 	t *big.Int, p *big.Int, q *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int,
 	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
-	Twol := ec.Params().N                              // "q" (N) == "2^l"
+	Twol := big.Wrap(ec.Params().N)                    // "q" (N) == "2^l"
 	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
 	TwolPlus𝜀 := twoTo768
 	sqrtNo := new(big.Int).Sqrt(pk.N) // pk.N == No
@@ -96,7 +98,7 @@ func proofStart(ec elliptic.Curve, pk *paillier.PublicKey, NCap *big.Int, s *big
 	x, y := common.GetRandomPositiveInt(TwolPlus𝜀NCap), common.GetRandomPositiveInt(TwolPlus𝜀NCap)
 
 	// Fig 28.1 compute
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 	P, Q := modNCap.Mul(modNCap.Exp(s, p), modNCap.Exp(t, 𝜇)), modNCap.Mul(modNCap.Exp(s, q), modNCap.Exp(t, 𝜈))
 	A := modNCap.Mul(modNCap.Exp(s, 𝛼), modNCap.Exp(t, x))
 	B := modNCap.Mul(modNCap.Exp(s, 𝛽), modNCap.Exp(t, y))
@@ -146,7 +148,7 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N)...)
-		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
+		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	b, done := verification(NCap, s, No, t, pf, e)
@@ -167,7 +169,7 @@ func (pf *ProofFac) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, N
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N, nonce)...)
-		e = common.RejectionSample(ec.Params().N, eHash) // Likely N and not secret input q
+		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	b, done := verification(NCap, s, No, t, pf, e)
@@ -179,7 +181,7 @@ func (pf *ProofFac) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, N
 }
 
 func verification(NCap, s *big.Int, No *big.Int, t *big.Int, pf *ProofFac, e *big.Int) (bool, bool) {
-	modNCap := common.ModInt(NCap)
+	modNCap := big.ModInt(NCap)
 	R := new(big.Int).Mul(modNCap.Exp(s, No), modNCap.Exp(t, pf.Sigma))
 
 	// Fig 28. Equality Checks

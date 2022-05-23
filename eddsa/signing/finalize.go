@@ -10,8 +10,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 	"strings"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/binance-chain/tss-lib/common"
@@ -53,7 +54,7 @@ func (round *finalization) Start() *tss.Error {
 		s = encodedBytesToBigInt(sumS)
 	} else if isSecp256k1Curve {
 		sumSInt := &round.temp.si
-		modN := common.ModInt(tss.S256().Params().N)
+		modN := big.ModInt(big.Wrap(tss.S256().Params().N))
 		for j := range round.Parties().IDs() {
 			round.ok[j] = true
 			if j == round.PartyID().Index {
@@ -63,7 +64,7 @@ func (round *finalization) Start() *tss.Error {
 			sumSInt = modN.Add(sumSInt, r3msg.UnmarshalS())
 		}
 		// if we adjusted R by adding aG to find R with an even Y coordinate, add a to s also.
-		s = modN.Add(sumSInt, big.NewInt(int64(round.temp.a)))
+		s = modN.Add(sumSInt, big.NewInt(uint64(round.temp.a)))
 	}
 
 	// save the signature for final output
@@ -89,7 +90,7 @@ func (round *finalization) Start() *tss.Error {
 	if isTwistedEdwardsCurve {
 		common.Logger.Debugf("finalize - r: %v, s:%v", hex.EncodeToString(round.temp.r.Bytes()),
 			hex.EncodeToString(s.Bytes()))
-		if ok = edwards.Verify(round.key.EDDSAPub.ToEdwardsPubKey(), round.temp.m.Bytes(), round.temp.r, s); !ok {
+		if ok = edwards.Verify(round.key.EDDSAPub.ToEdwardsPubKey(), round.temp.m.Bytes(), round.temp.r.Big(), s.Big()); !ok {
 			return round.WrapError(fmt.Errorf("edwards signature verification failed"))
 		}
 	} else if isSecp256k1Curve {
@@ -116,5 +117,5 @@ func (round *finalization) NextRound() tss.Round {
 }
 
 func encode32bytes(i *big.Int, buff *[32]byte) {
-	i.FillBytes(buff[:])
+	i.Big().FillBytes(buff[:])
 }

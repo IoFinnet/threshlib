@@ -9,8 +9,9 @@ package keygen
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"sync"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -39,11 +40,12 @@ func (round *round3) Start() *tss.Error {
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 	rid := round.temp.ridi
 	wg := sync.WaitGroup{}
-	modQ := common.ModInt(round.EC().Params().N)
+	modQ := big.ModInt(big.Wrap(round.EC().Params().N))
 	𝜅 := uint(128)
 	twoTo8𝜅 := new(big.Int).Lsh(big.NewInt(1), 8*𝜅)
-	sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), tss.EC().Params().N, tss.EC().Params().P, tss.EC().Params().B,
-		tss.EC().Params().Gx, tss.EC().Params().Gy)...)
+	sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
+		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
+		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 
 	var err error
 
@@ -63,7 +65,7 @@ func (round *round3) Start() *tss.Error {
 				errChs <- round.WrapError(errF, Pj)
 				return
 			}
-			keygenListToHash = append(keygenListToHash, []*big.Int{round.temp.r2msgSid[j], big.NewInt(int64(j)),
+			keygenListToHash = append(keygenListToHash, []*big.Int{round.temp.r2msgSid[j], big.NewInt(uint64(j)),
 				round.temp.r2msgRidj[j],
 				round.temp.r2msgXKeygenj[j].X(), round.temp.r2msgXKeygenj[j].Y(),
 				round.temp.r2msgAKeygenj[j].X(), round.temp.r2msgAKeygenj[j].Y(), round.temp.r2msgUj[j]}...)
@@ -123,7 +125,7 @@ func (round *round3) Start() *tss.Error {
 
 			Nj, sj, tj := round.temp.rref2msgNj[j], round.temp.rref2msgsj[j], round.temp.rref2msgtj[j]
 			ssid := common.SHA512_256i([]*big.Int{sid /*round.temp.r2msgRidj[j],*/, Nj, sj, tj, round.temp.sessionId}...)
-			nonce := big.NewInt(0).Add(ssid, big.NewInt(int64(j)))
+			nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(j)))
 			if v := round.temp.rref2msgpf𝜓j[j].VerifyWithNonce(sj, tj, Nj, nonce); !v {
 				/* common.Logger.Debugf("party %v r3 err Pj: %v, proof: %v, Ni: %v, si: %v, nonce: %v", round.PartyID(),
 					Pj, zkpprm.FormatProofPrm(round.temp.rref2msgpf𝜓j[j]), common.FormatBigInt(Nj),
@@ -150,7 +152,7 @@ func (round *round3) Start() *tss.Error {
 				return
 			}
 
-			h := append([]*big.Int{round.temp.rref2msgSsid[j], big.NewInt(int64(j)), round.temp.rref2msgYj[j].X(),
+			h := append([]*big.Int{round.temp.rref2msgSsid[j], big.NewInt(uint64(j)), round.temp.rref2msgYj[j].X(),
 				round.temp.rref2msgYj[j].Y(),
 				round.temp.rref2msgBj[j].X(), round.temp.rref2msgBj[j].Y(), Nj, sj, tj,
 				round.temp.rref2msg𝜌j[j], round.temp.r2msgUj[j]}, 𝜓array...)
@@ -177,7 +179,7 @@ func (round *round3) Start() *tss.Error {
 	// Fig 5. Round 3.2
 	xi := new(big.Int).Set(round.temp.shares[i].Share)
 	Xi := crypto.ScalarBaseMult(round.EC(), xi)
-	sidirid := modQ.Add(modQ.Add(round.temp.sid, big.NewInt(int64(i))), rid)
+	sidirid := modQ.Add(modQ.Add(round.temp.sid, big.NewInt(uint64(i))), rid)
 	nonceKG := modQ.Add(sidirid, round.temp.sessionId)
 	𝜓Schi, err := zkpsch.NewProofGivenAlpha(Xi, xi, round.temp.τKeygen, nonceKG)
 	if err != nil {
@@ -188,8 +190,8 @@ func (round *round3) Start() *tss.Error {
 	) */
 
 	// Refresh:
-	modN := common.ModInt(round.EC().Params().N)
-	nonce := modN.Add(modN.Add(round.temp.ssid, 𝜌), big.NewInt(int64(i)))
+	modN := big.ModInt(big.Wrap(round.EC().Params().N))
+	nonce := modN.Add(modN.Add(round.temp.ssid, 𝜌), big.NewInt(uint64(i)))
 
 	𝜓Modi, errP := zkpmod.NewProofGivenNonce(round.save.LocalPreParams.NTildei,
 		common.PrimeToSafePrime(round.save.LocalPreParams.P),

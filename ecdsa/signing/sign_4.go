@@ -11,6 +11,8 @@ import (
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
+	big "github.com/binance-chain/tss-lib/common/int"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -69,7 +71,7 @@ func (round *sign4) Start() *tss.Error {
 	}
 
 	// Fig 7. Output.2 check equality
-	modN := common.ModInt(round.EC().Params().N)
+	modN := int2.ModInt(big.Wrap(round.EC().Params().N))
 	𝛿 := round.temp.𝛿i
 	Δ := round.temp.Δi
 	for j := range round.Parties().IDs() {

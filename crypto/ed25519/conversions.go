@@ -2,13 +2,14 @@ package ed25519
 
 import (
 	"crypto/elliptic"
-	"math/big"
+	mathbig "math/big"
 	"math/bits"
 
 	"filippo.io/edwards25519"
 	"filippo.io/edwards25519/field"
 	edwards255192 "github.com/agl/ed25519/edwards25519"
 	"github.com/binance-chain/tss-lib/common"
+	big "github.com/binance-chain/tss-lib/common/int"
 )
 
 // Reverse reverses a byte string.
@@ -70,7 +71,7 @@ func fromBig(v *field.Element, n *big.Int) *field.Element {
 	}
 
 	buf := make([]byte, 0, 32)
-	for _, word := range n.Bits() {
+	for _, word := range n.Big().Bits() {
 		for i := 0; i < bits.UintSize; i += 8 {
 			if len(buf) >= cap(buf) {
 				break
@@ -90,8 +91,8 @@ func Toxy(P *edwards25519.Point) (xt, yt *big.Int) {
 	zInv.Invert(Z)       // zInv = 1 / Z
 	x.Multiply(X, &zInv) // x = X / Z
 	y.Multiply(Y, &zInv) // y = Y / Z
-	xt = elementToBigInt(&x)
-	yt = elementToBigInt(&y)
+	xt = big.Wrap(elementToBigInt(&x))
+	yt = big.Wrap(elementToBigInt(&y))
 	return
 }
 
@@ -115,28 +116,28 @@ func toLittleEndian(a *big.Int) []byte {
 }
 
 // elementToBigInt returns v as a big.Int.
-func elementToBigInt(v *field.Element) *big.Int {
+func elementToBigInt(v *field.Element) *mathbig.Int {
 	buf := v.Bytes()
 
-	words := make([]big.Word, 32*8/bits.UintSize)
+	words := make([]mathbig.Word, 32*8/bits.UintSize)
 	for n := range words {
 		for i := 0; i < bits.UintSize; i += 8 {
 			if len(buf) == 0 {
 				break
 			}
-			words[n] |= big.Word(buf[0]) << big.Word(i)
+			words[n] |= mathbig.Word(buf[0]) << mathbig.Word(i)
 			buf = buf[1:]
 		}
 	}
 
-	return new(big.Int).SetBits(words)
+	return new(mathbig.Int).SetBits(words)
 }
 
 func ECPointToExtendedElement(ec elliptic.Curve, x *big.Int, y *big.Int) edwards255192.ExtendedGroupElement {
 	encodedXBytes := BigIntToEncodedBytes(x)
 	encodedYBytes := BigIntToEncodedBytes(y)
 
-	z := common.GetRandomPositiveInt(ec.Params().N)
+	z := common.GetRandomPositiveInt(big.Wrap(ec.Params().N))
 	encodedZBytes := BigIntToEncodedBytes(z)
 
 	var fx, fy, fxy edwards255192.FieldElement

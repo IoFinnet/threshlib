@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
@@ -36,7 +37,7 @@ func ProveRangeAlice(ec elliptic.Curve, pk *paillier.PublicKey, c, NTilde, h1, h
 		return nil, errors.New("ProveRangeAlice constructor received nil value(s)")
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 	qNTilde := new(big.Int).Mul(q, NTilde)
@@ -54,12 +55,12 @@ func ProveRangeAlice(ec elliptic.Curve, pk *paillier.PublicKey, c, NTilde, h1, h
 	rho := common.GetRandomPositiveInt(qNTilde)
 
 	// 5.
-	modNTilde := common.ModInt(NTilde)
+	modNTilde := int2.ModInt(NTilde)
 	z := modNTilde.Exp(h1, m)
 	z = modNTilde.Mul(z, modNTilde.Exp(h2, rho))
 
 	// 6.
-	modNSq := common.ModInt(pk.NSquare())
+	modNSq := int2.ModInt(pk.NSquare())
 	u := modNSq.Exp(pk.Gamma(), alpha)
 	u = modNSq.Mul(u, modNSq.Exp(beta, pk.N))
 
@@ -74,7 +75,7 @@ func ProveRangeAlice(ec elliptic.Curve, pk *paillier.PublicKey, c, NTilde, h1, h
 		e = common.RejectionSample(q, eHash)
 	}
 
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
 	s := modN.Exp(r, e)
 	s = modN.Mul(s, beta)
 
@@ -108,7 +109,7 @@ func (pf *RangeProofAlice) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTi
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 
@@ -128,7 +129,7 @@ func (pf *RangeProofAlice) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTi
 	minusE := new(big.Int).Sub(zero, e)
 
 	{ // 4. gamma^s_1 * s^N * c^-e
-		modNSquared := common.ModInt(pk.NSquare())
+		modNSquared := int2.ModInt(pk.NSquare())
 
 		cExpMinusE := modNSquared.Exp(c, minusE)
 		sExpN := modNSquared.Exp(pf.S, pk.N)
@@ -142,7 +143,7 @@ func (pf *RangeProofAlice) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTi
 	}
 
 	{ // 5. h_1^s_1 * h_2^s_2 * z^-e
-		modNTilde := common.ModInt(NTilde)
+		modNTilde := int2.ModInt(NTilde)
 
 		h1ExpS1 := modNTilde.Exp(h1, pf.S1)
 		h2ExpS2 := modNTilde.Exp(h2, pf.S2)

@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
@@ -35,7 +36,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 		return nil, errors.New("ProveLogstar constructor received nil value(s)")
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
@@ -50,11 +51,11 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	gamma := common.GetRandomPositiveInt(TwolPlus𝜀NCap)
 
 	// Fig 25.1 compute
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 	S := modNCap.Exp(s, x)
 	S = modNCap.Mul(S, modNCap.Exp(t, mu))
 
-	modNSquared := common.ModInt(pk.NSquare())
+	modNSquared := int2.ModInt(pk.NSquare())
 	A := modNSquared.Exp(pk.Gamma(), alpha)
 	A = modNSquared.Mul(A, modNSquared.Exp(r, pk.N))
 
@@ -74,7 +75,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	z1 := new(big.Int).Mul(e, x)
 	z1 = new(big.Int).Add(z1, alpha)
 
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
 	z2 := modN.Exp(rho, e)
 	z2 = modN.Mul(z2, r)
 
@@ -110,7 +111,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
@@ -129,7 +130,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 
 	// Fig 25. equality checks
 	{
-		modNSquared := common.ModInt(pk.NSquare())
+		modNSquared := int2.ModInt(pk.NSquare())
 
 		Np1EXPz1 := modNSquared.Exp(pk.Gamma(), pf.Z1)
 		z2EXPN := modNSquared.Exp(pf.Z2, pk.N)
@@ -143,7 +144,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	}
 
 	{
-		z1ModQ := new(big.Int).Mod(pf.Z1, ec.Params().N)
+		z1ModQ := new(big.Int).Mod(pf.Z1, big.Wrap(ec.Params().N))
 		// left := crypto.ScalarBaseMult(ec, z1ModQ)
 		left := g.ScalarMult(z1ModQ)
 		right, err := X.ScalarMult(e).Add(pf.Y)
@@ -153,7 +154,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	}
 
 	{
-		modNCap := common.ModInt(NCap)
+		modNCap := int2.ModInt(NCap)
 		sEXPz1 := modNCap.Exp(s, pf.Z1)
 		tEXPz3 := modNCap.Exp(t, pf.Z3)
 		left := modNCap.Mul(sEXPz1, tEXPz3)

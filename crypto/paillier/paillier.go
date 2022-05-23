@@ -19,11 +19,13 @@ import (
 	"errors"
 	"fmt"
 	gmath "math"
-	"math/big"
 	"runtime"
 	"strconv"
 	"time"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/otiai10/primes"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -163,7 +165,7 @@ func (publicKey *PublicKey) EncryptAndReturnRandomness(m *big.Int) (c *big.Int, 
 	// 2. x^N mod N2
 	xN := new(big.Int).Exp(x, publicKey.N, N2)
 	// 3. (1) * (2) mod N2
-	c = common.ModInt(N2).Mul(Gm, xN)
+	c = int2.ModInt(N2).Mul(Gm, xN)
 	return
 }
 
@@ -175,7 +177,7 @@ func (pk *PublicKey) EncryptWithGivenRandomness(m, x *big.Int) (c *big.Int, err 
 		return nil, ErrMessageTooLong
 	}
 	// https://docs.rs/paillier/0.2.0/src/paillier/core.rs.html#236
-	modNSq := common.ModInt(pk.NSquare())
+	modNSq := int2.ModInt(pk.NSquare())
 	// 1. gamma^m mod N2
 	Gm := modNSq.Exp(pk.Gamma(), m)
 	// 2. x^N mod N2
@@ -199,7 +201,7 @@ func (publicKey *PublicKey) HomoMult(m, c1 *big.Int) (*big.Int, error) {
 		return nil, ErrMessageTooLong
 	}
 	// cipher^m mod N2
-	return common.ModInt(N2).Exp(c1, m), nil
+	return int2.ModInt(N2).Exp(c1, m), nil
 }
 
 func (publicKey *PublicKey) HomoAdd(c1, c2 *big.Int) (*big.Int, error) {
@@ -211,7 +213,7 @@ func (publicKey *PublicKey) HomoAdd(c1, c2 *big.Int) (*big.Int, error) {
 		return nil, ErrMessageTooLong
 	}
 	// c1 * c2 mod N2
-	return common.ModInt(N2).Mul(c1, c2), nil
+	return int2.ModInt(N2).Mul(c1, c2), nil
 }
 
 func (publicKey *PublicKey) NSquare() *big.Int {
@@ -245,7 +247,7 @@ func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 	Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
 	// 3. (1) * modInv(2) mod N
 	inv := new(big.Int).ModInverse(Lg, privateKey.N)
-	m = common.ModInt(privateKey.N).Mul(Lc, inv)
+	m = int2.ModInt(privateKey.N).Mul(Lc, inv)
 	return
 }
 
@@ -253,9 +255,9 @@ func (sk *PrivateKey) DecryptAndRecoverRandomness(c *big.Int) (m, x *big.Int, er
 	if m, err = sk.Decrypt(c); err != nil {
 		return
 	}
-	modN := common.ModInt(sk.N)
-	modNSq := common.ModInt(sk.NSquare())
-	modPhiN := common.ModInt(sk.PhiN)
+	modN := int2.ModInt(sk.N)
+	modNSq := int2.ModInt(sk.NSquare())
+	modPhiN := int2.ModInt(sk.PhiN)
 	// CDash = C * (1 - m*N) mod N2  (this is scalar subtraction)
 	mN := modNSq.Mul(m, sk.N)
 	cDash := modNSq.Mul(c, new(big.Int).Sub(one, mN))
@@ -290,7 +292,7 @@ func (pf Proof) Verify(pkN, k *big.Int, ecdsaPub *crypto2.ECPoint) (bool, error)
 	go func(ch chan<- bool) {
 		for _, prm := range prms {
 			// If prm divides N then Return 0
-			if new(big.Int).Mod(pkN, big.NewInt(prm)).Cmp(zero) == 0 {
+			if new(big.Int).Mod(pkN, big.NewInt(uint64(prm))).Cmp(zero) == 0 {
 				ch <- false // is divisible
 				return
 			}

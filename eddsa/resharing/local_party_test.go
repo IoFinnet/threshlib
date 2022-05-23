@@ -7,9 +7,10 @@
 package resharing_test
 
 import (
-	"math/big"
 	"sync/atomic"
 	"testing"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
@@ -64,7 +65,7 @@ func TestE2EConcurrent(t *testing.T) {
 	errCh := make(chan *tss.Error, bothCommitteesPax)
 	outCh := make(chan tss.Message, bothCommitteesPax)
 	endCh := make(chan keygen.LocalPartySaveData, bothCommitteesPax)
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
@@ -147,7 +148,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
-					xj = common.ModInt(tss.Edwards().Params().N).Add(xj, big.NewInt(0))
+					xj = big.ModInt(big.Wrap(tss.Edwards().Params().N)).Add(xj, big.NewInt(0))
 					gXj := crypto.ScalarBaseMult(tss.Edwards(), xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
@@ -214,8 +215,8 @@ signing:
 				pkX, pkY := signKeys[0].EDDSAPub.X(), signKeys[0].EDDSAPub.Y()
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
 
 				newSig, err := edwards.ParseSignature(signData.Signature)

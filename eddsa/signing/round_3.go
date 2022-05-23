@@ -8,8 +8,9 @@ package signing
 
 import (
 	"crypto/sha512"
-	"math/big"
 	"strings"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/binance-chain/tss-lib/crypto/ed25519"
@@ -99,7 +100,7 @@ func (round *round3) Start() *tss.Error {
 		encodedPubKey = ed25519.ECPointToEncodedBytes(round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
 	} else if isSecp256k1Curve {
 		s := new([32]byte)
-		round.key.EDDSAPub.X().FillBytes(s[:])
+		round.key.EDDSAPub.X().Big().FillBytes(s[:])
 		encodedPubKey = s
 	}
 

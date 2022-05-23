@@ -7,11 +7,11 @@
 package resharing
 
 import (
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/pkg/errors"
 
-	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
@@ -40,7 +40,7 @@ func (round *round4) Start() *tss.Error {
 	newXi := big.NewInt(0)
 
 	// 2-8.
-	modQ := common.ModInt(round.Params().EC().Params().N)
+	modQ := int2.ModInt(big.Wrap(round.Params().EC().Params().N))
 	vjc := make([][]*crypto.ECPoint, len(round.OldParties().IDs()))
 	for j := 0; j <= len(vjc)-1; j++ { // P1..P_t+1. Ps are indexed from 0 here
 		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)

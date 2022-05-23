@@ -7,9 +7,10 @@
 package zkpmod_test
 
 import (
-	"math/big"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	. "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -50,7 +51,7 @@ func TestBadW(test *testing.T) {
 	ok := pr.Verify(N)
 	assert.False(test, ok, "proof with nil W must not verify")
 
-	pr.W = big.NewInt(-1)
+	pr.W = big.NewInt(0)
 	ok2 := pr.Verify(N)
 	assert.False(test, ok2, "proof must not verify")
 

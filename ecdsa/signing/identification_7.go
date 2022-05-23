@@ -8,10 +8,12 @@ package signing
 
 import (
 	"errors"
-	"math/big"
-	sync "sync"
+	"sync"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -31,7 +33,7 @@ func (round *identification7) Start() *tss.Error {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
-	modN := common.ModInt(round.EC().Params().N)
+	modN := int2.ModInt(big.Wrap(round.EC().Params().N))
 
 	// Fig 7. Output.2
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)

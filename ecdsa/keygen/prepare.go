@@ -8,11 +8,13 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
 	"runtime"
 	"time"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
@@ -66,10 +68,10 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 	lambdaN := new(big.Int).Div(phiN, gcd)
 	paiSK := &paillier.PrivateKey{PublicKey: *paiPK, LambdaN: lambdaN, PhiN: phiN}
 	NTildei := new(big.Int).Mul(P, Q)
-	modNTildeI := common.ModInt(NTildei)
+	modNTildeI := int2.ModInt(NTildei)
 
 	p, q := sgps[0].Prime(), sgps[1].Prime()
-	modPQ := common.ModInt(new(big.Int).Mul(p, q))
+	modPQ := int2.ModInt(new(big.Int).Mul(p, q))
 	f1 := common.GetRandomPositiveRelativelyPrimeInt(NTildei)
 	alpha := common.GetRandomPositiveRelativelyPrimeInt(NTildei)
 	beta := modPQ.Inverse(alpha)

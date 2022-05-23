@@ -8,9 +8,11 @@ package zkpprm
 
 import (
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 )
 
 const (
@@ -26,7 +28,7 @@ type (
 )
 
 func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
-	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
+	modN, modPhi := int2.ModInt(N), int2.ModInt(Phi)
 
 	// Fig 17.1
 	a := make([]*big.Int, Iterations)
@@ -42,14 +44,14 @@ func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
 	for i := range Z {
-		ei := big.NewInt(int64(e.Bit(i)))
+		ei := big.NewInt(uint64(e.Bit(i)))
 		Z[i] = modPhi.Add(a[i], modPhi.Mul(ei, lambda))
 	}
 	return &ProofPrm{A: A, Z: Z}, nil
 }
 
 func NewProofWithNonce(s, t, N, Phi, lambda, nonce *big.Int) (*ProofPrm, error) {
-	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
+	modN, modPhi := big.ModInt(N), big.ModInt(Phi)
 
 	// Fig 17.1
 	a := make([]*big.Int, Iterations)
@@ -65,7 +67,7 @@ func NewProofWithNonce(s, t, N, Phi, lambda, nonce *big.Int) (*ProofPrm, error) 
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
 	for i := range Z {
-		ei := big.NewInt(int64(e.Bit(i)))
+		ei := big.NewInt(uint64(e.Bit(i)))
 		Z[i] = modPhi.Add(a[i], modPhi.Mul(ei, lambda))
 	}
 	return &ProofPrm{A: A, Z: Z}, nil
@@ -95,12 +97,12 @@ func (pf *ProofPrm) Verify(s, t, N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() || !pf.ValidateANotOne() {
 		return false
 	}
-	modN := common.ModInt(N)
+	modN := int2.ModInt(N)
 	e := common.SHA512_256i(append([]*big.Int{s, t, N}, pf.A[:]...)...)
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {
-		ei := big.NewInt(int64(e.Bit(i)))
+		ei := big.NewInt(uint64(e.Bit(i)))
 		left := modN.Exp(t, pf.Z[i])
 		right := modN.Exp(s, ei)
 		right = modN.Mul(pf.A[i], right)
@@ -115,12 +117,12 @@ func (pf *ProofPrm) VerifyWithNonce(s, t, N, nonce *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() || !pf.ValidateANotOne() {
 		return false
 	}
-	modN := common.ModInt(N)
+	modN := big.ModInt(N)
 	e := common.SHA512_256i(append([]*big.Int{s, t, N, nonce}, pf.A[:]...)...)
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {
-		ei := big.NewInt(int64(e.Bit(i)))
+		ei := big.NewInt(uint64(e.Bit(i)))
 		left := modN.Exp(t, pf.Z[i])
 		right := modN.Exp(s, ei)
 		right = modN.Mul(pf.A[i], right)

@@ -9,11 +9,13 @@ package signing
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"sync/atomic"
 	"testing"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
 	"github.com/agl/ed25519/edwards25519"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
@@ -60,7 +62,7 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	updater := test.SharedPartyUpdater
 
@@ -128,8 +130,8 @@ signing:
 				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
 
 				sBytes := ed25519.CopyBytes(parties[0].data.Signature[32:64])
@@ -140,10 +142,10 @@ signing:
 					t.Errorf("new sig error %v", err.Error())
 					t.FailNow()
 				}
-				t.Logf("R: %s\n", common.FormatBigInt(newSig.R))
-				t.Logf("S: %s\n", common.FormatBigInt(newSig.S))
+				t.Logf("R: %s\n", common.FormatBigInt(big.Wrap(newSig.R)))
+				t.Logf("S: %s\n", common.FormatBigInt(big.Wrap(newSig.S)))
 
-				ok := edwards.Verify(&pk, msg.Bytes(), R, sEncodedBigInt)
+				ok := edwards.Verify(&pk, msg.Bytes(), R.Big(), sEncodedBigInt.Big())
 				if !assert.True(t, ok, "eddsa verify must pass") {
 					t.Error("eddsa verify must pass")
 					t.FailNow()
@@ -182,7 +184,7 @@ func TestE2EConcurrentS256Schnorr(t *testing.T) {
 
 	msg, _ := hex.DecodeString("304502210088BE0644191B935DB1CD786B43FF27798006578D8C908906B49E89") // big.NewInt(200).Bytes()
 	msgI := big.NewInt(0).SetBytes(msg)
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	// init the parties
@@ -230,7 +232,7 @@ signing:
 				t.Logf("Done. Received save data from %d participants", ended)
 				R := parties[0].temp.r
 
-				modN := common.ModInt(tss.S256().Params().N)
+				modN := int2.ModInt(big.Wrap(tss.S256().Params().N))
 
 				// BEGIN check s correctness
 				sumS := big.NewInt(0)

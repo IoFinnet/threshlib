@@ -7,9 +7,9 @@
 package zkpsch
 
 import (
-	"math/big"
 	"testing"
 
+	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +19,7 @@ import (
 )
 
 func TestSchnorrProof(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	uG := crypto.ScalarBaseMult(tss.EC(), u)
 
@@ -34,7 +34,7 @@ func TestSchnorrProof(t *testing.T) {
 }
 
 func TestSchnorrProofVerify(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	nonce := common.GetRandomPositiveInt(q)
@@ -47,7 +47,7 @@ func TestSchnorrProofVerify(t *testing.T) {
 }
 
 func TestSchnorrProofVerifyWithNonce(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	nonce := common.GetRandomPositiveInt(q)
@@ -80,7 +80,7 @@ func TestSchnorrProofVerifyWithNonceEdwards(t *testing.T) {
 }
 
 func TestSchnorrProofVerifyBadX(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	u2 := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
@@ -107,7 +107,7 @@ func TestZeros(t *testing.T) {
 }
 
 func TestBadVerify(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	nonce := common.GetRandomPositiveInt(q)
