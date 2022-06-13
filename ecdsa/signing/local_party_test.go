@@ -98,7 +98,11 @@ func TestE2EConcurrent(t *testing.T) {
 		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
+		P_, errP := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
+		if errP != nil {
+			t.Errorf("error %v", errP)
+			t.FailNow()
+		}
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {

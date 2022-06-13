@@ -152,9 +152,10 @@ func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
 			return err
 		}
 	}
-	common.Logger.Infof("party %s: %s round %d starting", p.Round().Params().PartyID(), task, 1)
+	roundNumber := round.RoundNumber()
+	common.Logger.Infof("party %s: %s round %d starting", p.Round().Params().PartyID(), task, roundNumber)
 	defer func() {
-		common.Logger.Debugf("party %s: %s round %d finished", p.Round().Params().PartyID(), task, 1)
+		common.Logger.Debugf("party %s: %s round %d finished", p.Round().Params().PartyID(), task, roundNumber)
 	}()
 	return p.Round().Start()
 }
@@ -203,7 +204,7 @@ func BaseUpdate2(p Party, msg ParsedMessage, task string) (ok bool, err *Error) 
 }
 
 // an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
-func BaseUpdate(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
+func BaseUpdate(p Party, msg ParsedMessage, task string, advanceCallback ...func(Party) (bool, *Error)) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
 		return false, err
@@ -226,7 +227,16 @@ func BaseUpdate(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 			return r(false, err)
 		}
 		if p.Round().CanProceed() {
-			if p.advance(); p.Round() != nil {
+			if len(advanceCallback) > 0 {
+				p.Unlock()
+				_, err2 := advanceCallback[0](p)
+				p.Lock()
+				if err2 != nil {
+					return r(false, err2)
+				}
+			}
+			p.advance()
+			if p.Round() != nil {
 				rndNum := p.Round().RoundNumber()
 				common.Logger.Infof("party %s: %s round %d WILL start", p.Round().Params().PartyID(), task, rndNum+1)
 				if err := p.Round().Start(); err != nil {
