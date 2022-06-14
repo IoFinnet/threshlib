@@ -9,7 +9,6 @@ package signing
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"math/big"
 	"runtime"
 	"strings"
 	"sync"
@@ -17,6 +16,9 @@ import (
 	"testing"
 	"time"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
@@ -48,7 +50,7 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 	keys []keygen.LocalPartySaveData, keyDerivationDelta *big.Int, outCh chan tss.Message,
 	endCh chan common.SignatureData, parties []*LocalParty,
 	errCh chan *tss.Error) (*big.Int, []*LocalParty, chan *tss.Error) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	// init the parties
 	msg := common.GetRandomPrimeInt(256)
@@ -86,7 +88,7 @@ func TestE2EConcurrent(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	dumpCh := make(chan tss.Message, len(signPIDs))
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
@@ -146,7 +148,7 @@ signing:
 				// r := parties[0].temp.Rx
 				// fmt.Printf("sign result: R(%s, %s), r=%s\n", R.X().String(), R.Y().String(), r.String())
 
-				modN := common.ModInt(tss.S256().Params().N)
+				modN := int2.ModInt(big.Wrap(tss.S256().Params().N))
 
 				// BEGIN check s correctness
 				sumS := big.NewInt(0)
@@ -160,10 +162,10 @@ signing:
 				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
-				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X(), sumS)
+				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X().Big(), sumS.Big())
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify
@@ -187,7 +189,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	chainCode := make([]byte, 32)
 	max32b := new(big.Int).Lsh(new(big.Int).SetUint64(1), 256)
 	max32b = new(big.Int).Sub(max32b, new(big.Int).SetUint64(1))
-	common.GetRandomPositiveInt(max32b).FillBytes(chainCode)
+	common.GetRandomPositiveInt(max32b).Big().FillBytes(chainCode)
 
 	il, extendedChildPk, errorDerivation := derivingPubkeyFromPath(keys[0].ECDSAPub, chainCode, []uint32{12, 209, 3}, btcec.S256())
 	assert.NoErrorf(t, errorDerivation, "there should not be an error deriving the child public key")
@@ -206,7 +208,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	// dumpCh := make(chan tss.Message, len(signPIDs))
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
@@ -258,7 +260,7 @@ signing:
 				// r := parties[0].temp.Rx
 				// fmt.Printf("sign result: R(%s, %s), r=%s\n", R.X().String(), R.Y().String(), r.String())
 
-				modN := common.ModInt(tss.S256().Params().N)
+				modN := int2.ModInt(big.Wrap(tss.S256().Params().N))
 
 				// BEGIN check s correctness
 				sumS := big.NewInt(0)
@@ -272,10 +274,10 @@ signing:
 				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
-				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X(), sumS)
+				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X().Big(), sumS.Big())
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify
@@ -341,13 +343,13 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 		}
 		partyMutex.RUnlock()
 		ec := tss.EC()
-		q := ec.Params().N
+		q := big.Wrap(ec.Params().N)
 		sk, pk := otherRoundCulprit.key.PaillierSK, &otherRoundCulprit.key.PaillierSK.PublicKey
 
 		fakeki := common.GetRandomPositiveInt(q)
 		fakeKi, fake𝜌i, _ := sk.EncryptAndReturnRandomness(fakeki)
 		fakeΔi := roundVictim.temp.Γ.ScalarMult(fakeki)
-		modN := common.ModInt(roundVictim.EC().Params().N)
+		modN := int2.ModInt(big.Wrap(roundVictim.EC().Params().N))
 		fake𝛿i := modN.Mul(fakeki, roundVictim.temp.𝛾i)
 
 		common.Logger.Debugf(" test - fake proof - i:%v, j: %v, PK: %v, K(C): %v, Γ(g): %v, NTildej(NCap): %v, "+
@@ -370,7 +372,6 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 		pMsg = tss.NewMessage(meta, r3msg.Content(), tss.NewMessageWrapper(meta, r3msg.Content(), roundVictim.temp.sessionId))
 	}
 
-	common.Logger.Debugf("updater party:%v, pMsg: %v", party, pMsg)
 	isVictim := partyMutex != nil // && len(msg.GetTo()) > 0 && msg.GetTo()[0] != nil && msg.GetTo()[0].Index == victimPartySimulatingAbort
 	if isVictim {
 		partyMutex.Lock()
@@ -401,7 +402,7 @@ func TestAbortIdentification(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 	updater := identifiedAbortUpdater
 
@@ -471,15 +472,15 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 	setUp("info")
 	var err error
 	ec := tss.S256()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 
-	modN := common.ModInt(ec.Params().N)
+	modN := int2.ModInt(big.Wrap(ec.Params().N))
 	var modMul = func(N, a, b *big.Int) *big.Int {
-		_N := common.ModInt(big.NewInt(0).Set(N))
+		_N := int2.ModInt(big.NewInt(0).Set(N))
 		return _N.Mul(a, b)
 	}
 	var modQ3Mul = func(a, b *big.Int) *big.Int {
-		q3 := common.ModInt(new(big.Int).Mul(q, new(big.Int).Mul(q, q)))
+		q3 := int2.ModInt(new(big.Int).Mul(q, new(big.Int).Mul(q, q)))
 		return q3.Mul(a, b)
 	}
 	var q3Add = func(a, b *big.Int) *big.Int {
@@ -514,7 +515,7 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 		sk[i], pk[i] = keys[i].PaillierSK, &keys[i].PaillierSK.PublicKey
 
 		NCap[i], s[i], t[i] = keys[i].NTildei, keys[i].H1i, keys[i].H2i
-		k[i] = common.GetRandomPositiveInt(ec.Params().N)
+		k[i] = common.GetRandomPositiveInt(big.Wrap(ec.Params().N))
 		K[i], 𝜌[i], err = sk[i].EncryptAndReturnRandomness(k[i])
 		𝛾[i] = common.GetRandomPositiveInt(q)
 		Γ[i] = crypto.ScalarBaseMult(ec, 𝛾[i])
@@ -659,7 +660,7 @@ func TestTooManyParties(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(MaxParties + 1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	var err error

@@ -8,9 +8,11 @@ package zkpprm
 
 import (
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 )
 
 const (
@@ -26,7 +28,7 @@ type (
 )
 
 func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
-	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
+	modN, modPhi := int2.ModInt(N), int2.ModInt(Phi)
 
 	// Fig 17.1
 	a := make([]*big.Int, Iterations)
@@ -42,7 +44,30 @@ func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
 	for i := range Z {
-		ei := big.NewInt(int64(e.Bit(i)))
+		ei := big.NewInt(uint64(e.Bit(i)))
+		Z[i] = modPhi.Add(a[i], modPhi.Mul(ei, lambda))
+	}
+	return &ProofPrm{A: A, Z: Z}, nil
+}
+
+func NewProofWithNonce(s, t, N, Phi, lambda, nonce *big.Int) (*ProofPrm, error) {
+	modN, modPhi := big.ModInt(N), big.ModInt(Phi)
+
+	// Fig 17.1
+	a := make([]*big.Int, Iterations)
+	A := [Iterations]*big.Int{}
+	for i := range A {
+		a[i] = common.GetRandomPositiveInt(Phi)
+		A[i] = modN.Exp(t, a[i])
+	}
+
+	// Fig 17.2
+	e := common.SHA512_256i(append([]*big.Int{s, t, N, nonce}, A[:]...)...)
+
+	// Fig 17.3
+	Z := [Iterations]*big.Int{}
+	for i := range Z {
+		ei := big.NewInt(uint64(e.Bit(i)))
 		Z[i] = modPhi.Add(a[i], modPhi.Mul(ei, lambda))
 	}
 	return &ProofPrm{A: A, Z: Z}, nil
@@ -69,15 +94,35 @@ func NewProofFromBytes(bzs [][]byte) (*ProofPrm, error) {
 }
 
 func (pf *ProofPrm) Verify(s, t, N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() {
+	if pf == nil || !pf.ValidateBasic() || !pf.ValidateANotOne() {
 		return false
 	}
-	modN := common.ModInt(N)
+	modN := int2.ModInt(N)
 	e := common.SHA512_256i(append([]*big.Int{s, t, N}, pf.A[:]...)...)
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {
-		ei := big.NewInt(int64(e.Bit(i)))
+		ei := big.NewInt(uint64(e.Bit(i)))
+		left := modN.Exp(t, pf.Z[i])
+		right := modN.Exp(s, ei)
+		right = modN.Mul(pf.A[i], right)
+		if left.Cmp(right) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (pf *ProofPrm) VerifyWithNonce(s, t, N, nonce *big.Int) bool {
+	if pf == nil || !pf.ValidateBasic() || !pf.ValidateANotOne() {
+		return false
+	}
+	modN := big.ModInt(N)
+	e := common.SHA512_256i(append([]*big.Int{s, t, N, nonce}, pf.A[:]...)...)
+
+	// Fig 17. Verification
+	for i := 0; i < Iterations; i++ {
+		ei := big.NewInt(uint64(e.Bit(i)))
 		left := modN.Exp(t, pf.Z[i])
 		right := modN.Exp(s, ei)
 		right = modN.Mul(pf.A[i], right)
@@ -102,6 +147,16 @@ func (pf *ProofPrm) ValidateBasic() bool {
 	return true
 }
 
+func (pf *ProofPrm) ValidateANotOne() bool {
+	one := big.NewInt(1)
+	for i := range pf.A {
+		if pf.A[i] == nil || one.Cmp(pf.A[i]) == 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (pf *ProofPrm) Bytes() [ProofPrmBytesParts][]byte {
 	bzs := [ProofPrmBytesParts][]byte{}
 	for i := range pf.A {
@@ -111,4 +166,21 @@ func (pf *ProofPrm) Bytes() [ProofPrmBytesParts][]byte {
 		bzs[i+Iterations] = pf.Z[i].Bytes()
 	}
 	return bzs
+}
+
+func (pf *ProofPrm) ToIntArray() []*big.Int {
+	array := make([]*big.Int, len(pf.A)+len(pf.Z))
+	for k, a := range pf.A {
+		array[k] = a
+	}
+	lA := len(pf.A)
+	for k, z := range pf.Z {
+		array[k+lA] = z
+	}
+	return array
+}
+
+func FormatProofPrm(proof *ProofPrm) string {
+	a := proof.ToIntArray()
+	return "(" + common.FormatBigInt(a[0]) + "..." + common.FormatBigInt(a[len(a)-1]) + ")"
 }

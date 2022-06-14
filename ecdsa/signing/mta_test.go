@@ -7,10 +7,11 @@
 package signing
 
 import (
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
 
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
 	"github.com/stretchr/testify/assert"
 
@@ -28,7 +29,7 @@ const (
 
 func TestAffg(test *testing.T) {
 	ec := tss.EC()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	// q3 := new(big.Int).Mul(q, q)
 	// q3 = new(big.Int).Mul(q, q3)
 	// q6 := new(big.Int).Mul(q3, q3)
@@ -56,7 +57,7 @@ func TestAffg(test *testing.T) {
 	assert.NoError(test, err)
 	betai := MtaOut.Beta
 
-	modN := common.ModInt(ec.Params().N)
+	modN := int2.ModInt(big.Wrap(ec.Params().N))
 	lhs := modN.Add(alphaj, betai)
 	rhs := modN.Mul(kj, gammai)
 	test.Log(lhs, rhs)
@@ -67,9 +68,9 @@ func TestAffg(test *testing.T) {
 
 func TestDec(test *testing.T) {
 	ec := tss.EC()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, new(big.Int).Mul(q, q))
-	modN := common.ModInt(ec.Params().N)
+	modN := int2.ModInt(big.Wrap(ec.Params().N))
 
 	_, pki, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(test, err)

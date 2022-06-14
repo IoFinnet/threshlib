@@ -10,7 +10,7 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/gob"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"

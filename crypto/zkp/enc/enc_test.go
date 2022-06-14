@@ -7,7 +7,7 @@
 package zkpenc
 
 import (
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
 
@@ -26,7 +26,7 @@ const (
 
 func TestEnc(test *testing.T) {
 	ec := tss.EC()
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 
 	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
 	assert.NoError(test, err)

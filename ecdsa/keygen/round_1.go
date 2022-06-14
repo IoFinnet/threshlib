@@ -8,7 +8,8 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -16,6 +17,7 @@ import (
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 	"github.com/binance-chain/tss-lib/tss"
+	errors2 "github.com/pkg/errors"
 )
 
 var (
@@ -39,9 +41,12 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 	round.ok[i] = true
 
+	𝜅 := uint(256 - 1)
+	twoTo255 := new(big.Int).Lsh(big.NewInt(1), 𝜅)
+
 	// Fig 5. Round 1. private key part
-	ridi := common.GetRandomPositiveInt(round.EC().Params().N)
-	ui := common.GetRandomPositiveInt(round.Params().EC().Params().N)
+	ridi := common.GetRandomPositiveInt(twoTo255)
+	ui := common.GetRandomPositiveInt(twoTo255)
 
 	// Fig 5. Round 1. pub key part, vss shares
 	ids := round.Parties().IDs().Keys()
@@ -50,8 +55,8 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	xi := new(big.Int).Set(shares[i].Share)
-	Xi := crypto.ScalarBaseMult(round.EC(), xi)
-	Ai, τ, err := zkpsch.NewProofCommitment(Xi, xi)
+	XiKeygen := crypto.ScalarBaseMult(round.EC(), xi)
+	AiKeygen, τKeygen, err := zkpsch.NewProofCommitment(XiKeygen, xi)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -66,36 +71,97 @@ func (round *round1) Start() *tss.Error {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
 	}
+	Ni, si, ti := preParams.NTildei, preParams.H1i, preParams.H2i
+	sid := common.SHA512_256i(append(ids, big.Wrap(tss.EC().Params().N),
+		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
+		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 
-	P2, Q2 := new(big.Int).Lsh(preParams.P, 1), new(big.Int).Lsh(preParams.Q, 1)
-	𝜑 := new(big.Int).Mul(P2, Q2)
-	𝜓i, err := zkpprm.NewProof(preParams.H1i, preParams.H2i, preParams.NTildei, 𝜑, preParams.Beta)
+	𝜑Nᵢ := preParams.PaillierSK.PhiN
+	𝜆 := preParams.Beta
+	yi := common.GetRandomPositiveInt(big.Wrap(round.EC().Params().N))
+	Yi := crypto.ScalarBaseMult(round.EC(), yi)
+
+	Bᵢ, 𝜏KeyRefresh, err := zkpsch.NewProofCommitment(Yi, yi) // Bᵢ, 𝜏
+	if err != nil {
+		return round.WrapError(errors.New("zkpsch failed"), Pi)
+	}
+	xⁿᵢ := vss.CreateZeroSumRandomArray(big.Wrap(round.EC().Params().N), len(round.Parties().IDs()))
+	XᵢKeyRefresh := make([]*crypto.ECPoint, len(round.Parties().IDs()))
+	𝜌ᵢ := common.GetRandomPositiveInt(twoTo255)
+
+	for j := 0; j < len(round.Parties().IDs()); j++ {
+		XᵢKeyRefresh[j] = crypto.ScalarBaseMult(round.EC(), xⁿᵢ[j])
+	}
+
+	XiPoints, err := crypto.FlattenECPoints(XᵢKeyRefresh)
+	if err != nil {
+		return round.WrapError(errors2.Wrapf(err, "flattening error"))
+	}
+
+	ssid := common.SHA512_256i([]*big.Int{sid /* round.temp.rid,*/, Ni, si, ti, round.temp.sessionId}...)
+	nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(i)))
+	𝜓ᵢ, err := zkpprm.NewProofWithNonce(si, ti, Ni, 𝜑Nᵢ, 𝜆, nonce)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	listToHash, err := crypto.FlattenECPoints(vs)
+
+	/* common.Logger.Debugf("party %v r1 𝜓ᵢ proof[%v]: %v, Ni: %v, si: %v, ti: %v, nonce: %v"+
+		", ssid: %v, sid: %v, sessionId: %v", round.PartyID(),
+		i, zkpprm.FormatProofPrm(𝜓ᵢ), common.FormatBigInt(Ni), common.FormatBigInt(si), common.FormatBigInt(ti),
+		common.FormatBigInt(nonce), common.FormatBigInt(ssid), common.FormatBigInt(sid),
+		common.FormatBigInt(round.temp.sessionId),
+	) */
+
+	AᵢKeyrefresh := make([]*crypto.ECPoint, len(round.Parties().IDs()))
+	𝜏js := make([]*big.Int, len(round.Parties().IDs()))
+	for j := 0; j < len(round.Parties().IDs()); j++ {
+		Ajᵢ, 𝜏ⱼ, err2 := zkpsch.NewProofCommitment(XᵢKeyRefresh[j], xⁿᵢ[j])
+		if err2 != nil {
+			return round.WrapError(errors2.Wrapf(err, "zkpsch error"))
+		}
+		if err != nil {
+			return round.WrapError(errors2.Wrapf(err, "point addition error"))
+		}
+		AᵢKeyrefresh[j] = Ajᵢ
+		𝜏js[j] = 𝜏ⱼ
+	}
+	AiPoints, err := crypto.FlattenECPoints(AᵢKeyrefresh)
 	if err != nil {
-		return round.WrapError(err, Pi)
+		return round.WrapError(errors2.Wrapf(err, "flattening error"))
 	}
-	listToHash = append(listToHash, preParams.PaillierSK.PublicKey.N, ridi, Xi.X(), Xi.Y(), Ai.X(), Ai.Y(), preParams.NTildei, preParams.H1i, preParams.H2i)
-	for _, a := range 𝜓i.A {
-		listToHash = append(listToHash, a)
+
+	keygenListToHash, errF := crypto.FlattenECPoints(vs)
+	if errF != nil {
+		return round.WrapError(errF, Pi)
 	}
-	for _, z := range 𝜓i.Z {
-		listToHash = append(listToHash, z)
-	}
-	VHash := common.SHA512_256i(listToHash...)
+	keygenListToHash = append(keygenListToHash, []*big.Int{sid, big.NewInt(uint64(i)), ridi, XiKeygen.X(), XiKeygen.Y(), AiKeygen.X(), AiKeygen.Y(), ui}...)
+
+	𝜓array := 𝜓ᵢ.ToIntArray()
+	keyRefreshListToHash := append([]*big.Int{ssid, big.NewInt(uint64(i)), Yi.X(), Yi.Y(),
+		Bᵢ.X(), Bᵢ.Y(), Ni, si, ti, 𝜌ᵢ, ui}, 𝜓array...)
+	keyRefreshListToHash = append(keyRefreshListToHash, XiPoints...)
+	keyRefreshListToHash = append(keyRefreshListToHash, AiPoints...)
+
+	ViKeygen := common.SHA512_256i(keygenListToHash...)
+	ViKeyRefresh := common.SHA512_256i(keyRefreshListToHash...)
 	{
-		msg := NewKGRound1Message(round.temp.sessionId, round.PartyID(), VHash)
+		msg := NewKGRound1Message(round.temp.sessionId, round.PartyID(), sid, ViKeygen,
+			// refresh:
+			ssid,
+			ViKeyRefresh)
 		round.out <- msg
 	}
 
-	round.temp.𝜓i = 𝜓i
+	round.temp.𝜓ᵢ = 𝜓ᵢ
 	round.temp.vs = vs
 	round.temp.ridi = ridi
+	round.temp.sid = sid
 	round.temp.ui = ui
-	round.temp.Ai = Ai
-	round.temp.τ = τ
+	round.temp.Yᵢ, round.temp.yᵢ = Yi, yi
+	round.temp.AiKeygen = AiKeygen
+	round.temp.τKeygen = τKeygen
+	round.temp.xⁿᵢ = xⁿᵢ
+	round.temp.𝜏KeyRefresh = 𝜏KeyRefresh
 	round.save.Ks = ids
 	round.save.LocalPreParams = *preParams
 	round.save.NTildej[i] = preParams.NTildei
@@ -104,6 +170,13 @@ func (round *round1) Start() *tss.Error {
 	round.temp.shares = shares
 	round.save.PaillierSK = preParams.PaillierSK
 	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
+
+	round.temp.𝜌ᵢ = 𝜌ᵢ
+	round.temp.𝜏js = 𝜏js
+	round.temp.ssid = ssid
+	round.temp.Bᵢ = Bᵢ
+	round.temp.XiRefreshList = XᵢKeyRefresh
+	round.temp.AiRefreshList = AᵢKeyrefresh
 
 	return nil
 }
@@ -116,7 +189,7 @@ func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round1) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r1msgVHashs {
+	for j, msg := range round.temp.rref1msgSsid {
 		if round.ok[j] {
 			continue
 		}

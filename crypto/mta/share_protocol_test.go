@@ -7,9 +7,10 @@
 package mta
 
 import (
-	"math/big"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/stretchr/testify/assert"
 
@@ -26,7 +27,7 @@ const (
 )
 
 func TestShareProtocol(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 
 	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(t, err)
@@ -58,14 +59,16 @@ func TestShareProtocol(t *testing.T) {
 }
 
 func TestShareProtocolWC(t *testing.T) {
-	q := tss.EC().Params().N
+	tss.RegisterCurve("secp256k1", tss.EC())
+	q := big.Wrap(tss.EC().Params().N)
 
 	sk, pk, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(t, err)
 
 	a := common.GetRandomPositiveInt(q)
 	b := common.GetRandomPositiveInt(q)
-	gBX, gBY := tss.EC().ScalarBaseMult(b.Bytes())
+	P := crypto.ScalarBaseMult(tss.S256(), b)
+	gBX, gBY := P.X(), P.Y()
 
 	NTildei, h1i, h2i, err := keygen.ConstantTestNTildeH1H2(0)
 	assert.NoError(t, err)

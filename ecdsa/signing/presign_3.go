@@ -8,10 +8,12 @@ package signing
 
 import (
 	"errors"
-	"math/big"
 	"sync"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	zkpaffg "github.com/binance-chain/tss-lib/crypto/zkp/affg"
 	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
@@ -36,7 +38,7 @@ func (round *presign3) Start() *tss.Error {
 	round.ok[i] = true
 
 	// Fig 7. Round 3.1 verify proofs received and decrypt alpha share of MtA output
-	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
+	g := crypto.NewECPointNoCurveCheck(round.EC(), big.Wrap(round.EC().Params().Gx), big.Wrap(round.EC().Params().Gy))
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
@@ -120,7 +122,7 @@ func (round *presign3) Start() *tss.Error {
 	}
 	Δi := Γ.ScalarMult(round.temp.ki)
 
-	modN := common.ModInt(round.EC().Params().N)
+	modN := int2.ModInt(big.Wrap(round.EC().Params().N))
 	𝛿i := modN.Mul(round.temp.ki, round.temp.𝛾i)
 	𝜒i := modN.Mul(round.temp.ki, round.temp.w)
 	for j := range round.Parties().IDs() {
@@ -149,11 +151,11 @@ func (round *presign3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			ψDoublePrimeji, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, Δi, Γ, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.ki, round.temp.𝜌i)
+			ψʺji, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, Δi, Γ, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.ki, round.temp.𝜌i)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proof generation failed"))
 			}
-			ProofOut <- ψDoublePrimeji
+			ProofOut <- ψʺji
 		}(j, Pj)
 
 		ψDoublePrimeji := <-ProofOut

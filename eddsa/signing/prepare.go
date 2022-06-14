@@ -9,14 +9,14 @@ package signing
 import (
 	"crypto/elliptic"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
-	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 )
 
 // PrepareForSigning(), Fig. 7
 func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int) (wi *big.Int) {
-	modQ := common.ModInt(ec.Params().N)
+	modQ := int2.ModInt(big.Wrap(ec.Params().N))
 	if len(ks) != pax {
 		panic(fmt.Errorf("PrepareForSigning: len(ks) != pax (%d != %d)", len(ks), pax))
 	}

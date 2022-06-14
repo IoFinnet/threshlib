@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
@@ -38,7 +39,7 @@ func NewProof(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKe
 
 	NSquared := pk0.NSquare()
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	q6 := new(big.Int).Mul(q3, q3)
@@ -57,16 +58,16 @@ func NewProof(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKe
 	mu := common.GetRandomPositiveInt(qNCap)
 
 	// Fig 15.1 compute
-	modNSquared := common.ModInt(NSquared)
+	modNSquared := int2.ModInt(NSquared)
 	A := modNSquared.Exp(C, alpha)
 	A = modNSquared.Mul(A, modNSquared.Exp(pk0.Gamma(), beta))
 	A = modNSquared.Mul(A, modNSquared.Exp(r, pk0.N))
-	alphaModQ := new(big.Int).Mod(alpha, ec.Params().N)
+	alphaModQ := new(big.Int).Mod(alpha, big.Wrap(ec.Params().N))
 	Bx := crypto.ScalarBaseMult(ec, alphaModQ)
-	modN1Squared := common.ModInt(pk1.NSquare())
+	modN1Squared := int2.ModInt(pk1.NSquare())
 	By := modN1Squared.Mul(modN1Squared.Exp(pk1.Gamma(), beta), modN1Squared.Exp(ry, pk1.N))
 
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 	E := modNCap.Exp(s, alpha)
 	E = modNCap.Mul(E, modNCap.Exp(t, gamma))
 	S := modNCap.Exp(s, x)
@@ -92,10 +93,10 @@ func NewProof(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKe
 	z3 = z3.Add(z3, gamma)
 	z4 := new(big.Int).Mul(e, mu)
 	z4 = z4.Add(z4, delta)
-	modN := common.ModInt(pk0.N)
+	modN := int2.ModInt(pk0.N)
 	w := modN.Exp(rho, e)
 	w = modN.Mul(w, r)
-	modN1 := common.ModInt(pk1.N)
+	modN1 := int2.ModInt(pk1.N)
 	wy := modN1.Exp(rhoy, e)
 	wy = modN1.Mul(wy, ry)
 
@@ -138,7 +139,7 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	q6 := new(big.Int).Mul(q3, q3)
@@ -161,7 +162,7 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 	// Fig 15. Equality Check
 	var left, right *big.Int
 	{
-		modNSquared := common.ModInt(pk0.NSquare())
+		modNSquared := int2.ModInt(pk0.NSquare())
 
 		CEXPz1 := modNSquared.Exp(C, pf.Z1)
 		Np1EXPz2 := modNSquared.Exp(pk0.Gamma(), pf.Z2)
@@ -177,7 +178,7 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 	}
 
 	{
-		z1ModQ := new(big.Int).Mod(pf.Z1, ec.Params().N)
+		z1ModQ := new(big.Int).Mod(pf.Z1, big.Wrap(ec.Params().N))
 		gEXPz1 := crypto.ScalarBaseMult(ec, z1ModQ)
 		BxXEXPe, err := X.ScalarMult(e).Add(pf.Bx)
 		if err != nil || !gEXPz1.Equals(BxXEXPe) {
@@ -186,7 +187,7 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 	}
 
 	{
-		modN1Squared := common.ModInt(pk1.NSquare())
+		modN1Squared := int2.ModInt(pk1.NSquare())
 
 		N1p1EXPz2 := modN1Squared.Exp(pk1.Gamma(), pf.Z2)
 		wyEXPN := modN1Squared.Exp(pf.Wy, pk1.N)
@@ -200,7 +201,7 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 	}
 
 	{
-		modNCap := common.ModInt(NCap)
+		modNCap := int2.ModInt(NCap)
 		{
 			sExpz1 := modNCap.Exp(s, pf.Z1)
 			tExpz3 := modNCap.Exp(t, pf.Z3)

@@ -8,7 +8,7 @@ package tss
 
 import (
 	"errors"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"

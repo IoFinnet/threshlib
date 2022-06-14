@@ -9,9 +9,10 @@ package mta
 import (
 	"crypto/elliptic"
 	"errors"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
@@ -34,7 +35,7 @@ func BobMid(
 		err = errors.New("RangeProofAlice.Verify() returned false")
 		return
 	}
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	betaPrm = common.GetRandomPositiveInt(pkA.N)
 	cBetaPrm, cRand, err := pkA.EncryptAndReturnRandomness(betaPrm)
 	if err != nil {
@@ -46,7 +47,7 @@ func BobMid(
 	if cB, err = pkA.HomoAdd(cB, cBetaPrm); err != nil {
 		return
 	}
-	beta = common.ModInt(q).Sub(zero, betaPrm)
+	beta = int2.ModInt(q).Sub(zero, betaPrm)
 	piB, err = ProveBob(ec, pkA, NTildeA, h1A, h2A, cA, cB, b, betaPrm, cRand)
 	return
 }
@@ -93,7 +94,7 @@ func AliceEnd(
 	if alphaIJ, err = sk.Decrypt(cB); err != nil {
 		return
 	}
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	alphaIJ.Mod(alphaIJ, q)
 	return
 }
@@ -113,7 +114,7 @@ func AliceEndWC(
 	if muIJRec, muIJRand, err = sk.DecryptAndRecoverRandomness(cB); err != nil {
 		return
 	}
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	muIJ = new(big.Int).Mod(muIJRec, q)
 	return
 }

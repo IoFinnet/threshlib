@@ -8,9 +8,10 @@ package signing
 
 import (
 	"crypto/elliptic"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	zkpaffg "github.com/binance-chain/tss-lib/crypto/zkp/affg"
@@ -27,7 +28,7 @@ type MtAOut struct {
 }
 
 func NewMtA(ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey, pki *paillier.PublicKey, NCap, s, t *big.Int) (*MtAOut, error) {
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 
@@ -51,8 +52,8 @@ func NewMtA(ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.E
 		return nil, err
 	}
 
-	// q := ec.Params().N
-	beta := common.ModInt(q).Sub(zero, betaNeg)
+	// q := big.Wrap(ec.Params().N)
+	beta := int2.ModInt(q).Sub(zero, betaNeg)
 
 	Psiji, err := zkpaffg.NewProof(ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
 	if err != nil {

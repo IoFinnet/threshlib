@@ -10,9 +10,11 @@ package zkp
 
 import (
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	cmts "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/tss"
@@ -47,7 +49,7 @@ var (
 )
 
 func NewPDLwSlackProof(wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackProof {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 	qNTilde := new(big.Int).Mul(q, st.NTilde)
@@ -77,7 +79,7 @@ func NewPDLwSlackProof(wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackPro
 }
 
 func (pf PDLwSlackProof) Verify(st PDLwSlackStatement) bool {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 
 	e := common.SHA512_256i(st.G.X(), st.G.Y(), st.Q.X(), st.Q.Y(), st.CipherText, pf.Z, pf.U1.X(), pf.U1.Y(), pf.U2, pf.U3)
 	gS1 := st.G.ScalarMult(pf.S1)
@@ -156,7 +158,7 @@ func UnmarshalPDLwSlackProof(bzs [][]byte) (*PDLwSlackProof, error) {
 
 // https://github.com/KZen-networks/multi-party-ecdsa/blob/gg20/src/utilities/zk_pdl_with_slack/mod.rs#L175
 func commitmentUnknownOrder(h1, h2, NTilde, x, r *big.Int) (com *big.Int) {
-	modNTilde := common.ModInt(NTilde)
+	modNTilde := int2.ModInt(NTilde)
 	h1X := modNTilde.Exp(h1, x)
 	h2R := modNTilde.Exp(h2, r)
 	com = modNTilde.Mul(h1X, h2R)

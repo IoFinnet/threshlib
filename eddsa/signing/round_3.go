@@ -8,10 +8,12 @@ package signing
 
 import (
 	"crypto/sha512"
-	"math/big"
 	"strings"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
 	"github.com/agl/ed25519/edwards25519"
+	"github.com/binance-chain/tss-lib/crypto/ed25519"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
@@ -39,7 +41,7 @@ func (round *round3) Start() *tss.Error {
 	_, isTwistedEdwardsCurve := round.Params().EC().(*edwards.TwistedEdwardsCurve)
 	isSecp256k1Curve := strings.Compare("secp256k1", round.Params().EC().Params().Name) == 0
 	if isTwistedEdwardsCurve {
-		riBytes = bigIntToEncodedBytes(round.temp.ri)
+		riBytes = ed25519.BigIntToEncodedBytes(round.temp.ri)
 		edwards25519.GeScalarMultBase(&Redwards, riBytes)
 	} else if isSecp256k1Curve {
 		Rsecp256k1 = crypto.ScalarBaseMult(round.Params().EC(), round.temp.ri)
@@ -80,8 +82,8 @@ func (round *round3) Start() *tss.Error {
 		}
 
 		if isTwistedEdwardsCurve {
-			extendedRj := ecPointToExtendedElement(round.Params().EC(), Rj.X(), Rj.Y())
-			Redwards = addExtendedElements(Redwards, extendedRj)
+			extendedRj := ed25519.ECPointToExtendedElement(round.Params().EC(), Rj.X(), Rj.Y())
+			Redwards = ed25519.AddExtendedElements(Redwards, extendedRj)
 		} else if isSecp256k1Curve {
 			Rsecp256k1, err = Rsecp256k1.Add(Rj)
 			if err != nil {
@@ -95,10 +97,10 @@ func (round *round3) Start() *tss.Error {
 
 	if isTwistedEdwardsCurve {
 		Redwards.ToBytes(&encodedR)
-		encodedPubKey = ecPointToEncodedBytes(round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
+		encodedPubKey = ed25519.ECPointToEncodedBytes(round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
 	} else if isSecp256k1Curve {
 		s := new([32]byte)
-		round.key.EDDSAPub.X().FillBytes(s[:])
+		round.key.EDDSAPub.X().Big().FillBytes(s[:])
 		encodedPubKey = s
 	}
 
@@ -141,7 +143,7 @@ func (round *round3) Start() *tss.Error {
 	var localS [32]byte
 	var si *big.Int
 	if isTwistedEdwardsCurve {
-		edwards25519.ScMulAdd(&localS, &lambdaReduced, bigIntToEncodedBytes(round.temp.wi), riBytes)
+		edwards25519.ScMulAdd(&localS, &lambdaReduced, ed25519.BigIntToEncodedBytes(round.temp.wi), riBytes)
 		si = encodedBytesToBigInt(&localS)
 	} else if isSecp256k1Curve {
 		𝜆wi := big.NewInt(0).Mul(big.NewInt(0).SetBytes(𝜆.CloneBytes()), round.temp.wi)

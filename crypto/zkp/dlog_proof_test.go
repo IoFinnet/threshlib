@@ -9,6 +9,7 @@ package zkp_test
 import (
 	"testing"
 
+	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -18,7 +19,7 @@ import (
 )
 
 func TestSchnorrProof(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	uG := crypto.ScalarBaseMult(tss.EC(), u)
 	proof, _ := NewDLogProof(u, uG)
@@ -30,7 +31,7 @@ func TestSchnorrProof(t *testing.T) {
 }
 
 func TestSchnorrProofVerify(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 
@@ -41,7 +42,7 @@ func TestSchnorrProofVerify(t *testing.T) {
 }
 
 func TestSchnorrProofVerifyBadX(t *testing.T) {
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	u2 := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)

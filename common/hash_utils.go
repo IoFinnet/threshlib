@@ -7,7 +7,7 @@
 package common
 
 import (
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 )
 
 // RejectionSample implements the rejection sampling logic for converting a

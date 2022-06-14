@@ -8,9 +8,10 @@ package zkp
 
 import (
 	"errors"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -29,8 +30,8 @@ func NewDLogProof(x *big.Int, X *crypto.ECPoint) (*DLogProof, error) {
 		return nil, errors.New("NewDLogProof received nil or invalid value(s)")
 	}
 	ecParams := tss.EC().Params()
-	q := ecParams.N
-	g := crypto.NewECPointNoCurveCheck(tss.EC(), ecParams.Gx, ecParams.Gy) // already on the curve.
+	q := big.Wrap(ecParams.N)
+	g := crypto.NewECPointNoCurveCheck(tss.EC(), big.Wrap(ecParams.Gx), big.Wrap(ecParams.Gy)) // already on the curve.
 
 	a := common.GetRandomPositiveInt(q)
 	alpha := crypto.ScalarBaseMult(tss.EC(), a)
@@ -41,7 +42,7 @@ func NewDLogProof(x *big.Int, X *crypto.ECPoint) (*DLogProof, error) {
 		c = common.RejectionSample(q, cHash)
 	}
 	t := new(big.Int).Mul(c, x)
-	t = common.ModInt(q).Add(a, t)
+	t = int2.ModInt(q).Add(a, t)
 
 	return &DLogProof{Alpha: alpha, T: t}, nil
 }
@@ -52,8 +53,8 @@ func (pf *DLogProof) Verify(X *crypto.ECPoint) bool {
 		return false
 	}
 	ecParams := tss.EC().Params()
-	q := ecParams.N
-	g := crypto.NewECPointNoCurveCheck(tss.EC(), ecParams.Gx, ecParams.Gy)
+	q := big.Wrap(ecParams.N)
+	g := crypto.NewECPointNoCurveCheck(tss.EC(), big.Wrap(ecParams.Gx), big.Wrap(ecParams.Gy))
 
 	var c *big.Int
 	{

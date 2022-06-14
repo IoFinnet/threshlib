@@ -7,9 +7,11 @@
 package paillier_test
 
 import (
-	"math/big"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
+	"github.com/ipfs/go-log"
 
 	"github.com/stretchr/testify/assert"
 
@@ -37,13 +39,16 @@ func setUp(t *testing.T) {
 	var err error
 	privateKey, publicKey, err = GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(t, err)
+	if err = log.SetLogLevel("tss-lib", "debug"); err != nil {
+		panic(err)
+	}
 }
 
 func TestGenerateKeyPair(t *testing.T) {
 	setUp(t)
 	assert.NotZero(t, publicKey)
 	assert.NotZero(t, privateKey)
-	t.Log(privateKey)
+	// t.Log(privateKey)
 }
 
 func TestEncrypt(t *testing.T) {
@@ -140,7 +145,7 @@ func TestHomoMul(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 3 * 6 = 18
-	exp := int64(18)
+	exp := uint64(18)
 	assert.Equal(t, 0, multiple.Cmp(big.NewInt(exp)))
 }
 
@@ -155,30 +160,29 @@ func TestHomoAdd(t *testing.T) {
 	ciphered, _ := publicKey.HomoAdd(one, two)
 
 	plain, _ := privateKey.Decrypt(ciphered)
-
-	assert.Equal(t, new(big.Int).Add(num1, num2), plain)
+	assert.Equal(t, 0, plain.Cmp(new(big.Int).Add(num1, num2)))
 }
 
 func TestProofVerify(t *testing.T) {
 	setUp(t)
-	ki := common.MustGetRandomInt(256)                     // index
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N) // ECDSA private
-	yX, yY := tss.EC().ScalarBaseMult(ui.Bytes())          // ECDSA public
-	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
-	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
+	ki := common.MustGetRandomInt(256)                               // index
+	ui := common.GetRandomPositiveInt(big.Wrap(tss.EC().Params().N)) // ECDSA private
+	y := crypto.ScalarBaseMult(tss.EC(), ui)                         // ECDSA public
+	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), y.X(), y.Y()))
+	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), y.X(), y.Y()))
 	assert.NoError(t, err)
 	assert.True(t, res, "proof verify result must be true")
 }
 
 func TestProofVerifyFail(t *testing.T) {
 	setUp(t)
-	ki := common.MustGetRandomInt(256)                     // index
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N) // ECDSA private
-	yX, yY := tss.EC().ScalarBaseMult(ui.Bytes())          // ECDSA public
-	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
+	ki := common.MustGetRandomInt(256)                               // index
+	ui := common.GetRandomPositiveInt(big.Wrap(tss.EC().Params().N)) // ECDSA private
+	y := crypto.ScalarBaseMult(tss.EC(), ui)                         // ECDSA public
+	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), y.X(), y.Y()))
 	last := proof[len(proof)-1]
 	last.Sub(last, big.NewInt(1))
-	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
+	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), y.X(), y.Y()))
 	assert.NoError(t, err)
 	assert.False(t, res, "proof verify result must be true")
 }

@@ -9,10 +9,11 @@ package resharing_test
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"math/big"
 	"runtime"
 	"sync/atomic"
 	"testing"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,7 @@ func TestE2EConcurrent(t *testing.T) {
 	errCh := make(chan *tss.Error, bothCommitteesPax)
 	outCh := make(chan tss.Message, bothCommitteesPax)
 	endCh := make(chan keygen.LocalPartySaveData, bothCommitteesPax)
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	updater := test.SharedPartyUpdater
@@ -220,12 +221,12 @@ signing:
 				pkX, pkY := signKeys[0].ECDSAPub.X(), signKeys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.S256(),
-					X:     pkX,
-					Y:     pkY,
+					X:     pkX.Big(),
+					Y:     pkY.Big(),
 				}
 				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(),
-					new(big.Int).SetBytes(signData.R),
-					new(big.Int).SetBytes(signData.S))
+					new(big.Int).SetBytes(signData.R).Big(),
+					new(big.Int).SetBytes(signData.S).Big())
 
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
@@ -245,7 +246,7 @@ func TestTooManyParties(t *testing.T) {
 	oldP2PCtx := tss.NewPeerContext(pIDs)
 	params, _ := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
 		len(pIDs), MaxParties/10)
-	q := tss.EC().Params().N
+	q := big.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
 	var err error

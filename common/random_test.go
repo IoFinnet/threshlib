@@ -7,8 +7,10 @@
 package common_test
 
 import (
-	"math/big"
+	big2 "math/big"
 	"testing"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/stretchr/testify/assert"
 
@@ -53,6 +55,6 @@ func TestGetRandomQuadraticNonResidue(t *testing.T) {
 	for N.Bit(0) == 0 {
 		N = common.GetRandomPositiveRelativelyPrimeInt(rnd)
 	}
-	w := common.GetRandomQuandraticNonResidue(N)
-	assert.Equal(t, big.Jacobi(w, N), -1, "must get quandratic non residue")
+	w := common.GetRandomQuadraticNonResidue(N)
+	assert.Equal(t, big2.Jacobi(w.Big(), N.Big()), -1, "must get quadratic non residue")
 }

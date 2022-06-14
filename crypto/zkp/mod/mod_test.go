@@ -7,9 +7,10 @@
 package zkpmod_test
 
 import (
-	"math/big"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	. "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -34,4 +35,27 @@ func TestMod(test *testing.T) {
 
 	ok := proof.Verify(N)
 	assert.True(test, ok, "proof must verify")
+}
+
+func TestBadW(test *testing.T) {
+	preParams, err := keygen.GeneratePreParams(time.Minute*20, 8)
+	assert.NoError(test, err)
+
+	p, q, N := preParams.P, preParams.Q, preParams.NTildei
+	// p2, q2 := new(big.Int).Mul(p, big.NewInt(2)), new(big.Int).Mul(q, big.NewInt(2))
+	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
+	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
+
+	pr, err := NewProof(N, P, Q)
+	pr.W = nil
+	ok := pr.Verify(N)
+	assert.False(test, ok, "proof with nil W must not verify")
+
+	pr.W = big.NewInt(0)
+	ok2 := pr.Verify(N)
+	assert.False(test, ok2, "proof must not verify")
+
+	pr.W = GetRandomNonQuadraticNonResidue(N)
+	ok3 := pr.Verify(N)
+	assert.False(test, ok3, "proof must not verify")
 }

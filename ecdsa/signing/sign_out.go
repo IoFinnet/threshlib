@@ -11,16 +11,18 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
-	modN := common.ModInt(ec.Params().N)
+	modN := int2.ModInt(big.Wrap(ec.Params().N))
 	SInv := modN.Inverse(S)
 	mG := crypto.ScalarBaseMult(ec, m)
 	rx := R.X()
@@ -45,7 +47,7 @@ func (round *signout) Start() *tss.Error {
 
 	// Fig 8. Output. combine signature shares verify and output
 	Sigma := round.temp.SigmaShare
-	modN := common.ModInt(round.Params().EC().Params().N)
+	modN := int2.ModInt(big.Wrap(round.Params().EC().Params().N))
 	for j := range round.Parties().IDs() {
 		round.ok[j] = true
 		if j == round.PartyID().Index {
@@ -55,7 +57,7 @@ func (round *signout) Start() *tss.Error {
 	}
 	recid := 0
 	// byte v = if(R.X > curve.N) then 2 else 0) | (if R.Y.IsEven then 0 else 1);
-	if round.temp.Rx.Cmp(round.Params().EC().Params().N) > 0 {
+	if round.temp.Rx.Cmp(big.Wrap(round.Params().EC().Params().N)) > 0 {
 		recid = 2
 	}
 	if round.temp.BigR.Y().Bit(0) != 0 {
@@ -66,9 +68,9 @@ func (round *signout) Start() *tss.Error {
 	// https://github.com/btcsuite/btcd/blob/c26ffa870fd817666a857af1bf6498fabba1ffe3/btcec/signature.go#L442-L444
 	// This is needed because of tendermint checks here:
 	// https://github.com/tendermint/tendermint/blob/d9481e3648450cb99e15c6a070c1fb69aa0c255b/crypto/secp256k1/secp256k1_nocgo.go#L43-L47
-	halfN := new(big.Int).Rsh(round.Params().EC().Params().N, 1)
+	halfN := new(big.Int).Rsh(big.Wrap(round.Params().EC().Params().N), 1)
 	if Sigma.Cmp(halfN) > 0 {
-		Sigma.Sub(round.Params().EC().Params().N, Sigma)
+		Sigma.Sub(big.Wrap(round.Params().EC().Params().N), Sigma)
 		recid ^= 1
 	}
 
@@ -82,10 +84,10 @@ func (round *signout) Start() *tss.Error {
 
 	pk := ecdsa.PublicKey{
 		Curve: round.Params().EC(),
-		X:     round.key.ECDSAPub.X(),
-		Y:     round.key.ECDSAPub.Y(),
+		X:     round.key.ECDSAPub.X().Big(),
+		Y:     round.key.ECDSAPub.Y().Big(),
 	}
-	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.Rx, Sigma)
+	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.Rx.Big(), Sigma.Big())
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}

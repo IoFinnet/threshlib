@@ -3,10 +3,12 @@ module github.com/binance-chain/tss-lib
 go 1.17
 
 require (
+	filippo.io/edwards25519 v1.0.0-rc.1
 	github.com/agl/ed25519 v0.0.0-20200305024217-f36fc4b53d43
 	github.com/btcsuite/btcd v0.22.0-beta.0.20220201204404-81fbd9b67e54
 	github.com/btcsuite/btcd/btcec/v2 v2.1.0
 	github.com/btcsuite/btcutil v1.0.3-0.20211129182920-9c4bbabe7acd
+	github.com/cronokirby/saferith v0.33.0
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/ipfs/go-log v1.0.5

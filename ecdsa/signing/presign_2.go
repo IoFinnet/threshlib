@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
 	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
@@ -65,7 +66,7 @@ func (round *presign2) Start() *tss.Error {
 
 	// Fig 7. Round 2.2 compute MtA and generate proofs
 	Γi := crypto.ScalarBaseMult(round.Params().EC(), round.temp.𝛾i)
-	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
+	g := crypto.NewECPointNoCurveCheck(round.EC(), big.Wrap(round.EC().Params().Gx), big.Wrap(round.EC().Params().Gy))
 	errChs = make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 	wg = sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
@@ -151,7 +152,7 @@ func (round *presign2) Start() *tss.Error {
 	round.temp.Γi = Γi
 	// retire unused variables
 
-	round.temp.r1msg𝜓0ij = make([]*zkpenc.ProofEnc, round.PartyCount()) // GF TODO
+	round.temp.r1msg𝜓0ij = make([]*zkpenc.ProofEnc, round.PartyCount())
 
 	return nil
 }

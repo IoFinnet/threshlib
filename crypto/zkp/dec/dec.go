@@ -10,9 +10,11 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
@@ -32,27 +34,33 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rh
 		return nil, errors.New("ProveDec constructor received nil value(s)")
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
-	q3NCap := new(big.Int).Mul(q3, NCap)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀NCap := new(big.Int).Mul(TwolPlus𝜀, NCap)
 
-	// Fig 29.1 sample
+	// Fig 30.1 sample
 	alpha := common.GetRandomPositiveInt(q3)
 	mu := common.GetRandomPositiveInt(qNCap)
-	v := common.GetRandomPositiveInt(q3NCap)
+	v := common.GetRandomPositiveInt(TwolPlus𝜀NCap)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
+	/* common.Logger.Infof("dec step 4 - C: %v, x: %v, alpha:%v, mu: %v, v:%v, r:%v",
+	common.FormatBigInt(C), common.FormatBigInt(x),
+	common.FormatBigInt(alpha), common.FormatBigInt(mu), common.FormatBigInt(v), common.FormatBigInt(r))
+	*/
 
 	// Fig 29.1 compute
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 	S := modNCap.Exp(s, y)
 	S = modNCap.Mul(S, modNCap.Exp(t, mu))
 
 	T := modNCap.Exp(s, alpha)
 	T = modNCap.Mul(T, modNCap.Exp(t, v))
 
-	modNSquared := common.ModInt(pk.NSquare())
+	modNSquared := int2.ModInt(pk.NSquare())
 	A := modNSquared.Exp(pk.Gamma(), alpha)
 	A = modNSquared.Mul(A, modNSquared.Exp(r, pk.N))
 
@@ -72,7 +80,53 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rh
 	z2 := new(big.Int).Mul(e, mu)
 	z2 = new(big.Int).Add(v, z2)
 
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
+	w := modN.Exp(rho, e)
+	w = modN.Mul(r, w)
+
+	return &ProofDec{S: S, T: T, A: A, Gamma: gamma, Z1: z1, Z2: z2, W: w}, nil
+}
+
+func NewProofGivenAux(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rho, alpha, mu, v, r *big.Int) (*ProofDec, error) {
+	if ec == nil || pk == nil || C == nil || x == nil || NCap == nil || s == nil || t == nil || y == nil || rho == nil {
+		return nil, errors.New("ProveDec constructor received nil value(s)")
+	}
+
+	q := big.Wrap(ec.Params().N)
+	q3 := new(big.Int).Mul(q, q)
+	q3 = new(big.Int).Mul(q, q3)
+
+	// Fig 29.1 sample
+
+	// Fig 30.1 compute
+	modNCap := int2.ModInt(NCap)
+	S := modNCap.Exp(s, y)
+	S = modNCap.Mul(S, modNCap.Exp(t, mu))
+
+	T := modNCap.Exp(s, alpha)
+	T = modNCap.Mul(T, modNCap.Exp(t, v))
+
+	modNSquared := int2.ModInt(pk.NSquare())
+	A := modNSquared.Exp(pk.Gamma(), alpha)
+	A = modNSquared.Mul(A, modNSquared.Exp(r, pk.N))
+
+	gamma := new(big.Int).Mod(alpha, q)
+
+	// Fig 30.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), C, x, NCap, s, t, A, gamma)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	// Fig 14.3
+	z1 := new(big.Int).Mul(e, y)
+	z1 = new(big.Int).Add(alpha, z1)
+
+	z2 := new(big.Int).Mul(e, mu)
+	z2 = new(big.Int).Add(v, z2)
+
+	modN := int2.ModInt(pk.N)
 	w := modN.Exp(rho, e)
 	w = modN.Mul(r, w)
 
@@ -99,7 +153,7 @@ func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	// q3 := new(big.Int).Mul(q, q)
 	// q3 = new(big.Int).Mul(q, q3)
 
@@ -109,9 +163,9 @@ func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap
 		e = common.RejectionSample(q, eHash)
 	}
 
-	// Fig 29. Equality Check
+	// Fig 30. Equality Check
 	{
-		modNSquare := common.ModInt(pk.NSquare())
+		modNSquare := int2.ModInt(pk.NSquare())
 		Np1EXPz1 := modNSquare.Exp(pk.Gamma(), pf.Z1)
 		wEXPN := modNSquare.Exp(pf.W, pk.N)
 		left := modNSquare.Mul(Np1EXPz1, wEXPN)
@@ -125,7 +179,7 @@ func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap
 	}
 
 	{
-		modQ := common.ModInt(q)
+		modQ := int2.ModInt(q)
 		left := new(big.Int).Mod(pf.Z1, q)
 		right := modQ.Add(modQ.Mul(e, x), pf.Gamma)
 
@@ -135,7 +189,7 @@ func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap
 	}
 
 	{
-		modNCap := common.ModInt(NCap)
+		modNCap := int2.ModInt(NCap)
 		sEXPz1 := modNCap.Exp(s, pf.Z1)
 		tEXPz2 := modNCap.Exp(t, pf.Z2)
 		left := modNCap.Mul(sEXPz1, tEXPz2)
@@ -170,4 +224,10 @@ func (pf *ProofDec) Bytes() [ProofDecBytesParts][]byte {
 		pf.Z2.Bytes(),
 		pf.W.Bytes(),
 	}
+}
+
+func FormatProofDec(proof *ProofDec) string {
+	return "(S:" + common.FormatBigInt(proof.S) + ", T:" + common.FormatBigInt(proof.T) +
+		", A:" + common.FormatBigInt(proof.A) + ", Gamma:" + common.FormatBigInt(proof.Gamma) +
+		", Z1:" + common.FormatBigInt(proof.Z1) + ", Z2:" + common.FormatBigInt(proof.Z2) + ")"
 }

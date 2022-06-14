@@ -9,7 +9,8 @@ package commitments
 import (
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 )
 
 const (
@@ -50,7 +51,7 @@ func (b *builder) Secrets() ([]*big.Int, error) {
 		if MaxPartSize < partLen {
 			return nil, fmt.Errorf("builder.Secrets: commitment part too large: part %d, size %d", i, partLen)
 		}
-		secrets = append(secrets, big.NewInt(partLen))
+		secrets = append(secrets, big.NewInt(uint64(partLen)))
 		secrets = append(secrets, p...)
 	}
 	return secrets, nil

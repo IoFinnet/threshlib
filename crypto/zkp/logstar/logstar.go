@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
@@ -35,24 +36,26 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 		return nil, errors.New("ProveLogstar constructor received nil value(s)")
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
-	q3NCap := new(big.Int).Mul(q3, NCap)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀NCap := new(big.Int).Mul(TwolPlus𝜀, NCap)
 
 	// Fig 25.1 sample
 	alpha := common.GetRandomPositiveInt(q3)
 	mu := common.GetRandomPositiveInt(qNCap)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
-	gamma := common.GetRandomPositiveInt(q3NCap)
+	gamma := common.GetRandomPositiveInt(TwolPlus𝜀NCap)
 
 	// Fig 25.1 compute
-	modNCap := common.ModInt(NCap)
+	modNCap := int2.ModInt(NCap)
 	S := modNCap.Exp(s, x)
 	S = modNCap.Mul(S, modNCap.Exp(t, mu))
 
-	modNSquared := common.ModInt(pk.NSquare())
+	modNSquared := int2.ModInt(pk.NSquare())
 	A := modNSquared.Exp(pk.Gamma(), alpha)
 	A = modNSquared.Mul(A, modNSquared.Exp(r, pk.N))
 
@@ -64,7 +67,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y())...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -72,7 +75,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	z1 := new(big.Int).Mul(e, x)
 	z1 = new(big.Int).Add(z1, alpha)
 
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
 	z2 := modN.Exp(rho, e)
 	z2 = modN.Mul(z2, r)
 
@@ -108,24 +111,26 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
 
 	// Fig 25. range check
-	if pf.Z1.Cmp(q3) == 1 {
+	if pf.Z1.Cmp(TwolPlus𝜀) == 1 {
 		return false
 	}
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y())...)
 		e = common.RejectionSample(q, eHash)
 	}
 
 	// Fig 25. equality checks
 	{
-		modNSquared := common.ModInt(pk.NSquare())
+		modNSquared := int2.ModInt(pk.NSquare())
 
 		Np1EXPz1 := modNSquared.Exp(pk.Gamma(), pf.Z1)
 		z2EXPN := modNSquared.Exp(pf.Z2, pk.N)
@@ -139,7 +144,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	}
 
 	{
-		z1ModQ := new(big.Int).Mod(pf.Z1, ec.Params().N)
+		z1ModQ := new(big.Int).Mod(pf.Z1, big.Wrap(ec.Params().N))
 		// left := crypto.ScalarBaseMult(ec, z1ModQ)
 		left := g.ScalarMult(z1ModQ)
 		right, err := X.ScalarMult(e).Add(pf.Y)
@@ -149,7 +154,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	}
 
 	{
-		modNCap := common.ModInt(NCap)
+		modNCap := int2.ModInt(NCap)
 		sEXPz1 := modNCap.Exp(s, pf.Z1)
 		tEXPz3 := modNCap.Exp(t, pf.Z3)
 		left := modNCap.Mul(sEXPz1, tEXPz3)
@@ -183,4 +188,11 @@ func (pf *ProofLogstar) Bytes() [ProofLogstarBytesParts][]byte {
 		pf.Z2.Bytes(),
 		pf.Z3.Bytes(),
 	}
+}
+
+func FormatProofLogstar(proof *ProofLogstar) string {
+	return "(S:" + common.FormatBigInt(proof.S) + ", A:" + common.FormatBigInt(proof.A) +
+		", Y:" + crypto.FormatECPoint(proof.Y) +
+		", D:" + common.FormatBigInt(proof.D) + ", Z1:" + common.FormatBigInt(proof.Z1) +
+		", Z2:" + common.FormatBigInt(proof.Z2) + ", Z3:" + common.FormatBigInt(proof.Z3) + ")"
 }

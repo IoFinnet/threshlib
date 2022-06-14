@@ -9,10 +9,12 @@ package signing
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"sync"
 
+	big "github.com/binance-chain/tss-lib/common/int"
+
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
@@ -40,8 +42,8 @@ func (round *presign1) Start() *tss.Error {
 	round.ok[i] = true
 
 	// Fig 7. Round 1. sample k and gamma
-	ki := common.GetRandomPositiveInt(round.EC().Params().N)
-	𝛾i := common.GetRandomPositiveInt(round.EC().Params().N)
+	ki := common.GetRandomPositiveInt(big.Wrap(round.EC().Params().N))
+	𝛾i := common.GetRandomPositiveInt(big.Wrap(round.EC().Params().N))
 	Ki, 𝜌i, err := round.key.PaillierSK.EncryptAndReturnRandomness(ki)
 	if err != nil {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"))
@@ -129,7 +131,7 @@ func (round *presign1) prepare() error {
 	// adding the key derivation delta to the xi's
 	// Suppose x has shamir shares x_0,     x_1,     ..., x_n
 	// So x + D has shamir shares  x_0 + D, x_1 + D, ..., x_n + D
-	mod := common.ModInt(round.Params().EC().Params().N)
+	mod := int2.ModInt(big.Wrap(round.Params().EC().Params().N))
 	xi = mod.Add(round.temp.keyDerivationDelta, xi)
 	round.key.Xi = xi
 

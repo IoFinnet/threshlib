@@ -14,9 +14,11 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 )
 
@@ -43,7 +45,7 @@ var (
 func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 	visited := make(map[string]struct{})
 	for _, v := range indexes {
-		vMod := new(big.Int).Mod(v, ec.Params().N)
+		vMod := new(big.Int).Mod(v, big.Wrap(ec.Params().N))
 		if vMod.Cmp(zero) == 0 {
 			return nil, errors.New("party index should not be 0")
 		}
@@ -99,7 +101,7 @@ func (share *Share) Verify(ec elliptic.Curve, threshold int, vs Vs) bool {
 		return false
 	}
 	var err error
-	modQ := common.ModInt(ec.Params().N)
+	modQ := int2.ModInt(big.Wrap(ec.Params().N))
 	v, t := vs[0], one // YRO : we need to have our accumulator outside of the loop
 	for j := 1; j <= threshold; j++ {
 		// t = k_i^j
@@ -119,7 +121,7 @@ func (shares Shares) ReConstruct(ec elliptic.Curve) (secret *big.Int, err error)
 	if shares != nil && shares[0].Threshold >= len(shares) {
 		return nil, ErrNumSharesBelowThreshold
 	}
-	modN := common.ModInt(ec.Params().N)
+	modN := int2.ModInt(big.Wrap(ec.Params().N))
 
 	// x coords
 	xs := make([]*big.Int, 0)
@@ -148,7 +150,7 @@ func (shares Shares) ReConstruct(ec elliptic.Curve) (secret *big.Int, err error)
 }
 
 func samplePolynomial(ec elliptic.Curve, threshold int, secret *big.Int) []*big.Int {
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	v := make([]*big.Int, threshold+1)
 	v[0] = secret
 	for i := 1; i <= threshold; i++ {
@@ -158,15 +160,15 @@ func samplePolynomial(ec elliptic.Curve, threshold int, secret *big.Int) []*big.
 	return v
 }
 
-// Evauluates a polynomial with coefficients such that:
+// Evaluates a polynomial with coefficients such that:
 // evaluatePolynomial([a, b, c, d], x):
 // 		returns a + bx + cx^2 + dx^3
 //
 func evaluatePolynomial(ec elliptic.Curve, threshold int, v []*big.Int, id *big.Int) (result *big.Int) {
-	q := ec.Params().N
-	modQ := common.ModInt(q)
-	result = new(big.Int).Set(v[0])
-	X := big.NewInt(int64(1))
+	q := big.Wrap(ec.Params().N)
+	modQ := int2.ModInt(q)
+	result = new(big.Int).SetBytes(v[0].Bytes())
+	X := big.NewInt(uint64(1))
 	for i := 1; i <= threshold; i++ {
 		ai := v[i]
 		X = modQ.Mul(X, id)
@@ -174,4 +176,20 @@ func evaluatePolynomial(ec elliptic.Curve, threshold int, v []*big.Int, id *big.
 		result = modQ.Add(result, aiXi)
 	}
 	return
+}
+
+// CreateZeroSumRandomArray - Create an array such that the sum of its elements is zero mod N
+func CreateZeroSumRandomArray(N *big.Int, n int) []*big.Int {
+	array := make([]*big.Int, n)
+	mod := big.ModInt(N)
+	sum := big.NewInt(0)
+	for i := 0; i < n-1; i++ {
+		x := common.GetRandomPositiveInt(N)
+		array[i] = x
+		sum = mod.Add(sum, x)
+	}
+	remainder := big.NewInt(0).Neg(sum)
+	remainder = mod.Add(big.NewInt(0), remainder)
+	array[n-1] = remainder
+	return array
 }

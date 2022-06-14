@@ -10,9 +10,11 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
@@ -42,7 +44,7 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 
 	NSq := pk.NSquare()
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 	qNTilde := new(big.Int).Mul(q, NTilde)
@@ -71,7 +73,7 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 	}
 
 	// 6.
-	modNTilde := common.ModInt(NTilde)
+	modNTilde := int2.ModInt(NTilde)
 	z := modNTilde.Exp(h1, x)
 	z = modNTilde.Mul(z, modNTilde.Exp(h2, rho))
 
@@ -84,7 +86,7 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 	t = modNTilde.Mul(t, modNTilde.Exp(h2, sigma))
 
 	// 9.
-	modNSq := common.ModInt(NSq)
+	modNSq := int2.ModInt(NSq)
 	v := modNSq.Exp(c1, alpha)
 	v = modNSq.Mul(v, modNSq.Exp(pk.Gamma(), gamma))
 	v = modNSq.Mul(v, modNSq.Exp(beta, pk.N))
@@ -107,7 +109,7 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 	}
 
 	// 13.
-	modN := common.ModInt(pk.N)
+	modN := int2.ModInt(pk.N)
 	s := modN.Exp(r, e)
 	s = modN.Mul(s, beta)
 
@@ -190,7 +192,7 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 		return false
 	}
 
-	q := ec.Params().N
+	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3.Mul(q3, q)
 
@@ -216,7 +218,7 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 
 	// 4. runs only in the "with check" mode from Fig. 10
 	if X != nil {
-		s1ModQ := new(big.Int).Mod(pf.S1, ec.Params().N)
+		s1ModQ := new(big.Int).Mod(pf.S1, big.Wrap(ec.Params().N))
 		gS1 := crypto.ScalarBaseMult(ec, s1ModQ)
 		xEU, err := X.ScalarMult(e).Add(pf.U)
 		if err != nil || !gS1.Equals(xEU) {
@@ -225,7 +227,7 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 	}
 
 	{ // 5-6.
-		modNTilde := common.ModInt(NTilde)
+		modNTilde := int2.ModInt(NTilde)
 
 		{ // 5.
 			h1ExpS1 := modNTilde.Exp(h1, pf.S1)
@@ -251,7 +253,7 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 	}
 
 	{ // 7.
-		modNSq := common.ModInt(pk.NSquare())
+		modNSq := int2.ModInt(pk.NSquare())
 
 		c1ExpS1 := modNSq.Exp(c1, pf.S1)
 		sExpN := modNSq.Exp(pf.S, pk.N)
