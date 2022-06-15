@@ -28,6 +28,11 @@ const (
 	NBitLen            = 2048
 )
 
+func newRound3(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {
+	return &round3{&round2{&round1{
+		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}}
+}
+
 func (round *round3) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))

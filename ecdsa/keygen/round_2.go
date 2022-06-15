@@ -16,6 +16,11 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+func newRound2(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {
+	return &round2{&round1{
+		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 2}}}
+}
+
 func (round *round2) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))

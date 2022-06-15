@@ -115,6 +115,10 @@ func (p *BaseParty) setRound(round Round) *Error {
 	return nil
 }
 
+func (p *BaseParty) SetRound(round Round) *Error {
+	return p.setRound(round)
+}
+
 func (p *BaseParty) Round() Round {
 	p.rndMtx.RLock()
 	defer p.rndMtx.RUnlock()
