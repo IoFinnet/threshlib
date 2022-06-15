@@ -4,11 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"runtime"
-	"syscall"
 
 	"github.com/binance-chain/tss-lib/common"
 	big "github.com/binance-chain/tss-lib/common/int"
@@ -19,11 +14,6 @@ import (
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 	"github.com/binance-chain/tss-lib/tss"
-)
-
-const (
-	dirFormat  = "%s/../../state/ecdsa/keygen"
-	fileFormat = "state_temp_data_%d_%s.json"
 )
 
 type (
@@ -127,78 +117,6 @@ func NewLocalStatefulParty(
 	}
 	return &LocalStatefulParty{party.(*LocalParty), preAdvanceFunc}, nil
 }
-
-func makeFilePath(partyIndex int, sessionId *big.Int) string {
-	_, callerFileName, _, _ := runtime.Caller(0)
-	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(dirFormat, srcDirName)
-	return fmt.Sprintf("%s/"+fileFormat, fixtureDirName, partyIndex, sessionId.Text(62))
-}
-
-func RemoveLocalStatefulPartyFile(partyIndex int, sessionId *big.Int) error {
-	fileName := makeFilePath(partyIndex, sessionId)
-	_, err := os.Stat(fileName)
-	if err != nil {
-		pErr, isPErr := err.(*os.PathError)
-		if !(isPErr && pErr.Err == syscall.ENOENT) {
-			return err
-		}
-	}
-	err2 := os.Remove(fileName)
-	if err2 != nil {
-		return err2
-	}
-
-	return nil
-}
-
-func tryWriteLocalStatefulPartyFile(partyIndex int, sessionId *big.Int, dehydratedLocalStatefulPartyTempData []byte) error {
-	fileName := makeFilePath(partyIndex, sessionId)
-
-	// fixture file does not already exist?
-	// if it does, we won't re-create it here
-	_, err := os.Stat(fileName)
-	if err != nil {
-		pErr, isPErr := err.(*os.PathError)
-		if !(isPErr && pErr.Err == syscall.ENOENT) {
-			return err
-		}
-	}
-	fd, errO := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if errO != nil {
-		return errO
-	}
-	_, err = fd.Write(dehydratedLocalStatefulPartyTempData)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func tryReadLocalStatefulPartyFile(partyIndex int, sessionId *big.Int) (*MarshalledStatefulPartyData, error) {
-	fixtureFileName := makeFilePath(partyIndex, sessionId)
-	bz, err := ioutil.ReadFile(fixtureFileName)
-	if err != nil {
-		return nil, err
-	}
-	var marshalledStatefulPartyData MarshalledStatefulPartyData
-	if err = json.Unmarshal(bz, &marshalledStatefulPartyData); err != nil {
-		return nil, err
-	}
-	return &marshalledStatefulPartyData, nil
-}
-
-/*
-func (p *LocalStatefulParty) hashParams() *big.Int {
-	// common.SHA512_256i()
-	return nil
-}
-
-func (p *LocalStatefulParty) verifyHashedParams(hashedParams) bool {
-	// common.SHA512_256i()
-	return nil
-}
-*/
 
 func (p *LocalStatefulParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 	f := func(_p tss.Party) (bool, *tss.Error) {
@@ -378,21 +296,27 @@ func MarshalledToLocalTempData(marshalledLocalTempData *MarshalledLocalTempData)
 	return data, saveData
 }
 
-func (p *LocalStatefulParty) HydrateIfNeeded(sessionId *big.Int) (bool, *tss.Error) {
-	// verify hash
-	marshalledStatefulPartyData, err := tryReadLocalStatefulPartyFile(p.PartyID().Index, sessionId)
+func StringToMarshalledLocalTempData(serializedPartyState string) (MarshalledStatefulPartyData, error) {
+	var blob = []byte(serializedPartyState)
+	var marshalledStatefulPartyData MarshalledStatefulPartyData
+	if err := json.Unmarshal(blob, &marshalledStatefulPartyData); err != nil {
+		return marshalledStatefulPartyData, err
+	}
+	return marshalledStatefulPartyData, nil
+}
+
+func (p *LocalStatefulParty) Hydrate(marshalledPartyState string) (bool, *tss.Error) {
+	marshalledStatefulPartyData, err := StringToMarshalledLocalTempData(marshalledPartyState)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
 	tempData, saveData := MarshalledToLocalTempData(&marshalledStatefulPartyData.TheMarshalledLocalTempData)
 	p.temp = *tempData
 	p.data = *saveData
-	// common.Logger.Debugf("party:%v, HydrateIfNeeded, sessionId: %v, StartRndNum: %v", p.PartyID(),
-	//	sessionId.Text(62), p.startRndNum)
 	return true, nil
 }
 
-func (p *LocalStatefulParty) Dehydrate() ([]byte, *tss.Error) {
+func (p *LocalStatefulParty) Dehydrate() (string, *tss.Error) {
 	tempData := LocalTempDataToMarshalled(&p.temp, &p.data)
 	marshalledStatefulPartyData := &MarshalledStatefulPartyData{
 		TheMarshalledLocalTempData: tempData,
@@ -400,23 +324,9 @@ func (p *LocalStatefulParty) Dehydrate() ([]byte, *tss.Error) {
 	// common.Logger.Debugf("party:%v, Dehydrate, StartRndNum: %v (real is -1)", p.PartyID(), marshalledStatefulPartyData.StartRndNum)
 	bz, err := json.Marshal(marshalledStatefulPartyData)
 	if err != nil {
-		return nil, p.WrapError(err)
+		return "", p.WrapError(err)
 	}
-	return bz, nil
-}
-
-func (p *LocalStatefulParty) DehydrateAndSave() *tss.Error {
-	bz, err := p.Dehydrate()
-	if err != nil {
-		return p.WrapError(err)
-	}
-
-	// common.Logger.Debugf("party:%v, DehydrateAndSave, sessionId:%v, RoundNumber: %v",
-	//	p.PartyID(), p.temp.sessionId.Text(62), p.Round().RoundNumber())
-	if errW := tryWriteLocalStatefulPartyFile(p.PartyID().Index, p.temp.sessionId, bz); errW != nil {
-		return p.WrapError(errW)
-	}
-	return nil
+	return string(bz[:]), nil
 }
 
 func (p *LocalStatefulParty) RoundNumber(roundNumber int) tss.Round {

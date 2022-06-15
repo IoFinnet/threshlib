@@ -232,9 +232,7 @@ func BaseUpdate(p Party, msg ParsedMessage, task string, advanceCallback ...func
 		}
 		if p.Round().CanProceed() {
 			if len(advanceCallback) > 0 {
-				p.Unlock()
 				_, err2 := advanceCallback[0](p)
-				p.Lock()
 				if err2 != nil {
 					return r(false, err2)
 				}

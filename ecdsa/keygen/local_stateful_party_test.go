@@ -35,7 +35,7 @@ func TestSaveState(t *testing.T) {
 
 	p2pCtx := tss.NewPeerContext(pIDs)
 	parties := make([]*LocalStatefulParty, 0, len(pIDs))
-
+	stateParties := make([]string, len(pIDs))
 	errCh1 := make(chan *tss.Error, len(pIDs))
 	outCh1 := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
@@ -47,15 +47,16 @@ func TestSaveState(t *testing.T) {
 	q := int2.Wrap(tss.EC().Params().N)
 	sessionId := common.GetRandomPositiveInt(q)
 
-	// Save and reload party 0
-	preAdvanceReplacePartyFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
-		p.Lock()
-		defer p.Unlock()
-		if errF := p.DehydrateAndSave(); errF != nil {
+	// Save and reload party
+	preAdvanceFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+		var state string
+		var errF *tss.Error
+
+		if state, errF = p.Dehydrate(); errF != nil {
 			common.Logger.Errorf("error: %v", errF)
 			return false, p.WrapError(errF)
 		}
-
+		stateParties[p.PartyID().Index] = state
 		// Stop all parties after round 3
 		if p.Round().RoundNumber() >= 3 {
 			common.Logger.Debugf("party:%v (%p), post-update test intervention", p.PartyID(), &p)
@@ -69,10 +70,10 @@ func TestSaveState(t *testing.T) {
 		var P *LocalStatefulParty
 		params, _ := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
-			P_, _ := NewLocalStatefulParty(params, outCh1, endCh, preAdvanceReplacePartyFunc, sessionId, fixtures[i].LocalPreParams)
+			P_, _ := NewLocalStatefulParty(params, outCh1, endCh, preAdvanceFunc, sessionId, fixtures[i].LocalPreParams)
 			P, _ = P_.(*LocalStatefulParty)
 		} else {
-			P_, _ := NewLocalStatefulParty(params, outCh1, endCh, preAdvanceReplacePartyFunc, sessionId)
+			P_, _ := NewLocalStatefulParty(params, outCh1, endCh, preAdvanceFunc, sessionId)
 			P, _ = P_.(*LocalStatefulParty)
 		}
 		parties = append(parties, P)
@@ -140,7 +141,7 @@ keygenFirstPart:
 			P_, _ := NewLocalStatefulParty(params, outCh2, endCh, noActionFunc, sessionId)
 			P, _ = P_.(*LocalStatefulParty)
 		}
-		_, errH := P.HydrateIfNeeded(sessionId)
+		_, errH := P.Hydrate(stateParties[i])
 		if errH != nil {
 			assert.NoError(t, errH, "there should be no error hydrating")
 		}
@@ -285,12 +286,6 @@ keygenSecondPart:
 				assert.NoError(t, err, "sign should not throw an error")
 				ok := ecdsa.Verify(&pk, data, r, s)
 				assert.True(t, ok, "signature should be ok")
-
-				// State file cleanup
-				for _, p := range parties {
-					errR := RemoveLocalStatefulPartyFile(p.PartyID().Index, sessionId)
-					assert.NoError(t, errR)
-				}
 
 				t.Log("ECDSA signing test done.")
 
