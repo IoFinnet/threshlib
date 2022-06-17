@@ -195,6 +195,12 @@ func (z *Int) String() string {
 }
 
 // TODO: DANGER ZONE! Revisit
+func (z *Int) SetBit(x *Int, i int, b uint) *Int {
+	z.ensureInitialized()
+	x.ensureInitialized()
+	bi := new(big.Int).SetBit(x.Big(), i, b)
+	return z.wrap(bi)
+}
 func (z *Int) Sub(x, y *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
