@@ -1,52 +1,57 @@
-// Copyright © 2019 Binance
-//
-// This file is part of Binance. The full Binance copyright notice, including
-// terms governing use, modification, and redistribution, is contained in the
-// file LICENSE at the root of the source code distribution tree.
-
 package common_test
 
 import (
-	big "github.com/binance-chain/tss-lib/common/int"
+	"crypto/sha512"
 	"reflect"
 	"testing"
 
 	"github.com/binance-chain/tss-lib/common"
+	big "github.com/binance-chain/tss-lib/common/int"
 )
 
 func TestRejectionSample(t *testing.T) {
 	curveQ := common.GetRandomPrimeInt(256)
-	randomQ := common.MustGetRandomInt(64)
+	smallQ := common.MustGetRandomInt(64)
 	hash := common.SHA512_256iOne(big.NewInt(123))
-	rs1 := common.RejectionSample(curveQ, hash)
-	rs2 := common.RejectionSample(randomQ, hash)
-	rs3 := common.RejectionSample(common.MustGetRandomInt(64), hash)
+	temp := sha512.Sum512(big.NewInt(123).Bytes())
+	hashX2 := new(big.Int).SetBytes(temp[:])
 	type args struct {
 		q     *big.Int
 		eHash *big.Int
 	}
 	tests := []struct {
-		name       string
-		args       args
-		want       *big.Int
-		wantBitLen int
-		notEqual   bool
+		name          string
+		args          args
+		want          *big.Int
+		wantMaxBitLen int
+		notEqual      bool
 	}{{
-		name:       "happy path with curve order",
-		args:       args{curveQ, hash},
-		want:       rs1,
-		wantBitLen: 256,
+		name:          "with 256-bit curve order",
+		args:          args{curveQ, hash},
+		want:          common.RejectionSample(curveQ, hash),
+		wantMaxBitLen: 256,
 	}, {
-		name:       "happy path with random 64-bit int",
-		args:       args{randomQ, hash},
-		want:       rs2,
-		wantBitLen: 64,
+		name:          "with 256-bit curve order, large hash",
+		args:          args{curveQ, hashX2},
+		want:          common.RejectionSample(curveQ, hashX2),
+		wantMaxBitLen: 256,
 	}, {
-		name:       "inequality with different input",
-		args:       args{randomQ, hash},
-		want:       rs3,
-		wantBitLen: 64,
-		notEqual:   true,
+		name:          "with 64-bit q",
+		args:          args{smallQ, hash},
+		want:          common.RejectionSample(smallQ, hash),
+		wantMaxBitLen: 64,
+	}, {
+		name:          "inequality with 256-bit curve order and different input",
+		args:          args{smallQ, hash},
+		want:          common.RejectionSample(common.MustGetRandomInt(256), hash),
+		wantMaxBitLen: 256,
+		notEqual:      true,
+	}, {
+		name:          "inequality with 64-bit curve order and different input",
+		args:          args{smallQ, hash},
+		want:          common.RejectionSample(common.MustGetRandomInt(64), hash),
+		wantMaxBitLen: 64,
+		notEqual:      true,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -54,8 +59,8 @@ func TestRejectionSample(t *testing.T) {
 			if !tt.notEqual && !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RejectionSample() = %v, want %v", got, tt.want)
 			}
-			if tt.wantBitLen < got.BitLen() { // leading zeros not counted
-				t.Errorf("RejectionSample() = bitlen %d, want %d", got.BitLen(), tt.wantBitLen)
+			if tt.wantMaxBitLen < got.BitLen() { // leading zeros not counted
+				t.Errorf("RejectionSample() = bitlen %d, want %d", got.BitLen(), tt.wantMaxBitLen)
 			}
 		})
 	}
