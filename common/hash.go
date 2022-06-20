@@ -10,8 +10,8 @@ import (
 	"crypto"
 	_ "crypto/sha512"
 	"encoding/binary"
+
 	big "github.com/binance-chain/tss-lib/common/int"
-	"strconv"
 )
 
 const (
@@ -29,20 +29,22 @@ func SHA512_256(in ...[]byte) []byte {
 	}
 	bzSize := 0
 	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
+	inLenBz := make([]byte, 8) // 64-bits
 	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
 	// this prefix is never read/interpreted, so that doesn't matter.
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
 	for _, bz := range in {
 		bzSize += len(bz)
 	}
-	data = make([]byte, 0, len(inLenBz)+bzSize+inLen)
+	dataCap := len(inLenBz) + bzSize + inLen + (inLen * 8)
+	data = make([]byte, 0, dataCap)
 	data = append(data, inLenBz...)
 	for _, bz := range in {
 		data = append(data, bz...)
 		data = append(data, hashInputDelimiter) // safety delimiter
-		l := []byte(strconv.Itoa(len(bz)))
-		data = append(data, l...) // Security audit: length of each byte buffer should be added after
+		dataLen := make([]byte, 8)              // 64-bits
+		binary.LittleEndian.PutUint64(dataLen, uint64(len(bz)))
+		data = append(data, dataLen...) // Security audit: length of each byte buffer should be added after
 		// each security delimiters in order to enforce proper domain separation
 	}
 	// n < len(data) or an error will never happen.
@@ -63,7 +65,7 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	}
 	bzSize := 0
 	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
+	inLenBz := make([]byte, 8) // 64-bits
 	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
 	// this prefix is never read/interpreted, so that doesn't matter.
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
@@ -72,13 +74,15 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 		ptrs[i] = append(n.Bytes(), byte(n.Sign()))
 		bzSize += len(ptrs[i])
 	}
-	data = make([]byte, 0, len(inLenBz)+bzSize+inLen)
+	dataCap := len(inLenBz) + bzSize + inLen + (inLen * 8)
+	data = make([]byte, 0, dataCap)
 	data = append(data, inLenBz...)
 	for i := range in {
 		data = append(data, ptrs[i]...)
 		data = append(data, hashInputDelimiter) // safety delimiter
-		l := []byte(strconv.Itoa(len(ptrs[i])))
-		data = append(data, l...) // Security audit: length of each byte buffer should be added after
+		dataLen := make([]byte, 8)              // 64-bits
+		binary.LittleEndian.PutUint64(dataLen, uint64(len(ptrs[i])))
+		data = append(data, dataLen...) // Security audit: length of each byte buffer should be added after
 		// each security delimiters in order to enforce proper domain separation
 	}
 	// n < len(data) or an error will never happen.

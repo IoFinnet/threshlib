@@ -79,8 +79,9 @@ func (z *Int) Clone() *Int {
 	z.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.Clone()
-	return z
+	cloned := new(Int)
+	cloned.i = z.i.Clone()
+	return cloned
 }
 func (z *Int) Resize(cap int) *Int {
 	z.ensureInitialized()
@@ -127,7 +128,8 @@ func (z *Int) Neg(x *Int) *Int {
 	x.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = x.i.Neg(1)
+	// allocate a new *Int otherwise we will mutate arg `x`
+	z.i = x.Clone().i.Neg(1)
 	return z
 }
 func (z *Int) SetNeg() *Int {

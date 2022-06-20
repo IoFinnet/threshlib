@@ -128,6 +128,6 @@ func TestReconstruct(t *testing.T) {
 	assert.NoError(t, err5)
 	assert.NotZero(t, secret5)
 
-	assert.EqualValues(t, secret, secret4, "secrets must be the same")
-	assert.EqualValues(t, secret4, secret5, "secrets must be the same")
+	assert.Equal(t, secret.Int64(), secret4.Int64(), "secrets must be the same")
+	assert.Equal(t, secret4.Int64(), secret5.Int64(), "secrets must be the same")
 }
