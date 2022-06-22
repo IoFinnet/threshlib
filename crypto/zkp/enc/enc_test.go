@@ -29,7 +29,7 @@ func TestEnc(test *testing.T) {
 	ec := tss.EC()
 	q := big.Wrap(ec.Params().N)
 
-	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*15)
 	assert.NoError(test, err)
 
 	k := common.GetRandomPositiveInt(q)

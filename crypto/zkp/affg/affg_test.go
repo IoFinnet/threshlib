@@ -33,9 +33,9 @@ func TestAffg(test *testing.T) {
 	q3 = new(big.Int).Mul(q, q3)
 	// q6 := new(big.Int).Mul(q3, q3)
 
-	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
 	assert.NoError(test, err)
-	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
 	assert.NoError(test, err)
 
 	// a*b+w
@@ -93,9 +93,9 @@ func TestAffgWithNonce(test *testing.T) {
 	q3 = new(big.Int).Mul(q, q3)
 	// q6 := new(big.Int).Mul(q3, q3)
 
-	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
 	assert.NoError(test, err)
-	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
 	assert.NoError(test, err)
 
 	// a*b+w

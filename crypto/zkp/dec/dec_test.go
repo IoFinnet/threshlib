@@ -35,7 +35,7 @@ func TestDec(test *testing.T) {
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
 	assert.NoError(test, err)
 
-	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*15)
 	assert.NoError(test, err)
 
 	x := common.GetRandomPositiveInt(q)
@@ -58,7 +58,7 @@ func TestDecWithNonce(test *testing.T) {
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
 	assert.NoError(test, err)
 
-	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*15)
 	assert.NoError(test, err)
 
 	x := common.GetRandomPositiveInt(q)
