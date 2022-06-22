@@ -353,13 +353,13 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 		modN := int2.ModInt(big.Wrap(roundVictim.EC().Params().N))
 		fake𝛿i := modN.Mul(fakeki, roundVictim.temp.𝛾i)
 
-		common.Logger.Debugf(" test - fake proof - i:%v, j: %v, PK: %v, K(C): %v, Γ(g): %v, NTildej(NCap): %v, "+
-			"H1j(s): %v, H2j(t): %v, ki(x): %v, 𝜌i: %v -- fakeΔi:%v",
-			parties[i], parties[j], common.FormatBigInt(pk.N),
-			common.FormatBigInt(fakeKi),
-			crypto.FormatECPoint(roundVictim.temp.Γ),
-			common.FormatBigInt(roundVictim.key.NTildej[j]), common.FormatBigInt(roundVictim.key.H1j[j]), common.FormatBigInt(roundVictim.key.H2j[j]),
-			common.FormatBigInt(fakeki), common.FormatBigInt(fake𝜌i), crypto.FormatECPoint(fakeΔi))
+		/* common.Logger.Debugf(" test - fake proof - i:%v, j: %v, PK: %v, K(C): %v, Γ(g): %v, NTildej(NCap): %v, "+
+		"H1j(s): %v, H2j(t): %v, ki(x): %v, 𝜌i: %v -- fakeΔi:%v",
+		parties[i], parties[j], common.FormatBigInt(pk.N),
+		common.FormatBigInt(fakeKi),
+		crypto.FormatECPoint(roundVictim.temp.Γ),
+		common.FormatBigInt(roundVictim.key.NTildej[j]), common.FormatBigInt(roundVictim.key.H1j[j]), common.FormatBigInt(roundVictim.key.H2j[j]),
+		common.FormatBigInt(fakeki), common.FormatBigInt(fake𝜌i), crypto.FormatECPoint(fakeΔi)) */
 		proof, errP := zkplogstar.NewProofGivenNonce(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ, roundVictim.key.NTildej[j],
 			roundVictim.key.H1j[j], roundVictim.key.H2j[j], fakeki, fake𝜌i, roundVictim.temp.sessionId)
 		if errP != nil {
@@ -405,7 +405,7 @@ func TestAbortIdentification(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	updater := identifiedAbortUpdater
 
 	// init the parties
@@ -417,8 +417,8 @@ func TestAbortIdentification(t *testing.T) {
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
-				errCh <- err
+			if err0 := P.Start(); err0 != nil {
+				errCh <- err0
 			}
 		}(P)
 	}
