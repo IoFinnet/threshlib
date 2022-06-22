@@ -47,4 +47,26 @@ func TestMul(test *testing.T) {
 
 	ok := proof.Verify(ec, pk, X, Y, C)
 	assert.True(test, ok, "proof must verify")
+
+	// with nonce
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
+	proof2, err := NewProofGivenNonce(ec, pk, X, Y, C, x, rhox, nonce)
+	assert.NoError(test, err)
+
+	ok2 := proof2.VerifyWithNonce(ec, pk, X, Y, C, nonce)
+	assert.True(test, ok2, "proof must verify")
+}
+
+func TestInvalidNonce(test *testing.T) {
+	ec := tss.EC()
+	q := big.Wrap(ec.Params().N)
+
+	pk := &paillier.PublicKey{}
+
+	// with nonce
+	nonce := common.GetRandomPositiveInt(q)
+	nonce = nonce.Rsh(nonce, 2)
+	one := big.NewInt(1)
+	_, err := NewProofGivenNonce(ec, pk, one, one, one, one, one, nonce)
+	assert.Error(test, err, "there must be an error because nonce is too small")
 }

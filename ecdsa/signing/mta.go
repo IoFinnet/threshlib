@@ -8,6 +8,7 @@ package signing
 
 import (
 	"crypto/elliptic"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -27,7 +28,8 @@ type MtAOut struct {
 	Proofji *zkpaffg.ProofAffg
 }
 
-func NewMtA(ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey, pki *paillier.PublicKey, NCap, s, t *big.Int) (*MtAOut, error) {
+func NewMtA(ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey,
+	pki *paillier.PublicKey, NCap, s, t, nonce *big.Int) (*MtAOut, error) {
 	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
@@ -55,7 +57,8 @@ func NewMtA(ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.E
 	// q := big.Wrap(ec.Params().N)
 	beta := int2.ModInt(q).Sub(zero, betaNeg)
 
-	Psiji, err := zkpaffg.NewProof(ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
+	Psiji, err := zkpaffg.NewProofGivenNonce(ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg,
+		sij, rij, nonce)
 	if err != nil {
 		return nil, err
 	}

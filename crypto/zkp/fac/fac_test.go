@@ -150,7 +150,7 @@ func TestGeneral(test *testing.T) {
 
 func TestGeneralNonce(test *testing.T) {
 	ec := tss.EC()
-	nonce := common.GetRandomPositiveInt(big.Wrap(ec.Params().N))
+	nonce := common.GetBigRandomPositiveInt(big.Wrap(ec.Params().N), big.Wrap(ec.Params().N).BitLen()-1)
 	preParams, err := generatePreParams(10 * time.Minute)
 	if err != nil {
 		test.Error("pre-params generation failed")

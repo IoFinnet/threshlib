@@ -49,7 +49,8 @@ func (round *identification7) Start() *tss.Error {
 			defer wg.Done()
 
 			proofMul := round.temp.r6msgProofMul[j]
-			ok := proofMul.Verify(round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r6msgH[j])
+			ok := proofMul.VerifyWithNonce(round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j],
+				round.temp.r1msgG[j], round.temp.r6msgH[j], round.temp.sessionId)
 			if !ok {
 				common.Logger.Errorf("round7: proofmul verify failed. Current party(i): %v, culprit(j): %v", round.PartyID(), Pj)
 				errChs <- round.WrapError(errors.New("round7: proofmul verify failed"), Pj)
@@ -61,8 +62,9 @@ func (round *identification7) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			proofDec := round.temp.r6msgProofDec[j]
-			okDec := proofDec.Verify(round.EC(), round.key.PaillierPKs[j], round.temp.r6msgDeltaShareEnc[j],
-				modN.Add(zero, round.temp.r6msgEncryptedValueSum[j]), round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			okDec := proofDec.VerifyWithNonce(round.EC(), round.key.PaillierPKs[j], round.temp.r6msgDeltaShareEnc[j],
+				modN.Add(zero, round.temp.r6msgEncryptedValueSum[j]), round.key.NTildej[j], round.key.H1j[j],
+				round.key.H2j[j], round.temp.sessionId)
 			if !okDec {
 				common.Logger.Errorf("round7: proofdec verify failed. Current party(i): %v, culprit(j): %v", round.PartyID(), Pj)
 				errChs <- round.WrapError(errors.New("round7: proofdec verify failed"), Pj)

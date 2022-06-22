@@ -49,9 +49,29 @@ func GetRandomPositiveInt(upper *int2.Int) *int2.Int {
 	var try *int2.Int
 	for {
 		try = MustGetRandomInt(upper.BitLen())
-		if try.Cmp(upper) < 0 && try.Cmp(zero) >= 0 {
+		if try.Cmp(upper) < 0 && try.Cmp(zero) > 0 {
 			break
 		}
+	}
+	return try
+}
+
+func GetBigRandomPositiveInt(upper *int2.Int, minBitLen int) *int2.Int {
+	if upper == nil || zero.Cmp(upper) != -1 || minBitLen < 8 || upper.BitLen() < minBitLen {
+		return nil
+	}
+	var try *int2.Int
+	maxRetries := 100
+	ok := false
+	for i := 0; i < maxRetries; i++ {
+		try = MustGetRandomInt(upper.BitLen())
+		if try.Cmp(upper) < 0 && try.Cmp(zero) >= 0 && try.BitLen() >= minBitLen {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return nil
 	}
 	return try
 }

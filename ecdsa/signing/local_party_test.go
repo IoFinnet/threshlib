@@ -51,7 +51,7 @@ func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, thresh
 	endCh chan common.SignatureData, parties []*LocalParty,
 	errCh chan *tss.Error) (*big.Int, []*LocalParty, chan *tss.Error) {
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	// init the parties
 	msg := common.GetRandomPrimeInt(256)
 	for i := 0; i < len(signPIDs); i++ {
@@ -89,7 +89,7 @@ func TestE2EConcurrent(t *testing.T) {
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	dumpCh := make(chan tss.Message, len(signPIDs))
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	updater := test.SharedPartyUpdater
 
@@ -209,7 +209,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	// dumpCh := make(chan tss.Message, len(signPIDs))
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	updater := test.SharedPartyUpdater
 
@@ -346,6 +346,7 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 		q := big.Wrap(ec.Params().N)
 		sk, pk := otherRoundCulprit.key.PaillierSK, &otherRoundCulprit.key.PaillierSK.PublicKey
 
+		// sessionId := otherRoundCulprit.temp.sessionId
 		fakeki := common.GetRandomPositiveInt(q)
 		fakeKi, fake𝜌i, _ := sk.EncryptAndReturnRandomness(fakeki)
 		fakeΔi := roundVictim.temp.Γ.ScalarMult(fakeki)
@@ -365,7 +366,8 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 			common.Logger.Errorf("error changing message %s from %s", msg.Type(), msg.GetFrom())
 		}
 
-		verified := proof.Verify(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ, roundVictim.key.NTildej[j], roundVictim.key.H1j[j], roundVictim.key.H2j[j])
+		verified := proof.Verify(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ,
+			roundVictim.key.NTildej[j], roundVictim.key.H1j[j], roundVictim.key.H2j[j])
 		common.Logger.Debugf(" i: %v, j: %v, verified? %v", parties[i], parties[j], verified)
 		r3msg := NewPreSignRound3Message(roundVictim.temp.sessionId, msg.GetTo()[0], msg.GetFrom(), fake𝛿i, fakeΔi, proof)
 		// repackaging the malicious message
@@ -473,6 +475,7 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 	var err error
 	ec := tss.S256()
 	q := big.Wrap(ec.Params().N)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	modN := int2.ModInt(big.Wrap(ec.Params().N))
 	var modMul = func(N, a, b *big.Int) *big.Int {
@@ -534,7 +537,7 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 				continue
 			}
 
-			DeltaMtAij, errMta := NewMtA(ec, K[j], 𝛾[i], Γ[i], pk[j], pk[i], NCap[j], s[j], t[j])
+			DeltaMtAij, errMta := NewMtA(ec, K[j], 𝛾[i], Γ[i], pk[j], pk[i], NCap[j], s[j], t[j], nonce)
 			if errMta != nil {
 				test.Errorf("error %v", errMta)
 				test.FailNow()
@@ -560,8 +563,9 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 		encryptedValueSum := modQ3Mul(k[i], 𝛾[i])
 
 		{
-			proof, _ := zkpdec.NewProof(ec, pk[i], Hi, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i], encryptedValueSum, secretProduct)
-			ok := proof.Verify(ec, pk[i], Hi, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i])
+			proof, _ := zkpdec.NewProofGivenNonce(ec, pk[i], Hi, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i],
+				encryptedValueSum, secretProduct, nonce)
+			ok := proof.VerifyWithNonce(ec, pk[i], Hi, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i], nonce)
 			assert.True(test, ok, "zkpdec proof must verify")
 		}
 
@@ -577,9 +581,9 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 				common.FormatBigInt(𝛽[j][i]), common.FormatBigInt(𝛽ʹ[j][i]), common.FormatBigInt(D[i][j].Sij), common.FormatBigInt(𝛾k𝛽ʹ),
 				common.FormatBigInt(𝜌𝛾s), common.FormatBigInt(𝛾[j]))
 			{
-				proofD, err1 := zkpdec.NewProof(ec, pk[i], D[i][j].Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap[i], s[i], t[i], 𝛾k𝛽ʹ, 𝜌𝛾s)
+				proofD, err1 := zkpdec.NewProofGivenNonce(ec, pk[i], D[i][j].Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap[i], s[i], t[i], 𝛾k𝛽ʹ, 𝜌𝛾s, nonce)
 				assert.NoError(test, err1)
-				okD := proofD.Verify(ec, pk[i], D[i][j].Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap[i], s[i], t[i])
+				okD := proofD.VerifyWithNonce(ec, pk[i], D[i][j].Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap[i], s[i], t[i], nonce)
 				assert.True(test, okD, "proof must verify")
 			}
 
@@ -609,12 +613,12 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 					common.FormatBigInt(𝛾k𝛽ʹ), common.FormatBigInt(𝛽[i][j]),
 					common.FormatBigInt(𝜌𝛾sr))
 
-				proof2, err4 := zkpdec.NewProof(ec, pk[i], DF, modN.Add(zero, 𝛾k𝛽ʹ𝛽), NCap[i], s[i], t[i], 𝛾k𝛽ʹ𝛽, 𝜌𝛾sr)
+				proof2, err4 := zkpdec.NewProofGivenNonce(ec, pk[i], DF, modN.Add(zero, 𝛾k𝛽ʹ𝛽), NCap[i], s[i], t[i], 𝛾k𝛽ʹ𝛽, 𝜌𝛾sr, nonce)
 				if err4 != nil {
 					test.Errorf("error %v", err4)
 					test.FailNow()
 				}
-				ok2 := proof2.Verify(ec, pk[i], DF, modN.Add(zero, 𝛾k𝛽ʹ𝛽), NCap[i], s[i], t[i])
+				ok2 := proof2.VerifyWithNonce(ec, pk[i], DF, modN.Add(zero, 𝛾k𝛽ʹ𝛽), NCap[i], s[i], t[i], nonce)
 				if okA := assert.True(test, ok2, "proof must verify"); !okA {
 					test.FailNow()
 				}
@@ -635,12 +639,13 @@ func TestIdAbortSimulateRound7(test *testing.T) {
 				common.FormatBigInt(DeltaShareEnc),
 				common.FormatBigInt(encryptedValueSum), common.FormatBigInt(secretProduct))
 
-			proofDeltaShare, err6 := zkpdec.NewProof(ec, pk[i], DeltaShareEnc, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i], encryptedValueSum, secretProduct)
+			proofDeltaShare, err6 := zkpdec.NewProofGivenNonce(ec, pk[i], DeltaShareEnc, modN.Add(zero, encryptedValueSum),
+				NCap[i], s[i], t[i], encryptedValueSum, secretProduct, nonce)
 			if err6 != nil {
 				test.Errorf("error %v", err6)
 				test.FailNow()
 			}
-			ok6 := proofDeltaShare.Verify(ec, pk[i], DeltaShareEnc, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i])
+			ok6 := proofDeltaShare.VerifyWithNonce(ec, pk[i], DeltaShareEnc, modN.Add(zero, encryptedValueSum), NCap[i], s[i], t[i], nonce)
 			assert.True(test, ok6, "proof must verify")
 		}
 	}
@@ -661,7 +666,7 @@ func TestTooManyParties(t *testing.T) {
 	p2pCtx := tss.NewPeerContext(pIDs)
 	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	var err error
 	var void keygen.LocalPartySaveData

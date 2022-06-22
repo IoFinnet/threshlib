@@ -53,7 +53,8 @@ func (round *presign3) Start() *tss.Error {
 			DeltaD := round.temp.r2msgDeltaD[j]
 			DeltaF := round.temp.r2msgDeltaF[j]
 			proofAffgDelta := round.temp.r2msgDeltaProof[j]
-			ok := proofAffgDelta.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, Γj)
+			ok := proofAffgDelta.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j],
+				round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, Γj, round.temp.sessionId)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg delta"))
 				return
@@ -72,7 +73,9 @@ func (round *presign3) Start() *tss.Error {
 			ChiD := round.temp.r2msgChiD[j]
 			ChiF := round.temp.r2msgChiF[j]
 			proofAffgChi := round.temp.r2msgChiProof[j]
-			ok := proofAffgChi.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
+			ok := proofAffgChi.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j],
+				round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j],
+				round.temp.sessionId)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg chi"))
 				return

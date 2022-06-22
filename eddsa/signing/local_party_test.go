@@ -39,12 +39,12 @@ func setUp(level string) {
 		panic(err)
 	}
 
-	// only for test
-	tss.SetCurve(tss.Edwards())
 }
 
 func TestE2EConcurrentEdwards(t *testing.T) {
 	setUp("info")
+	// only for test
+	tss.SetCurve(tss.Edwards())
 
 	threshold := testThreshold
 
@@ -63,7 +63,7 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen()-1)
 	updater := test.SharedPartyUpdater
 
 	msg := big.NewInt(200)
@@ -160,8 +160,9 @@ signing:
 }
 
 func TestE2EConcurrentS256Schnorr(t *testing.T) {
-	setUp("info")
-
+	setUp("debug")
+	// only for test
+	tss.SetCurve(tss.S256())
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -184,8 +185,10 @@ func TestE2EConcurrentS256Schnorr(t *testing.T) {
 
 	msg, _ := hex.DecodeString("304502210088BE0644191B935DB1CD786B43FF27798006578D8C908906B49E89") // big.NewInt(200).Bytes()
 	msgI := big.NewInt(0).SetBytes(msg)
-	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	ec := tss.EC()
+	q := big.Wrap(ec.Params().N)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
+	common.Logger.Warnf("t sessionId: %v, #: %v", common.FormatBigInt(sessionId), sessionId.BitLen())
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {

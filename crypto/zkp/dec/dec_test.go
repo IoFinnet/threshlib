@@ -50,6 +50,30 @@ func TestDec(test *testing.T) {
 	assert.True(test, ok, "proof must verify")
 }
 
+func TestDecWithNonce(test *testing.T) {
+	ec := tss.EC()
+	q := big.Wrap(ec.Params().N)
+
+	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
+	NCap, s, t, err := crypto.GenerateNTildei(primes)
+	assert.NoError(test, err)
+
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	assert.NoError(test, err)
+
+	x := common.GetRandomPositiveInt(q)
+	y := new(big.Int).Add(x, q)
+	C, rho, err := sk.EncryptAndReturnRandomness(y)
+	assert.NoError(test, err)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
+
+	proof, err := NewProofGivenNonce(ec, pk, C, x, NCap, s, t, y, rho, nonce)
+	assert.NoError(test, err)
+
+	ok := proof.VerifyWithNonce(ec, pk, C, x, NCap, s, t, nonce)
+	assert.True(test, ok, "proof must verify")
+}
+
 func TestDecWithCompositions(test *testing.T) {
 	if err := log.SetLogLevel("tss-lib", "debug"); err != nil {
 		panic(err)

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/binance-chain/tss-lib/common"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	. "github.com/binance-chain/tss-lib/crypto/zkp/mod"
@@ -35,6 +36,13 @@ func TestMod(test *testing.T) {
 
 	ok := proof.Verify(N)
 	assert.True(test, ok, "proof must verify")
+
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
+	proof2, err2 := NewProofGivenNonce(N, P, Q, nonce)
+	assert.NoError(test, err2)
+
+	ok2 := proof2.VerifyWithNonce(N, nonce)
+	assert.True(test, ok2, "proof must verify")
 }
 
 func TestBadW(test *testing.T) {

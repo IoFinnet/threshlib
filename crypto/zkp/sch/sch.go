@@ -56,12 +56,16 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 	return &ProofSch{A: A, Z: z}, nil
 }
 
-// NewProof implements proofsch
+// NewProofGivenNonce implements proofsch
 func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSch, error) {
-	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 {
+	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 || nonce == nil ||
+		big.NewInt(0).Cmp(nonce) == 0 {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
+	if nonce.BitLen() < ec.Params().N.BitLen()-1 {
+		return nil, errors.New("invalid nonce")
+	}
 	q := big.Wrap(ec.Params().N)
 	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy)) // already on the curve.
 
@@ -85,10 +89,14 @@ func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSc
 
 // NewProof implements proofsch
 func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *big.Int) (*ProofSch, error) {
-	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 || big.NewInt(0).Cmp(alpha) == 0 {
+	if x == nil || X == nil || !X.ValidateBasic() || big.NewInt(0).Cmp(x) == 0 || big.NewInt(0).Cmp(alpha) == 0 ||
+		nonce == nil || big.NewInt(0).Cmp(nonce) == 0 || alpha == nil {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
+	if nonce.BitLen() < ec.Params().N.BitLen()-1 {
+		return nil, errors.New("invalid nonce")
+	}
 	q := big.Wrap(ec.Params().N)
 	g := crypto.NewECPointNoCurveCheck(ec, big.Wrap(ec.Params().Gx), big.Wrap(ec.Params().Gy)) // already on the curve.
 
@@ -166,7 +174,8 @@ func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
 }
 
 func (pf *ProofSch) VerifyWithNonce(X *crypto.ECPoint, nonce *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() || X == nil || pf.Z == nil || big.NewInt(0).Cmp(pf.Z) == 0 {
+	if pf == nil || !pf.ValidateBasic() || X == nil || pf.Z == nil || big.NewInt(0).Cmp(pf.Z) == 0 || nonce == nil ||
+		big.NewInt(0).Cmp(nonce) == 0 {
 		return false
 	}
 	ec := X.Curve()

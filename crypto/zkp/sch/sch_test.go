@@ -37,7 +37,7 @@ func TestSchnorrProofVerify(t *testing.T) {
 	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
-	nonce := common.GetRandomPositiveInt(q)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
 	proof, err := NewProofGivenNonce(X, u, nonce)
 	assert.NoError(t, err, "there should be no error")
 
@@ -50,7 +50,7 @@ func TestSchnorrProofVerifyWithNonce(t *testing.T) {
 	q := big.Wrap(tss.EC().Params().N)
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
-	nonce := common.GetRandomPositiveInt(q)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
 	proof, err := NewProofGivenNonce(X, u, nonce)
 	assert.NoError(t, err, "there should be no error")
 
@@ -67,7 +67,7 @@ func TestSchnorrProofVerifyWithNonceEdwards(t *testing.T) {
 
 	u := big.NewInt(11)
 	X := crypto.ScalarBaseMult(curve, u)
-	nonce := big.NewInt(10101)
+	nonce := common.GetBigRandomPositiveInt(big.Wrap(curve.Params().N), big.Wrap(curve.Params().N).BitLen()-1)
 	alpha := big.NewInt(90909)
 	proof, err := NewProofGivenAlpha(X, u, alpha, nonce)
 

@@ -71,12 +71,13 @@ func (round *identification6) Start() *tss.Error {
 	secretProduct := big.NewInt(1).Exp(round.temp.𝜈i, round.temp.ki, round.key.PaillierSK.PublicKey.NSquare())
 	encryptedValueSum := modQ3Mul(round.temp.ki, round.temp.𝛾i)
 
-	proofHDec, errHDec := zkpdec.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, Hi, modN(encryptedValueSum),
-		round.key.NTildei, round.key.H1i, round.key.H2i, encryptedValueSum, secretProduct)
+	proofHDec, errHDec := zkpdec.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey, Hi, modN(encryptedValueSum),
+		round.key.NTildei, round.key.H1i, round.key.H2i, encryptedValueSum, secretProduct, round.temp.sessionId)
 	if errHDec != nil {
 		return round.WrapError(fmt.Errorf("error creating zkp"))
 	}
-	okHDec := proofHDec.Verify(round.EC(), &round.key.PaillierSK.PublicKey, Hi, modN(encryptedValueSum), round.key.NTildei, round.key.H1i, round.key.H2i)
+	okHDec := proofHDec.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, Hi, modN(encryptedValueSum),
+		round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.sessionId)
 	if !okHDec {
 		return round.WrapError(errors.New("error in zkp verification"))
 	}
@@ -99,16 +100,16 @@ func (round *identification6) Start() *tss.Error {
 			𝛽ij := round.temp.DeltaShareBetas[j]
 			𝛾k𝛽ʹ := q3Add(𝛽ʹ, modQ3Mul(𝛾j, round.temp.ki))
 			{
-				proofD, errD := zkpdec.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.r2msgDeltaD[j],
-					modN(𝛾k𝛽ʹ), round.key.NTildei, round.key.H1i, round.key.H2i, 𝛾k𝛽ʹ, 𝜌𝛾s)
+				proofD, errD := zkpdec.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.r2msgDeltaD[j],
+					modN(𝛾k𝛽ʹ), round.key.NTildei, round.key.H1i, round.key.H2i, 𝛾k𝛽ʹ, 𝜌𝛾s, round.temp.sessionId)
 				/* common.Logger.Debugf("r6 zkpdecNewProof D(i%v,j:%v): %v, 𝛽ji: %v, DeltaShareBetas[j]: %v, 𝛽ʹji:%v, sji:%v, 𝛾k𝛽ʹ:%v, 𝜌𝛾s: %v, 𝛾j:%v", i, j, common.FormatBigInt(round.temp.r2msgDeltaD[j]),
 				common.FormatBigInt(𝛽ji), common.FormatBigInt(round.temp.DeltaShareBetas[j]), common.FormatBigInt(𝛽ʹ), common.FormatBigInt(round.temp.r5msgsji[j]),
 				common.FormatBigInt(𝛾k𝛽ʹ) , common.FormatBigInt(𝜌𝛾s), common.FormatBigInt(𝛾j)) */
 				if errD != nil {
 					return round.WrapError(fmt.Errorf("error creating zkp"))
 				}
-				okD := proofD.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.r2msgDeltaD[j],
-					modN(𝛾k𝛽ʹ), round.key.NTildei, round.key.H1i, round.key.H2i)
+				okD := proofD.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.r2msgDeltaD[j],
+					modN(𝛾k𝛽ʹ), round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.sessionId)
 				if !okD {
 					return round.WrapError(errors.New(fmt.Sprintf("error in zkp verification - current party(i):%v, other party(j):%v",
 						round.PartyID(), Pj)))
@@ -126,13 +127,15 @@ func (round *identification6) Start() *tss.Error {
 			common.FormatBigInt(𝛾k𝛽ʹ), common.FormatBigInt(𝛽ij),
 			common.FormatBigInt(𝜌𝛾sr)) */
 
-			proof, errP := zkpdec.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, DF,
-				int2.ModInt(big.Wrap(round.EC().Params().N)).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i, round.key.H2i, 𝛾k𝛽ʹ𝛽, 𝜌𝛾sr)
+			proof, errP := zkpdec.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey, DF,
+				int2.ModInt(big.Wrap(round.EC().Params().N)).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i,
+				round.key.H2i, 𝛾k𝛽ʹ𝛽, 𝜌𝛾sr, round.temp.sessionId)
 			if errP != nil {
 				return round.WrapError(fmt.Errorf("identification of aborts - error with zk proof"), Pj)
 			}
-			if ok := proof.Verify(round.EC(), &round.key.PaillierSK.PublicKey, DF,
-				int2.ModInt(big.Wrap(round.EC().Params().N)).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i, round.key.H2i); !ok {
+			if ok := proof.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, DF,
+				int2.ModInt(big.Wrap(round.EC().Params().N)).Add(zero, 𝛾k𝛽ʹ𝛽), round.key.NTildei, round.key.H1i,
+				round.key.H2i, round.temp.sessionId); !ok {
 				return round.WrapError(fmt.Errorf("identification of aborts - error with zk proof"), Pj)
 			}
 
@@ -148,8 +151,9 @@ func (round *identification6) Start() *tss.Error {
 	/* common.Logger.Debugf("r6 zkpdecNewProof i:%v, DeltaShareEnc: %v, encryptedValueSum: %v, secretProduct: %v", i,
 	common.FormatBigInt(DeltaShareEnc), common.FormatBigInt(encryptedValueSum), common.FormatBigInt(secretProduct)) */
 
-	proofDeltaShare, errS := zkpdec.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc,
-		modN(encryptedValueSum), round.key.NTildei, round.key.H1i, round.key.H2i, encryptedValueSum, secretProduct)
+	proofDeltaShare, errS := zkpdec.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc,
+		modN(encryptedValueSum), round.key.NTildei, round.key.H1i, round.key.H2i, encryptedValueSum, secretProduct,
+		round.temp.sessionId)
 	if errS != nil {
 		return round.WrapError(fmt.Errorf("error in zkpdec"))
 	}

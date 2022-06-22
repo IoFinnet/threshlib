@@ -43,6 +43,9 @@ func (round *round4) Start() *tss.Error {
 		}
 		// Keygen: Fig 5. Output 1.
 		noncej := modQ.Add(modQ.Add(round.temp.rref3msgSsid[j], round.temp.𝜌), big.NewInt(uint64(j)))
+		if noncej.BitLen() < round.EC().Params().N.BitLen() {
+			noncej = new(big.Int).Lsh(noncej, uint(round.EC().Params().N.BitLen()-noncej.BitLen()))
+		}
 		/* common.Logger.Debugf("party %v r4 j: %v, ssid[%v]: %v, 𝜌: %v, nonce[j=%v]: %v", round.PartyID(),
 			j, j, common.FormatBigInt(round.temp.rref3msgSsid[j]), common.FormatBigInt(round.temp.𝜌),
 			j, common.FormatBigInt(noncej),
@@ -62,6 +65,9 @@ func (round *round4) Start() *tss.Error {
 			defer wg.Done()
 			sidjrid := modQ.Add(modQ.Add(sid, big.NewInt(uint64(j))), round.temp.rid)
 			nonceKG := modQ.Add(sidjrid, round.temp.sessionId)
+			if nonceKG.BitLen() < round.EC().Params().N.BitLen() {
+				nonceKG = new(big.Int).Lsh(nonceKG, uint(round.EC().Params().N.BitLen()-nonceKG.BitLen()))
+			}
 			if ok := round.temp.r3msgpf𝜓j[j].VerifyWithNonce(round.temp.r2msgXKeygenj[j], nonceKG); !ok {
 				/* common.Logger.Debugf("party %v r4 KG err sch 𝜓[j=%v]: %v, nonceKG: %v", round.PartyID(),
 					j, zkpsch.FormatProofSch(round.temp.r3msgpf𝜓j[j]), common.FormatBigInt(nonceKG),

@@ -30,7 +30,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 		return nil, errors.New("ProveDec constructor received nil value(s)")
 	}
 
-	𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T := proofStart(ec, pk, NCap, s, t, p, q)
+	𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T := initProof(ec, pk, NCap, s, t, p, q)
 
 	// Fig 28.2 e
 	var e *big.Int
@@ -39,18 +39,23 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
-	z1, z2, w1, w2, v := proofEnd(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
+	z1, z2, w1, w2, v := coda(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
 
 	return &ProofFac{P: P, Q: Q, A: A, B: B, T: T, Sigma: 𝜎, Z1: z1, Z2: z2, W1: w1, W2: w2, V: v}, nil
 }
 
 // NewProof implements prooffac
 func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q, nonce *big.Int) (*ProofFac, error) {
-	if ec == nil || pk == nil || NCap == nil || s == nil || t == nil || p == nil || q == nil {
+	if ec == nil || pk == nil || NCap == nil || s == nil || t == nil || p == nil || q == nil ||
+		nonce == nil || big.NewInt(0).Cmp(nonce) == 0 {
 		return nil, errors.New("ProveDec constructor received nil value(s)")
 	}
 
-	𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T := proofStart(ec, pk, NCap, s, t, p, q)
+	if nonce.BitLen() < ec.Params().N.BitLen()-1 {
+		return nil, errors.New("invalid nonce")
+	}
+
+	𝛼, 𝛽, 𝜇, 𝜈, 𝜎, r, x, y, P, Q, A, B, T := initProof(ec, pk, NCap, s, t, p, q)
 
 	// Fig 28.2 e
 	var e *big.Int
@@ -59,12 +64,12 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p
 		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
-	z1, z2, w1, w2, v := proofEnd(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
+	z1, z2, w1, w2, v := coda(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
 
 	return &ProofFac{P: P, Q: Q, A: A, B: B, T: T, Sigma: 𝜎, Z1: z1, Z2: z2, W1: w1, W2: w2, V: v}, nil
 }
 
-func proofEnd(𝜎 *big.Int, 𝜈 *big.Int, p *big.Int, 𝛼 *big.Int, e *big.Int, 𝛽 *big.Int, q *big.Int,
+func coda(𝜎 *big.Int, 𝜈 *big.Int, p *big.Int, 𝛼 *big.Int, e *big.Int, 𝛽 *big.Int, q *big.Int,
 	x *big.Int, 𝜇 *big.Int, y *big.Int, r *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	// Fig 28.3
 	ŝ := new(big.Int).Sub(𝜎, new(big.Int).Mul(𝜈, p))
@@ -77,7 +82,7 @@ func proofEnd(𝜎 *big.Int, 𝜈 *big.Int, p *big.Int, 𝛼 *big.Int, e *big.In
 	return z1, z2, w1, w2, v
 }
 
-func proofStart(ec elliptic.Curve, pk *paillier.PublicKey, NCap *big.Int, s *big.Int,
+func initProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap *big.Int, s *big.Int,
 	t *big.Int, p *big.Int, q *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int,
 	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
 	Twol := big.Wrap(ec.Params().N)                    // "q" (N) == "2^l"

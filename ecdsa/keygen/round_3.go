@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	big "github.com/binance-chain/tss-lib/common/int"
+	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -126,6 +127,9 @@ func (round *round3) Start() *tss.Error {
 			Nj, sj, tj := round.temp.rref2msgNj[j], round.temp.rref2msgsj[j], round.temp.rref2msgtj[j]
 			ssid := common.SHA512_256i([]*big.Int{sid /*round.temp.r2msgRidj[j],*/, Nj, sj, tj, round.temp.sessionId}...)
 			nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(j)))
+			if nonce.BitLen() < zkpprm.MinBitLen {
+				nonce = new(big.Int).Lsh(nonce, uint(zkpprm.MinBitLen-nonce.BitLen()))
+			}
 			if v := round.temp.rref2msgpf𝜓j[j].VerifyWithNonce(sj, tj, Nj, nonce); !v {
 				/* common.Logger.Debugf("party %v r3 err Pj: %v, proof: %v, Ni: %v, si: %v, nonce: %v", round.PartyID(),
 					Pj, zkpprm.FormatProofPrm(round.temp.rref2msgpf𝜓j[j]), common.FormatBigInt(Nj),
@@ -181,6 +185,9 @@ func (round *round3) Start() *tss.Error {
 	Xi := crypto.ScalarBaseMult(round.EC(), xi)
 	sidirid := modQ.Add(modQ.Add(round.temp.sid, big.NewInt(uint64(i))), rid)
 	nonceKG := modQ.Add(sidirid, round.temp.sessionId)
+	if nonceKG.BitLen() < round.EC().Params().N.BitLen() {
+		nonceKG = new(big.Int).Lsh(nonceKG, uint(round.EC().Params().N.BitLen()-nonceKG.BitLen()))
+	}
 	𝜓Schi, err := zkpsch.NewProofGivenAlpha(Xi, xi, round.temp.τKeygen, nonceKG)
 	if err != nil {
 		return round.WrapError(errors.New("create proofSch failed"))
@@ -192,6 +199,9 @@ func (round *round3) Start() *tss.Error {
 	// Refresh:
 	modN := big.ModInt(big.Wrap(round.EC().Params().N))
 	nonce := modN.Add(modN.Add(round.temp.ssid, 𝜌), big.NewInt(uint64(i)))
+	if nonce.BitLen() < round.EC().Params().N.BitLen() {
+		nonce = new(big.Int).Lsh(nonce, uint(round.EC().Params().N.BitLen()-nonce.BitLen()))
+	}
 
 	𝜓Modi, errP := zkpmod.NewProofGivenNonce(round.save.LocalPreParams.NTildei,
 		common.PrimeToSafePrime(round.save.LocalPreParams.P),
