@@ -360,14 +360,14 @@ func identifiedAbortUpdater(party tss.Party, msg tss.Message, parties []*LocalPa
 			crypto.FormatECPoint(roundVictim.temp.Γ),
 			common.FormatBigInt(roundVictim.key.NTildej[j]), common.FormatBigInt(roundVictim.key.H1j[j]), common.FormatBigInt(roundVictim.key.H2j[j]),
 			common.FormatBigInt(fakeki), common.FormatBigInt(fake𝜌i), crypto.FormatECPoint(fakeΔi))
-		proof, errP := zkplogstar.NewProof(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ, roundVictim.key.NTildej[j],
-			roundVictim.key.H1j[j], roundVictim.key.H2j[j], fakeki, fake𝜌i)
+		proof, errP := zkplogstar.NewProofGivenNonce(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ, roundVictim.key.NTildej[j],
+			roundVictim.key.H1j[j], roundVictim.key.H2j[j], fakeki, fake𝜌i, roundVictim.temp.sessionId)
 		if errP != nil {
 			common.Logger.Errorf("error changing message %s from %s", msg.Type(), msg.GetFrom())
 		}
 
-		verified := proof.Verify(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ,
-			roundVictim.key.NTildej[j], roundVictim.key.H1j[j], roundVictim.key.H2j[j])
+		verified := proof.VerifyWithNonce(ec, pk, fakeKi, fakeΔi, roundVictim.temp.Γ,
+			roundVictim.key.NTildej[j], roundVictim.key.H1j[j], roundVictim.key.H2j[j], roundVictim.temp.sessionId)
 		common.Logger.Debugf(" i: %v, j: %v, verified? %v", parties[i], parties[j], verified)
 		r3msg := NewPreSignRound3Message(roundVictim.temp.sessionId, msg.GetTo()[0], msg.GetFrom(), fake𝛿i, fakeΔi, proof)
 		// repackaging the malicious message

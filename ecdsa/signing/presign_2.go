@@ -113,7 +113,9 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ProofLogstar, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, Γi, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.𝛾i, round.temp.𝜈i)
+				ProofLogstar, err := zkplogstar.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey,
+					round.temp.G, Γi, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.𝛾i,
+					round.temp.𝜈i, round.temp.sessionId)
 				if err != nil {
 					errChs <- round.WrapError(errors.New("prooflogstar failed"), Pj)
 					return
