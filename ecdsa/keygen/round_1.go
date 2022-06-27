@@ -98,8 +98,13 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(errors2.Wrapf(err, "flattening error"))
 	}
 
+	var nonce *big.Int
 	ssid := common.SHA512_256i([]*big.Int{sid /* round.temp.rid,*/, Ni, si, ti, round.temp.sessionId}...)
-	nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(i)))
+	nonce = big.NewInt(0).Add(ssid, big.NewInt(uint64(i)))
+	if nonce.BitLen() < zkpprm.MinBitLen {
+		nonce = new(big.Int).Lsh(nonce, uint(zkpprm.MinBitLen-nonce.BitLen()))
+	}
+
 	𝜓ᵢ, err := zkpprm.NewProofWithNonce(si, ti, Ni, 𝜑Nᵢ, 𝜆, nonce)
 	if err != nil {
 		return round.WrapError(err, Pi)

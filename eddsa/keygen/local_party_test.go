@@ -43,7 +43,7 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
-	setUp("info")
+	setUp("debug")
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants, testSetIdEdwards)
@@ -59,7 +59,7 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
 	q := big.Wrap(tss.Edwards().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen()-1)
 
 	updater := test.SharedPartyUpdater
 
@@ -241,7 +241,7 @@ func TestE2EConcurrentAndSaveFixturesS256Schnorr(t *testing.T) {
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	updater := test.SharedPartyUpdater
 
 	startGR := runtime.NumGoroutine()

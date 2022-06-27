@@ -10,6 +10,7 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -34,6 +35,59 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.I
 	}
 	q := big.Wrap(ec.Params().N)
 
+	alpha, r, s, A, B := initProof(pk, Y)
+
+	// Fig 28.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), X, Y, C, A, B)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	z, v := coda(e, x, alpha, pk, rhox, s)
+
+	return &ProofMul{A: A, B: B, Z: z, U: r, V: v}, nil
+}
+
+func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox, nonce *big.Int) (*ProofMul, error) {
+	if pk == nil || X == nil || Y == nil || C == nil || rhox == nil || nonce == nil ||
+		big.NewInt(0).Cmp(nonce) == 0 {
+		return nil, errors.New("ProveMul constructor received nil value(s)")
+	}
+	if nonce.BitLen() < ec.Params().N.BitLen()-1 {
+		return nil, errors.New("invalid nonce")
+	}
+	q := big.Wrap(ec.Params().N)
+
+	alpha, r, s, A, B := initProof(pk, Y)
+
+	// Fig 28.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), X, Y, C, A, B, nonce)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	z, v := coda(e, x, alpha, pk, rhox, s)
+
+	return &ProofMul{A: A, B: B, Z: z, U: r, V: v}, nil
+}
+
+func coda(e *int2.Int, x *int2.Int, alpha *int2.Int, pk *paillier.PublicKey, rhox *int2.Int, s *int2.Int) (*int2.Int, *int2.Int) {
+	// Fig 14.3
+	z := new(big.Int).Mul(e, x)
+	z = new(big.Int).Add(z, alpha)
+
+	modN := int2.ModInt(pk.N)
+	// u := modN.Exp(rho, e)
+	// u = modN.Mul(u, r)
+
+	v := modN.Exp(rhox, e)
+	v = modN.Mul(v, s)
+	return z, v
+}
+
+func initProof(pk *paillier.PublicKey, Y *int2.Int) (*int2.Int, *int2.Int, *int2.Int, *int2.Int, *int2.Int) {
 	// Fig 28.1 sample
 	alpha := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk.N)
@@ -45,26 +99,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.I
 
 	B := modNSquared.Exp(pk.Gamma(), alpha)
 	B = modNSquared.Mul(B, modNSquared.Exp(s, pk.N))
-
-	// Fig 28.2 e
-	var e *big.Int
-	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), X, Y, C, A, B)...)
-		e = common.RejectionSample(q, eHash)
-	}
-
-	// Fig 14.3
-	z := new(big.Int).Mul(e, x)
-	z = new(big.Int).Add(z, alpha)
-
-	modN := int2.ModInt(pk.N)
-	// u := modN.Exp(rho, e)
-	// u = modN.Mul(u, r)
-
-	v := modN.Exp(rhox, e)
-	v = modN.Mul(v, s)
-
-	return &ProofMul{A: A, B: B, Z: z, U: r, V: v}, nil
+	return alpha, r, s, A, B
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofMul, error) {
@@ -93,6 +128,26 @@ func (pf *ProofMul) Verify(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *b
 		e = common.RejectionSample(q, eHash)
 	}
 
+	return doVerify(pk, Y, pf, C, e, X)
+}
+
+func (pf *ProofMul) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, nonce *big.Int) bool {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || X == nil || Y == nil || C == nil {
+		return false
+	}
+
+	q := big.Wrap(ec.Params().N)
+
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), X, Y, C, pf.A, pf.B, nonce)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	return doVerify(pk, Y, pf, C, e, X)
+}
+
+func doVerify(pk *paillier.PublicKey, Y *int2.Int, pf *ProofMul, C *int2.Int, e *int2.Int, X *int2.Int) bool {
 	// Fig 14. Equality Check
 	modNSquare := int2.ModInt(pk.NSquare())
 	{

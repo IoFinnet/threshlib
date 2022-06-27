@@ -63,12 +63,13 @@ func (round *presign1) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			proof, err := zkpenc.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, Ki, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], ki, 𝜌i)
+			𝜓0ji, err := zkpenc.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey, Ki,
+				round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], ki, 𝜌i, round.temp.sessionId)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pj)
 				return
 			}
-			r1msg := NewPreSignRound1Message(round.temp.sessionId, Pj, round.PartyID(), Ki, Gi, proof)
+			r1msg := NewPreSignRound1Message(round.temp.sessionId, Pj, round.PartyID(), Ki, Gi, 𝜓0ji)
 			round.out <- r1msg
 		}(j, Pj)
 	}

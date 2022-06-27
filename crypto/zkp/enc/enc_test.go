@@ -7,9 +7,10 @@
 package zkpenc
 
 import (
-	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/stretchr/testify/assert"
 
@@ -28,7 +29,7 @@ func TestEnc(test *testing.T) {
 	ec := tss.EC()
 	q := big.Wrap(ec.Params().N)
 
-	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*15)
 	assert.NoError(test, err)
 
 	k := common.GetRandomPositiveInt(q)
@@ -43,4 +44,12 @@ func TestEnc(test *testing.T) {
 
 	ok := proof.Verify(ec, pk, NCap, s, t, K)
 	assert.True(test, ok, "proof must verify")
+
+	// with nonce
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
+	proof2, err := NewProofGivenNonce(ec, pk, K, NCap, s, t, k, rho, nonce)
+	assert.NoError(test, err)
+
+	ok2 := proof2.VerifyWithNonce(ec, pk, NCap, s, t, K, nonce)
+	assert.True(test, ok2, "proof must verify")
 }

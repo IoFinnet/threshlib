@@ -53,7 +53,8 @@ func (round *presign3) Start() *tss.Error {
 			DeltaD := round.temp.r2msgDeltaD[j]
 			DeltaF := round.temp.r2msgDeltaF[j]
 			proofAffgDelta := round.temp.r2msgDeltaProof[j]
-			ok := proofAffgDelta.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, Γj)
+			ok := proofAffgDelta.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j],
+				round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, Γj, round.temp.sessionId)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg delta"))
 				return
@@ -72,7 +73,9 @@ func (round *presign3) Start() *tss.Error {
 			ChiD := round.temp.r2msgChiD[j]
 			ChiF := round.temp.r2msgChiF[j]
 			proofAffgChi := round.temp.r2msgChiProof[j]
-			ok := proofAffgChi.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
+			ok := proofAffgChi.VerifyWithNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j],
+				round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j],
+				round.temp.sessionId)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg chi"))
 				return
@@ -90,7 +93,8 @@ func (round *presign3) Start() *tss.Error {
 			defer wg.Done()
 			ψʹij := round.temp.r2msgProofLogstar[j]
 			Gj := round.temp.r1msgG[j]
-			ok := ψʹij.Verify(round.EC(), round.key.PaillierPKs[j], Gj, Γj, g, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := ψʹij.VerifyWithNonce(round.EC(), round.key.PaillierPKs[j], Gj, Γj, g, round.key.NTildei,
+				round.key.H1i, round.key.H2i, round.temp.sessionId)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify logstar"))
 				return
@@ -151,7 +155,8 @@ func (round *presign3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			ψʺji, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, Δi, Γ, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.ki, round.temp.𝜌i)
+			ψʺji, err := zkplogstar.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, Δi, Γ,
+				round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.ki, round.temp.𝜌i, round.temp.sessionId)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proof generation failed"))
 			}

@@ -48,7 +48,8 @@ func (round *presign2) Start() *tss.Error {
 
 			Kj := round.temp.r1msgK[j]
 			𝜓ij := round.temp.r1msg𝜓0ij[j]
-			ok := 𝜓ij.Verify(round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
+			ok := 𝜓ij.VerifyWithNonce(round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i,
+				round.key.H2i, Kj, round.temp.sessionId)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round2: proofenc verify failed"), Pj)
 			}
@@ -87,7 +88,7 @@ func (round *presign2) Start() *tss.Error {
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
 				DeltaMtA, err := NewMtA(round.EC(), Kj, round.temp.𝛾i, Γi, round.key.PaillierPKs[j],
-					&round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+					&round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.sessionId)
 
 				if err != nil {
 					errChs <- round.WrapError(errors.New("MtADelta failed"), Pj)
@@ -99,7 +100,9 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ChiMtA, err := NewMtA(round.EC(), Kj, round.temp.w, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+				ChiMtA, err := NewMtA(round.EC(), Kj, round.temp.w, round.temp.BigWs[i], round.key.PaillierPKs[j],
+					&round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j],
+					round.temp.sessionId)
 				if err != nil {
 					errChs <- round.WrapError(errors.New("MtAChi failed"), Pj)
 					return
@@ -110,7 +113,9 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ProofLogstar, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, Γi, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.𝛾i, round.temp.𝜈i)
+				ProofLogstar, err := zkplogstar.NewProofGivenNonce(round.EC(), &round.key.PaillierSK.PublicKey,
+					round.temp.G, Γi, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.𝛾i,
+					round.temp.𝜈i, round.temp.sessionId)
 				if err != nil {
 					errChs <- round.WrapError(errors.New("prooflogstar failed"), Pj)
 					return

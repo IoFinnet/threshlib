@@ -7,6 +7,7 @@
 package zkpmod
 
 import (
+	"errors"
 	"fmt"
 	mathbig "math/big"
 
@@ -19,6 +20,7 @@ import (
 const (
 	Iterations         = 13
 	ProofModBytesParts = Iterations*4 + 1
+	MinBitLen          = 254
 )
 
 var (
@@ -44,6 +46,9 @@ func isQuadraticResidue(X, N *big.Int) bool {
 }
 
 func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
+	if N == nil || P == nil || Q == nil {
+		return nil, errors.New("nil value(s)")
+	}
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
 	W := common.GetRandomQuadraticNonResidue(N)
@@ -61,6 +66,12 @@ func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
 }
 
 func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
+	if N == nil || P == nil || Q == nil || nonce == nil || big.NewInt(0).Cmp(nonce) == 0 {
+		return nil, errors.New("nil value(s)")
+	}
+	if nonce.BitLen() < MinBitLen {
+		return nil, errors.New("invalid nonce")
+	}
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
 	W := common.GetRandomQuadraticNonResidue(N)

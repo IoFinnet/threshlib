@@ -7,6 +7,7 @@
 package zkpprm
 
 import (
+	"errors"
 	"fmt"
 
 	big "github.com/binance-chain/tss-lib/common/int"
@@ -18,6 +19,7 @@ import (
 const (
 	Iterations         = 64
 	ProofPrmBytesParts = Iterations * 2
+	MinBitLen          = 254
 )
 
 type (
@@ -28,6 +30,10 @@ type (
 )
 
 func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
+	if s == nil || t == nil || N == nil || Phi == nil || lambda == nil {
+		return nil, errors.New("nil argument")
+	}
+
 	modN, modPhi := int2.ModInt(N), int2.ModInt(Phi)
 
 	// Fig 17.1
@@ -51,6 +57,13 @@ func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 }
 
 func NewProofWithNonce(s, t, N, Phi, lambda, nonce *big.Int) (*ProofPrm, error) {
+	if s == nil || t == nil || N == nil || Phi == nil || lambda == nil ||
+		nonce == nil || big.NewInt(0).Cmp(nonce) == 0 {
+		return nil, errors.New("nil argument")
+	}
+	if nonce.BitLen() < MinBitLen {
+		return nil, fmt.Errorf("invalid nonce")
+	}
 	modN, modPhi := big.ModInt(N), big.ModInt(Phi)
 
 	// Fig 17.1

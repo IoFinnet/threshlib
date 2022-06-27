@@ -7,9 +7,10 @@
 package zkplogstar
 
 import (
-	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/stretchr/testify/assert"
 
@@ -46,4 +47,12 @@ func TestLogstar(test *testing.T) {
 
 	ok := proof.Verify(ec, pk, C, X, g, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
+
+	// with nonce
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
+	proof2, err := NewProofGivenNonce(ec, pk, C, X, g, NCap, s, t, x, rho, nonce)
+	assert.NoError(test, err)
+
+	ok2 := proof2.VerifyWithNonce(ec, pk, C, X, g, NCap, s, t, nonce)
+	assert.True(test, ok2, "proof must verify")
 }

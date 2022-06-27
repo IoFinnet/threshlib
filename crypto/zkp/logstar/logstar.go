@@ -10,6 +10,7 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -37,6 +38,61 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	}
 
 	q := big.Wrap(ec.Params().N)
+	alpha, mu, r, gamma, S, A, Y, D := initProof(q, NCap, pk, s, x, t, g)
+
+	// Fig 25.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y())...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	z1, z2, z3 := coda(e, x, alpha, pk, rho, r, mu, gamma)
+
+	return &ProofLogstar{S: S, A: A, Y: Y, D: D, Z1: z1, Z2: z2, Z3: z3}, nil
+}
+
+func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint,
+	NCap, s, t, x, rho, nonce *big.Int) (*ProofLogstar, error) {
+	if ec == nil || pk == nil || C == nil || X == nil || g == nil || NCap == nil || s == nil || t == nil || x == nil ||
+		rho == nil || nonce == nil || big.NewInt(0).Cmp(nonce) == 0 {
+		return nil, errors.New("ProveLogstar constructor received nil value(s)")
+	}
+	if nonce.BitLen() < ec.Params().N.BitLen()-1 {
+		return nil, errors.New("invalid nonce")
+	}
+	q := big.Wrap(ec.Params().N)
+	alpha, mu, r, gamma, S, A, Y, D := initProof(q, NCap, pk, s, x, t, g)
+
+	// Fig 25.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), nonce)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	z1, z2, z3 := coda(e, x, alpha, pk, rho, r, mu, gamma)
+
+	return &ProofLogstar{S: S, A: A, Y: Y, D: D, Z1: z1, Z2: z2, Z3: z3}, nil
+}
+
+func coda(e *int2.Int, x *int2.Int, alpha *int2.Int, pk *paillier.PublicKey, rho *int2.Int, r *int2.Int, mu *int2.Int,
+	gamma *int2.Int) (*int2.Int, *int2.Int, *int2.Int) {
+	// Fig 25.3
+	z1 := new(big.Int).Mul(e, x)
+	z1 = new(big.Int).Add(z1, alpha)
+
+	modN := int2.ModInt(pk.N)
+	z2 := modN.Exp(rho, e)
+	z2 = modN.Mul(z2, r)
+
+	z3 := new(big.Int).Mul(e, mu)
+	z3 = new(big.Int).Add(z3, gamma)
+	return z1, z2, z3
+}
+
+func initProof(q *int2.Int, NCap *int2.Int, pk *paillier.PublicKey, s *int2.Int, x *int2.Int, t *int2.Int,
+	g *crypto.ECPoint) (*int2.Int, *int2.Int, *int2.Int, *int2.Int, *int2.Int, *int2.Int, *crypto.ECPoint, *int2.Int) {
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
@@ -63,26 +119,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 
 	D := modNCap.Exp(s, alpha)
 	D = modNCap.Mul(D, modNCap.Exp(t, gamma))
-
-	// Fig 25.2 e
-	var e *big.Int
-	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y())...)
-		e = common.RejectionSample(q, eHash)
-	}
-
-	// Fig 25.3
-	z1 := new(big.Int).Mul(e, x)
-	z1 = new(big.Int).Add(z1, alpha)
-
-	modN := int2.ModInt(pk.N)
-	z2 := modN.Exp(rho, e)
-	z2 = modN.Mul(z2, r)
-
-	z3 := new(big.Int).Mul(e, mu)
-	z3 = new(big.Int).Add(z3, gamma)
-
-	return &ProofLogstar{S: S, A: A, Y: Y, D: D, Z1: z1, Z2: z2, Z3: z3}, nil
+	return alpha, mu, r, gamma, S, A, Y, D
 }
 
 func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofLogstar, error) {
@@ -112,8 +149,6 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	}
 
 	q := big.Wrap(ec.Params().N)
-	q3 := new(big.Int).Mul(q, q)
-	q3 = new(big.Int).Mul(q, q3)
 	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
 	TwolPlus𝜀 := twoTo768
 
@@ -128,6 +163,35 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 		e = common.RejectionSample(q, eHash)
 	}
 
+	return doVerify(ec, pk, C, X, g, NCap, s, t, pf, e)
+}
+
+func (pf *ProofLogstar) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint,
+	g *crypto.ECPoint, NCap, s, t, nonce *big.Int) bool {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || C == nil || X == nil || NCap == nil || s == nil || t == nil {
+		return false
+	}
+
+	q := big.Wrap(ec.Params().N)
+	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
+	TwolPlus𝜀 := twoTo768
+
+	// Fig 25. range check
+	if pf.Z1.Cmp(TwolPlus𝜀) == 1 {
+		return false
+	}
+
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(),
+			g.X(), g.Y(), nonce)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	return doVerify(ec, pk, C, X, g, NCap, s, t, pf, e)
+}
+
+func doVerify(ec elliptic.Curve, pk *paillier.PublicKey, C *int2.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap *int2.Int, s *int2.Int, t *int2.Int, pf *ProofLogstar, e *int2.Int) bool {
 	// Fig 25. equality checks
 	{
 		modNSquared := int2.ModInt(pk.NSquare())

@@ -42,7 +42,7 @@ func TestPrm(test *testing.T) {
 func TestPrmWithNonce(test *testing.T) {
 	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
 	assert.NoError(test, err)
-	secret := common.GetRandomPositiveInt(big.Wrap(tss.EC().Params().N))
+	secret := common.GetBigRandomPositiveInt(big.Wrap(tss.EC().Params().N), big.Wrap(tss.EC().Params().N).BitLen()-1)
 
 	s, t, lambda, P, Q, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P, preParams.Q, preParams.NTildei
 	P2, Q2 := new(big.Int).Lsh(P, 1), new(big.Int).Lsh(Q, 1)

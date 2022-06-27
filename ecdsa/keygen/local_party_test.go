@@ -60,7 +60,7 @@ func handleMessage(t *testing.T, msg tss.Message, parties []*LocalParty, updater
 
 func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold int, fixtures []LocalPartySaveData, outCh chan tss.Message, endCh chan LocalPartySaveData, parties []*LocalParty, errCh chan *tss.Error) ([]*LocalParty, chan *tss.Error) {
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
@@ -165,7 +165,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {
@@ -413,7 +413,7 @@ func TestTooManyParties(t *testing.T) {
 	p2pCtx := tss.NewPeerContext(pIDs)
 	params, _ := tss.NewParameters(tss.S256(), p2pCtx, pIDs[0], len(pIDs), MaxParties/100)
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	out := make(chan tss.Message, len(pIDs))
 	var err error
 	_, err = NewLocalParty(params, out, nil, sessionId)

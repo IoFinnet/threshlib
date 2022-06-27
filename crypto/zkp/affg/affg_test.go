@@ -7,9 +7,10 @@
 package zkpaffg
 
 import (
-	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/stretchr/testify/assert"
 
@@ -32,9 +33,9 @@ func TestAffg(test *testing.T) {
 	q3 = new(big.Int).Mul(q, q3)
 	// q6 := new(big.Int).Mul(q3, q3)
 
-	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
 	assert.NoError(test, err)
-	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
+	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
 	assert.NoError(test, err)
 
 	// a*b+w
@@ -83,4 +84,50 @@ func TestAffg(test *testing.T) {
 
 	ok = proof.Verify(ec, pk0, pk1, NCap, s, t, C, D, Y, X)
 	assert.False(test, ok, "proof must verify")
+}
+
+func TestAffgWithNonce(test *testing.T) {
+	ec := tss.EC()
+	q := big.Wrap(ec.Params().N)
+	q3 := new(big.Int).Mul(q, q)
+	q3 = new(big.Int).Mul(q, q3)
+	// q6 := new(big.Int).Mul(q3, q3)
+
+	_, pk0, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
+	assert.NoError(test, err)
+	_, pk1, err := paillier.GenerateKeyPair(testPaillierKeyLength, 15*time.Minute)
+	assert.NoError(test, err)
+
+	// a*b+w
+	a := common.GetRandomPositiveInt(q)
+	x := common.GetRandomPositiveInt(q)
+	// x := q6
+	y := common.GetRandomPositiveInt(q3)
+
+	X := crypto.ScalarBaseMult(ec, x)
+	assert.NoError(test, err)
+
+	Y, rhoy, err := pk1.EncryptAndReturnRandomness(y)
+	assert.NoError(test, err)
+
+	NCap, s, t, err := keygen.ConstantTestNTildeH1H2(1)
+	assert.NoError(test, err)
+
+	C, _, err := pk0.EncryptAndReturnRandomness(a)
+	assert.NoError(test, err)
+
+	cw, rho, err := pk0.EncryptAndReturnRandomness(y)
+	assert.NoError(test, err)
+
+	D, err := pk0.HomoMult(x, C)
+	assert.NoError(test, err)
+	D, err = pk0.HomoAdd(D, cw)
+	assert.NoError(test, err)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
+
+	proof, err := NewProofGivenNonce(ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy, nonce)
+	assert.NoError(test, err)
+
+	ok := proof.VerifyWithNonce(ec, pk0, pk1, NCap, s, t, C, D, Y, X, nonce)
+	assert.True(test, ok, "proof must verify")
 }

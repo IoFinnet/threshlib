@@ -51,7 +51,8 @@ func (round *sign4) Start() *tss.Error {
 			Δj := round.temp.r3msgΔj[j]
 			ψʺij := round.temp.r3msgProofLogstar[j]
 
-			ok := ψʺij.Verify(round.EC(), round.key.PaillierPKs[j], Kj, Δj, round.temp.Γ, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := ψʺij.VerifyWithNonce(round.EC(), round.key.PaillierPKs[j], Kj, Δj, round.temp.Γ, round.key.NTildei,
+				round.key.H1i, round.key.H2i, round.temp.sessionId)
 			if !ok {
 				round.ok[i] = false
 				common.Logger.Errorf("zkplogstar proof verify failed - this party(i): %v, culprit(Pj): %v", i, Pj)

@@ -10,6 +10,7 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -34,6 +35,58 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *
 	}
 
 	q := big.Wrap(ec.Params().N)
+	alpha, mu, r, gamma, S, A, C := initProof(q, NCap, pk, s, k, t)
+
+	// Fig 14.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), K, S, A, C)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	z1, z2, z3 := coda(e, k, alpha, pk, rho, r, mu, gamma)
+
+	return &ProofEnc{S: S, A: A, C: C, Z1: z1, Z2: z2, Z3: z3}, nil
+}
+
+func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho, nonce *big.Int) (*ProofEnc, error) {
+	if ec == nil || pk == nil || K == nil || NCap == nil || s == nil || t == nil || k == nil || rho == nil || nonce == nil ||
+		big.NewInt(0).Cmp(nonce) == 0 {
+		return nil, errors.New("ProveEnc constructor received nil value(s)")
+	}
+	if nonce.BitLen() < ec.Params().N.BitLen()-1 {
+		return nil, errors.New("invalid nonce")
+	}
+	q := big.Wrap(ec.Params().N)
+	alpha, mu, r, gamma, S, A, C := initProof(q, NCap, pk, s, k, t)
+
+	// Fig 14.2 e
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), K, S, A, C, nonce)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	z1, z2, z3 := coda(e, k, alpha, pk, rho, r, mu, gamma)
+
+	return &ProofEnc{S: S, A: A, C: C, Z1: z1, Z2: z2, Z3: z3}, nil
+}
+
+func coda(e *int2.Int, k *int2.Int, alpha *int2.Int, pk *paillier.PublicKey, rho *int2.Int, r *int2.Int, mu *int2.Int, gamma *int2.Int) (*int2.Int, *int2.Int, *int2.Int) {
+	// Fig 14.3
+	z1 := new(big.Int).Mul(e, k)
+	z1 = new(big.Int).Add(z1, alpha)
+
+	modN := int2.ModInt(pk.N)
+	z2 := modN.Exp(rho, e)
+	z2 = modN.Mul(z2, r)
+
+	z3 := new(big.Int).Mul(e, mu)
+	z3 = new(big.Int).Add(z3, gamma)
+	return z1, z2, z3
+}
+
+func initProof(q *int2.Int, NCap *int2.Int, pk *paillier.PublicKey, s *int2.Int, k *int2.Int, t *int2.Int) (*int2.Int, *int2.Int, *int2.Int, *int2.Int, *int2.Int, *int2.Int, *int2.Int) {
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
@@ -56,26 +109,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *
 
 	C := modNCap.Exp(s, alpha)
 	C = modNCap.Mul(C, modNCap.Exp(t, gamma))
-
-	// Fig 14.2 e
-	var e *big.Int
-	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), K, S, A, C)...)
-		e = common.RejectionSample(q, eHash)
-	}
-
-	// Fig 14.3
-	z1 := new(big.Int).Mul(e, k)
-	z1 = new(big.Int).Add(z1, alpha)
-
-	modN := int2.ModInt(pk.N)
-	z2 := modN.Exp(rho, e)
-	z2 = modN.Mul(z2, r)
-
-	z3 := new(big.Int).Mul(e, mu)
-	z3 = new(big.Int).Add(z3, gamma)
-
-	return &ProofEnc{S: S, A: A, C: C, Z1: z1, Z2: z2, Z3: z3}, nil
+	return alpha, mu, r, gamma, S, A, C
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofEnc, error) {
@@ -112,6 +146,33 @@ func (pf *ProofEnc) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 		e = common.RejectionSample(q, eHash)
 	}
 
+	return doVerify(pk, pf, K, e, NCap, s, t)
+}
+
+func (pf *ProofEnc) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, K, nonce *big.Int) bool {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || NCap == nil || s == nil || t == nil || K == nil {
+		return false
+	}
+
+	q := big.Wrap(ec.Params().N)
+	q3 := new(big.Int).Mul(q, q)
+	q3 = new(big.Int).Mul(q, q3)
+
+	// Fig 14. Range Check
+	if pf.Z1.Cmp(q3) == 1 {
+		return false
+	}
+
+	var e *big.Int
+	{
+		eHash := common.SHA512_256i(append(pk.AsInts(), K, pf.S, pf.A, pf.C, nonce)...)
+		e = common.RejectionSample(q, eHash)
+	}
+
+	return doVerify(pk, pf, K, e, NCap, s, t)
+}
+
+func doVerify(pk *paillier.PublicKey, pf *ProofEnc, K *int2.Int, e *int2.Int, NCap *int2.Int, s *int2.Int, t *int2.Int) bool {
 	// Fig 14. Equality Check
 	{
 		modNSquare := int2.ModInt(pk.NSquare())

@@ -7,9 +7,10 @@
 package signing
 
 import (
-	big "github.com/binance-chain/tss-lib/common/int"
 	"testing"
 	"time"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
@@ -49,8 +50,9 @@ func TestAffg(test *testing.T) {
 
 	NCap, s, t, err := keygen.ConstantTestNTildeH1H2(1)
 	assert.NoError(test, err)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
 
-	MtaOut, err := NewMtA(ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t)
+	MtaOut, err := NewMtA(ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t, nonce)
 	assert.NoError(test, err)
 
 	alphaj, err := skj.Decrypt(MtaOut.Dji)
@@ -62,7 +64,7 @@ func TestAffg(test *testing.T) {
 	rhs := modN.Mul(kj, gammai)
 	test.Log(lhs, rhs)
 	assert.Equal(test, 0, lhs.Cmp(rhs))
-	ok := MtaOut.Proofji.Verify(ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
+	ok := MtaOut.Proofji.VerifyWithNonce(ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai, nonce)
 	assert.True(test, ok)
 }
 
@@ -71,6 +73,7 @@ func TestDec(test *testing.T) {
 	q := big.Wrap(ec.Params().N)
 	q3 := new(big.Int).Mul(q, new(big.Int).Mul(q, q))
 	modN := int2.ModInt(big.Wrap(ec.Params().N))
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	_, pki, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
 	assert.NoError(test, err)
@@ -89,15 +92,15 @@ func TestDec(test *testing.T) {
 
 	N2 := pkj.NSquare()
 
-	MtaOut, err := NewMtA(ec, Kj, 𝛾i, Γi, pkj, pki, NCap, s, t)
+	MtaOut, err := NewMtA(ec, Kj, 𝛾i, Γi, pkj, pki, NCap, s, t, nonce)
 	assert.NoError(test, err)
 
 	𝜌𝛾s := N2.Mul(big.NewInt(1).Exp(𝜌j, 𝛾i, N2), MtaOut.Sij)
 	𝛾k𝛽ʹ := q3.Add(MtaOut.BetaNeg, q3.Mul(𝛾i, kj))
 
-	proofD, err := zkpdec.NewProof(ec, pkj, MtaOut.Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap, s, t, 𝛾k𝛽ʹ, 𝜌𝛾s)
+	proofD, err := zkpdec.NewProofGivenNonce(ec, pkj, MtaOut.Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap, s, t, 𝛾k𝛽ʹ, 𝜌𝛾s, nonce)
 	assert.NoError(test, err)
-	okD := proofD.Verify(ec, pkj, MtaOut.Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap, s, t)
+	okD := proofD.VerifyWithNonce(ec, pkj, MtaOut.Dji, modN.Add(zero, 𝛾k𝛽ʹ), NCap, s, t, nonce)
 	assert.True(test, okD, "proof must verify")
 
 }
