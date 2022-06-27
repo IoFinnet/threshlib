@@ -10,6 +10,7 @@
 package commitments
 
 import (
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -35,7 +36,7 @@ func NewHashCommitmentWithRandomness(r *big.Int, secrets ...*big.Int) *HashCommi
 	for i := 1; i < len(parts); i++ {
 		parts[i] = secrets[i-1]
 	}
-	hash := common.SHA512_256i(parts...)
+	hash := hash.SHA512_256i(parts...)
 
 	cmt := &HashCommitDecommit{}
 	cmt.C = hash
@@ -57,7 +58,7 @@ func (cmt *HashCommitDecommit) Verify() bool {
 	if C == nil || D == nil {
 		return false
 	}
-	hash := common.SHA512_256i(D...)
+	hash := hash.SHA512_256i(D...)
 	return hash.Cmp(C) == 0
 }
 

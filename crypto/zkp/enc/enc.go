@@ -11,9 +11,9 @@ import (
 	"errors"
 	"fmt"
 
-	big "github.com/binance-chain/tss-lib/common/int"
-
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/common/hash"
+	big "github.com/binance-chain/tss-lib/common/int"
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
@@ -40,8 +40,8 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *
 	// Fig 14.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), K, S, A, C)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), K, S, A, C)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	z1, z2, z3 := coda(e, k, alpha, pk, rho, r, mu, gamma)
@@ -63,8 +63,8 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t
 	// Fig 14.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), K, S, A, C, nonce)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), K, S, A, C, nonce)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	z1, z2, z3 := coda(e, k, alpha, pk, rho, r, mu, gamma)
@@ -142,8 +142,8 @@ func (pf *ProofEnc) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), K, pf.S, pf.A, pf.C)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), K, pf.S, pf.A, pf.C)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	return doVerify(pk, pf, K, e, NCap, s, t)
@@ -165,8 +165,8 @@ func (pf *ProofEnc) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, N
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), K, pf.S, pf.A, pf.C, nonce)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), K, pf.S, pf.A, pf.C, nonce)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	return doVerify(pk, pf, K, e, NCap, s, t)

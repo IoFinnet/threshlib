@@ -11,6 +11,7 @@ import (
 	"fmt"
 	mathbig "math/big"
 
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -56,8 +57,8 @@ func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := common.SHA512_256i(append([]*big.Int{W, N}, Y[:i]...)...)
-		Y[i] = common.RejectionSample(N, ei)
+		ei := hash.SHA512_256i(append([]*big.Int{W, N}, Y[:i]...)...)
+		Y[i] = hash.RejectionSample(N, ei)
 	}
 
 	X, A, B, Z := proof(N, P, Q, Phi, Y, W)
@@ -79,8 +80,8 @@ func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := common.SHA512_256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
-		Y[i] = common.RejectionSample(N, ei)
+		ei := hash.SHA512_256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
+		Y[i] = hash.RejectionSample(N, ei)
 	}
 
 	X, A, B, Z := proof(N, P, Q, Phi, Y, W)
@@ -156,8 +157,8 @@ func (pf *ProofMod) Verify(N *big.Int) bool {
 	}
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := common.SHA512_256i(append([]*big.Int{pf.W, N}, Y[:i]...)...)
-		Y[i] = common.RejectionSample(N, ei)
+		ei := hash.SHA512_256i(append([]*big.Int{pf.W, N}, Y[:i]...)...)
+		Y[i] = hash.RejectionSample(N, ei)
 	}
 
 	b, done := verification(N, pf, Y)
@@ -174,8 +175,8 @@ func (pf *ProofMod) VerifyWithNonce(N, nonce *big.Int) bool {
 	}
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := common.SHA512_256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
-		Y[i] = common.RejectionSample(N, ei)
+		ei := hash.SHA512_256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
+		Y[i] = hash.RejectionSample(N, ei)
 	}
 
 	b, done := verification(N, pf, Y)

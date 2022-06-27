@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 
@@ -44,7 +45,7 @@ func (round *round3) Start() *tss.Error {
 	modQ := big.ModInt(big.Wrap(round.EC().Params().N))
 	𝜅 := uint(128)
 	twoTo8𝜅 := new(big.Int).Lsh(big.NewInt(1), 8*𝜅)
-	sid := common.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
+	sid := hash.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
 		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
 		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 
@@ -71,7 +72,7 @@ func (round *round3) Start() *tss.Error {
 				round.temp.r2msgXKeygenj[j].X(), round.temp.r2msgXKeygenj[j].Y(),
 				round.temp.r2msgAKeygenj[j].X(), round.temp.r2msgAKeygenj[j].Y(), round.temp.r2msgUj[j]}...)
 
-			VjKeygen := common.SHA512_256i(keygenListToHash...)
+			VjKeygen := hash.SHA512_256i(keygenListToHash...)
 			if VjKeygen.Cmp(round.temp.r1msgVjKeygen[j]) != 0 {
 				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
 				return
@@ -125,7 +126,7 @@ func (round *round3) Start() *tss.Error {
 			defer wg.Done()
 
 			Nj, sj, tj := round.temp.rref2msgNj[j], round.temp.rref2msgsj[j], round.temp.rref2msgtj[j]
-			ssid := common.SHA512_256i([]*big.Int{sid /*round.temp.r2msgRidj[j],*/, Nj, sj, tj, round.temp.sessionId}...)
+			ssid := hash.SHA512_256i([]*big.Int{sid /*round.temp.r2msgRidj[j],*/, Nj, sj, tj, round.temp.sessionId}...)
 			nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(j)))
 			if nonce.BitLen() < zkpprm.MinBitLen {
 				nonce = new(big.Int).Lsh(nonce, uint(zkpprm.MinBitLen-nonce.BitLen()))
@@ -162,7 +163,7 @@ func (round *round3) Start() *tss.Error {
 				round.temp.rref2msg𝜌j[j], round.temp.r2msgUj[j]}, 𝜓array...)
 			h = append(h, XjPoints...)
 			h = append(h, AjPoints...)
-			Vj := common.SHA512_256i(h...)
+			Vj := hash.SHA512_256i(h...)
 			if same := round.temp.rref1msgVjKeyRefresh[j].Cmp(Vj) == 0; !same {
 				errChs <- round.WrapError(errors.New("different V hashes"), Pj)
 				return

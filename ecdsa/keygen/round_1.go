@@ -9,9 +9,9 @@ package keygen
 import (
 	"errors"
 
-	big "github.com/binance-chain/tss-lib/common/int"
-
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/common/hash"
+	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
@@ -72,7 +72,7 @@ func (round *round1) Start() *tss.Error {
 		}
 	}
 	Ni, si, ti := preParams.NTildei, preParams.H1i, preParams.H2i
-	sid := common.SHA512_256i(append(ids, big.Wrap(tss.EC().Params().N),
+	sid := hash.SHA512_256i(append(ids, big.Wrap(tss.EC().Params().N),
 		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
 		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 
@@ -99,7 +99,7 @@ func (round *round1) Start() *tss.Error {
 	}
 
 	var nonce *big.Int
-	ssid := common.SHA512_256i([]*big.Int{sid /* round.temp.rid,*/, Ni, si, ti, round.temp.sessionId}...)
+	ssid := hash.SHA512_256i([]*big.Int{sid /* round.temp.rid,*/, Ni, si, ti, round.temp.sessionId}...)
 	nonce = big.NewInt(0).Add(ssid, big.NewInt(uint64(i)))
 	if nonce.BitLen() < zkpprm.MinBitLen {
 		nonce = new(big.Int).Lsh(nonce, uint(zkpprm.MinBitLen-nonce.BitLen()))
@@ -147,8 +147,8 @@ func (round *round1) Start() *tss.Error {
 	keyRefreshListToHash = append(keyRefreshListToHash, XiPoints...)
 	keyRefreshListToHash = append(keyRefreshListToHash, AiPoints...)
 
-	ViKeygen := common.SHA512_256i(keygenListToHash...)
-	ViKeyRefresh := common.SHA512_256i(keyRefreshListToHash...)
+	ViKeygen := hash.SHA512_256i(keygenListToHash...)
+	ViKeyRefresh := hash.SHA512_256i(keyRefreshListToHash...)
 	{
 		msg := NewKGRound1Message(round.temp.sessionId, round.PartyID(), sid, ViKeygen,
 			// refresh:

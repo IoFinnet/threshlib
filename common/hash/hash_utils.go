@@ -1,4 +1,4 @@
-package common
+package hash
 
 import (
 	big "github.com/binance-chain/tss-lib/common/int"

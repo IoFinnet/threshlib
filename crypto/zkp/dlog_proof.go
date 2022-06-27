@@ -8,6 +8,8 @@ package zkp
 
 import (
 	"errors"
+
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -38,8 +40,8 @@ func NewDLogProof(x *big.Int, X *crypto.ECPoint) (*DLogProof, error) {
 
 	var c *big.Int
 	{
-		cHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), alpha.X(), alpha.Y())
-		c = common.RejectionSample(q, cHash)
+		cHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), alpha.X(), alpha.Y())
+		c = hash.RejectionSample(q, cHash)
 	}
 	t := new(big.Int).Mul(c, x)
 	t = int2.ModInt(q).Add(a, t)
@@ -58,8 +60,8 @@ func (pf *DLogProof) Verify(X *crypto.ECPoint) bool {
 
 	var c *big.Int
 	{
-		cHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y())
-		c = common.RejectionSample(q, cHash)
+		cHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y())
+		c = hash.RejectionSample(q, cHash)
 	}
 	tG := crypto.ScalarBaseMult(tss.EC(), pf.T)
 	Xc := X.ScalarMult(c)

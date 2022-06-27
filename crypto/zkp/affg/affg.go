@@ -11,9 +11,9 @@ import (
 	"errors"
 	"fmt"
 
-	big "github.com/binance-chain/tss-lib/common/int"
-
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/common/hash"
+	big "github.com/binance-chain/tss-lib/common/int"
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
@@ -44,8 +44,8 @@ func NewProof(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKe
 	// Fig 15.2
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, Bx.X(), Bx.Y(), By, S, T, A, E, F)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, Bx.X(), Bx.Y(), By, S, T, A, E, F)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	z1, z2, z3, z4, w, wy := coda(e, x, alpha, y, beta, m, gamma, mu, delta, pk0, rho, r, pk1, rhoy, ry)
@@ -70,9 +70,9 @@ func NewProofGivenNonce(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillie
 	// Fig 15.2
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, Bx.X(), Bx.Y(), By,
+		eHash := hash.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, Bx.X(), Bx.Y(), By,
 			S, T, A, E, F, nonce)...)
-		e = common.RejectionSample(q, eHash)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	z1, z2, z3, z4, w, wy := coda(e, x, alpha, y, beta, m, gamma, mu, delta, pk0, rho, r, pk1, rhoy, ry)
@@ -195,8 +195,8 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.S, pf.T, pf.A, pf.E, pf.F)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.S, pf.T, pf.A, pf.E, pf.F)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	return doVerify(ec, pk0, pk1, NCap, s, t, C, D, Y, X, pf, e)
@@ -225,9 +225,9 @@ func (pf *ProofAffg) VerifyWithNonce(ec elliptic.Curve, pk0 *paillier.PublicKey,
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, pf.Bx.X(), pf.Bx.Y(),
+		eHash := hash.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, pf.Bx.X(), pf.Bx.Y(),
 			pf.By, pf.S, pf.T, pf.A, pf.E, pf.F, nonce)...)
-		e = common.RejectionSample(q, eHash)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	return doVerify(ec, pk0, pk1, NCap, s, t, C, D, Y, X, pf, e)

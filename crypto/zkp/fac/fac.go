@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/zkp"
 
@@ -36,8 +37,8 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p, q *big.I
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N)...)
-		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
+		eHash := hash.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N)...)
+		e = hash.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	z1, z2, w1, w2, v := coda(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
@@ -61,8 +62,8 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, p
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N, nonce)...)
-		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
+		eHash := hash.SHA512_256i(append(pk.AsInts(), P, Q, A, B, T, 𝜎, pk.N, nonce)...)
+		e = hash.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	z1, z2, w1, w2, v := coda(𝜎, 𝜈, p, 𝛼, e, 𝛽, q, x, 𝜇, y, r)
@@ -152,8 +153,8 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N)...)
-		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
+		eHash := hash.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N)...)
+		e = hash.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	b, done := verification(NCap, s, No, t, pf, e)
@@ -173,8 +174,8 @@ func (pf *ProofFac) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, N
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N, nonce)...)
-		e = common.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
+		eHash := hash.SHA512_256i(append(pk.AsInts(), pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, pk.N, nonce)...)
+		e = hash.RejectionSample(big.Wrap(ec.Params().N), eHash) // Likely N and not secret input q
 	}
 
 	b, done := verification(NCap, s, No, t, pf, e)

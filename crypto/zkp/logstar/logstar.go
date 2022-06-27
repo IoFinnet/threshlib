@@ -11,13 +11,13 @@ import (
 	"errors"
 	"fmt"
 
-	big "github.com/binance-chain/tss-lib/common/int"
-	"github.com/binance-chain/tss-lib/crypto/zkp"
-
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/common/hash"
+	big "github.com/binance-chain/tss-lib/common/int"
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
+	"github.com/binance-chain/tss-lib/crypto/zkp"
 )
 
 const (
@@ -44,8 +44,8 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	z1, z2, z3 := coda(e, x, alpha, pk, rho, r, mu, gamma)
@@ -68,8 +68,8 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q, nonce)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q, nonce)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	z1, z2, z3 := coda(e, x, alpha, pk, rho, r, mu, gamma)
@@ -158,8 +158,8 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	return doVerify(ec, pk, C, X, g, NCap, s, t, pf, e)
@@ -181,9 +181,9 @@ func (pf *ProofLogstar) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKe
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(),
+		eHash := hash.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(),
 			g.X(), g.Y(), q, nonce)...)
-		e = common.RejectionSample(q, eHash)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	return doVerify(ec, pk, C, X, g, NCap, s, t, pf, e)

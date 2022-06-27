@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	int2 "github.com/binance-chain/tss-lib/common/int"
@@ -350,7 +351,7 @@ func GenerateXs(m int, k, N *big.Int, ecdsaPub *crypto2.ECPoint) []*big.Int {
 		for j := 0; j < blocks; j++ {
 			go func(j int) {
 				jBz := []byte(strconv.Itoa(j))
-				hash := common.SHA512_256(ib, jBz, nb, kb, sXb, sYb, Nb)
+				hash := hash.SHA512_256(ib, jBz, nb, kb, sXb, sYb, Nb)
 				chs[j] <- hash
 			}(j)
 		}

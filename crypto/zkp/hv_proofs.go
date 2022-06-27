@@ -8,6 +8,8 @@ package zkp
 
 import (
 	"errors"
+
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -47,9 +49,9 @@ func NewTProof(TI, h *crypto.ECPoint, sigmaI, lI *big.Int) (*TProof, error) {
 
 	var c *big.Int
 	{
-		cHash := common.SHA512_256i(
+		cHash := hash.SHA512_256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), alpha.X(), alpha.Y())
-		c = common.RejectionSample(q, cHash)
+		c = hash.RejectionSample(q, cHash)
 	}
 	t, u := calculateTAndU(q, a, c, sigmaI, b, lI)
 	return &TProof{Alpha: alpha, T: t, U: u}, nil
@@ -66,9 +68,9 @@ func (pf *TProof) Verify(TI, h *crypto.ECPoint) bool {
 
 	var c *big.Int
 	{
-		cHash := common.SHA512_256i(
+		cHash := hash.SHA512_256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y())
-		c = common.RejectionSample(q, cHash)
+		c = hash.RejectionSample(q, cHash)
 	}
 	tG, uH := crypto.ScalarBaseMult(ec, pf.T), h.ScalarMult(pf.U)
 	tGuH, _ := tG.Add(uH) // already on the curve.
@@ -110,9 +112,9 @@ func NewSTProof(TI, R, h *crypto.ECPoint, sigmaI, lI *big.Int) (*STProof, error)
 
 	var c *big.Int
 	{
-		cHash := common.SHA512_256i(
+		cHash := hash.SHA512_256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), alpha.X(), alpha.Y(), beta.X(), beta.Y())
-		c = common.RejectionSample(q, cHash)
+		c = hash.RejectionSample(q, cHash)
 	}
 	t, u := calculateTAndU(q, a, c, sigmaI, b, lI)
 	return &STProof{Alpha: alpha, Beta: beta, T: t, U: u}, nil
@@ -129,9 +131,9 @@ func (pf *STProof) Verify(SI, TI, R, h *crypto.ECPoint) bool {
 
 	var c *big.Int
 	{
-		cHash := common.SHA512_256i(
+		cHash := hash.SHA512_256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y(), pf.Beta.X(), pf.Beta.Y())
-		c = common.RejectionSample(q, cHash)
+		c = hash.RejectionSample(q, cHash)
 	}
 	tR, cS := R.ScalarMult(pf.T), SI.ScalarMult(c)
 	aSc, err := pf.Alpha.Add(cS)

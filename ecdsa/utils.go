@@ -5,9 +5,11 @@ package ecdsautils
 import (
 	"crypto/ecdsa"
 	"encoding/json"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
+	hsh "github.com/binance-chain/tss-lib/common/hash"
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
@@ -23,7 +25,7 @@ type AbortTrigger int
 func HashShare(share *vss.Share) (hash []byte) {
 	hash = append(share.ID.Bytes(), share.Share.Bytes()...)
 	hash = append(hash, big.NewInt(uint64(share.Threshold)).Bytes()...)
-	hash = common.SHA512_256(hash)
+	hash = hsh.SHA512_256(hash)
 	return
 }
 
@@ -32,7 +34,7 @@ func NewECDSASignature(r, s *big.Int) *ECDSASignature {
 }
 
 func HashPaillierKey(pk *paillier.PublicKey) (hash []byte) {
-	hash = common.SHA512_256i(pk.AsInts()...).Bytes()
+	hash = hsh.SHA512_256i(pk.AsInts()...).Bytes()
 	return
 }
 

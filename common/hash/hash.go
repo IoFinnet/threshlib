@@ -4,13 +4,14 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package common
+package hash
 
 import (
 	"crypto"
 	_ "crypto/sha512"
 	"encoding/binary"
 
+	"github.com/binance-chain/tss-lib/common"
 	big "github.com/binance-chain/tss-lib/common/int"
 )
 
@@ -50,7 +51,7 @@ func SHA512_256(in ...[]byte) []byte {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256 Write() failed: %v", err)
+		common.Logger.Errorf("SHA512_256 Write() failed: %v", err)
 		return nil
 	}
 	return state.Sum(nil)
@@ -88,7 +89,7 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256i Write() failed: %v", err)
+		common.Logger.Errorf("SHA512_256i Write() failed: %v", err)
 		return nil
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))
@@ -104,7 +105,7 @@ func SHA512_256iOne(in *big.Int) *big.Int {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256iOne Write() failed: %v", err)
+		common.Logger.Errorf("SHA512_256iOne Write() failed: %v", err)
 		return nil
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))

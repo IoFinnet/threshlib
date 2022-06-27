@@ -13,6 +13,8 @@ package dlnp
 
 import (
 	"fmt"
+
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -39,7 +41,7 @@ func NewProof(h1, h2, x, p, q, N *big.Int) *Proof {
 		alpha[i] = modN.Exp(h1, a[i])
 	}
 	msg := append([]*big.Int{h1, h2, N}, alpha[:]...)
-	c := common.SHA512_256i(msg...)
+	c := hash.SHA512_256i(msg...)
 	t := [Iterations]*big.Int{}
 	cIBI := new(big.Int)
 	for i := range t {
@@ -56,7 +58,7 @@ func (p *Proof) Verify(h1, h2, N *big.Int) bool {
 	}
 	modN := int2.ModInt(N)
 	msg := append([]*big.Int{h1, h2, N}, p.Alpha[:]...)
-	c := common.SHA512_256i(msg...)
+	c := hash.SHA512_256i(msg...)
 	cIBI := new(big.Int)
 	for i := 0; i < Iterations; i++ {
 		if p.Alpha[i] == nil || p.T[i] == nil {

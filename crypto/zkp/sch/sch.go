@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -45,8 +46,8 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	// Fig 22.3
@@ -76,8 +77,8 @@ func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSc
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	// Fig 22.3
@@ -106,8 +107,8 @@ func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *bi
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	// Fig 22.3
@@ -156,8 +157,8 @@ func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	// Fig 22. Verification
@@ -184,8 +185,8 @@ func (pf *ProofSch) VerifyWithNonce(X *crypto.ECPoint, nonce *big.Int) bool {
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y(), nonce)
-		e = common.RejectionSample(q, eHash)
+		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y(), nonce)
+		e = hash.RejectionSample(q, eHash)
 	}
 
 	// Fig 22. Verification
