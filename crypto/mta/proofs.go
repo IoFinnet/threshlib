@@ -102,9 +102,9 @@ func ProveBobWC(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, h1, h2, c1, c
 		var eHash *big.Int
 		// X is nil if called by ProveBob (Bob's proof "without check")
 		if X == nil {
-			eHash = hash.SHA512_256i(append(pk.AsInts(), c1, c2, z, zPrm, t, v, w)...)
+			eHash = hash.SHA256i(append(pk.AsInts(), c1, c2, z, zPrm, t, v, w)...)
 		} else {
-			eHash = hash.SHA512_256i(append(pk.AsInts(), X.X(), X.Y(), c1, c2, u.X(), u.Y(), z, zPrm, t, v, w)...)
+			eHash = hash.SHA256i(append(pk.AsInts(), X.X(), X.Y(), c1, c2, u.X(), u.Y(), z, zPrm, t, v, w)...)
 		}
 		e = hash.RejectionSample(q, eHash)
 	}
@@ -208,9 +208,9 @@ func (pf *ProofBobWC) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTilde, 
 		var eHash *big.Int
 		// X is nil if called on a ProveBob (Bob's proof "without check")
 		if X == nil {
-			eHash = hash.SHA512_256i(append(pk.AsInts(), c1, c2, pf.Z, pf.ZPrm, pf.T, pf.V, pf.W)...)
+			eHash = hash.SHA256i(append(pk.AsInts(), c1, c2, pf.Z, pf.ZPrm, pf.T, pf.V, pf.W)...)
 		} else {
-			eHash = hash.SHA512_256i(append(pk.AsInts(), X.X(), X.Y(), c1, c2, pf.U.X(), pf.U.Y(), pf.Z, pf.ZPrm, pf.T, pf.V, pf.W)...)
+			eHash = hash.SHA256i(append(pk.AsInts(), X.X(), X.Y(), c1, c2, pf.U.X(), pf.U.Y(), pf.Z, pf.ZPrm, pf.T, pf.V, pf.W)...)
 		}
 		e = hash.RejectionSample(q, eHash)
 	}

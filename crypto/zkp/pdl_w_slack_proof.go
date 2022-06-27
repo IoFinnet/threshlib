@@ -69,7 +69,7 @@ func NewPDLwSlackProof(wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackPro
 	u2 := commitmentUnknownOrder(nOne, beta, nSquare, alpha, st.N)
 	u3 := commitmentUnknownOrder(st.H1, st.H2, st.NTilde, alpha, gamma)
 
-	e := hash.SHA512_256i(st.G.X(), st.G.Y(), st.Q.X(), st.Q.Y(), st.CipherText, z, u1.X(), u1.Y(), u2, u3)
+	e := hash.SHA256i(st.G.X(), st.G.Y(), st.Q.X(), st.Q.Y(), st.CipherText, z, u1.X(), u1.Y(), u2, u3)
 	s1 := new(big.Int).Mul(e, wit.X)
 	s3 := new(big.Int).Mul(e, rho)
 	s1.Add(s1, alpha)
@@ -82,7 +82,7 @@ func NewPDLwSlackProof(wit PDLwSlackWitness, st PDLwSlackStatement) PDLwSlackPro
 func (pf PDLwSlackProof) Verify(st PDLwSlackStatement) bool {
 	q := big.Wrap(tss.EC().Params().N)
 
-	e := hash.SHA512_256i(st.G.X(), st.G.Y(), st.Q.X(), st.Q.Y(), st.CipherText, pf.Z, pf.U1.X(), pf.U1.Y(), pf.U2, pf.U3)
+	e := hash.SHA256i(st.G.X(), st.G.Y(), st.Q.X(), st.Q.Y(), st.CipherText, pf.Z, pf.U1.X(), pf.U1.Y(), pf.U2, pf.U3)
 	gS1 := st.G.ScalarMult(pf.S1)
 	eFeNeg := new(big.Int).Sub(q, e)
 	yMinusE := st.Q.ScalarMult(eFeNeg)

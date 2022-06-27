@@ -4,11 +4,11 @@ import (
 	big "github.com/binance-chain/tss-lib/common/int"
 )
 
-// SHA512/256
+// SHA256
 const hashBitLen = 256
 
 // RejectionSample implements the rejection sampling logic for converting a
-// SHA512/256 hash to a value between 0-q
+// SHA256 hash to a value between 0-q
 func RejectionSample(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 	// e = the first |q| bits of e'
 	qBits := q.BitLen()
@@ -19,7 +19,7 @@ func RejectionSample(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 	}
 	// while e is not between 0-q
 	for e.Cmp(q) > -1 {
-		eHash = SHA512_256iOne(eHash)
+		eHash = SHA256iOne(eHash)
 		e = firstBitsOf(qBits, eHash)
 	}
 	return e

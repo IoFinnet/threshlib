@@ -40,7 +40,7 @@ func NewDLogProof(x *big.Int, X *crypto.ECPoint) (*DLogProof, error) {
 
 	var c *big.Int
 	{
-		cHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), alpha.X(), alpha.Y())
+		cHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), alpha.X(), alpha.Y())
 		c = hash.RejectionSample(q, cHash)
 	}
 	t := new(big.Int).Mul(c, x)
@@ -60,7 +60,7 @@ func (pf *DLogProof) Verify(X *crypto.ECPoint) bool {
 
 	var c *big.Int
 	{
-		cHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y())
+		cHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y())
 		c = hash.RejectionSample(q, cHash)
 	}
 	tG := crypto.ScalarBaseMult(tss.EC(), pf.T)

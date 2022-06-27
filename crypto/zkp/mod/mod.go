@@ -61,7 +61,7 @@ func NewProofGivenNonce(q, N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := hash.SHA512_256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
+		ei := hash.SHA256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
 		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+16)
 		expandedI := new(big.Int).SetBytes(expanded)
 		expandedI = expandedI.Mod(expandedI, q)
@@ -139,7 +139,7 @@ func (pf *ProofMod) Verify(q, N, nonce *big.Int) bool {
 	}
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := hash.SHA512_256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
+		ei := hash.SHA256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
 		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+16)
 		expandedI := new(big.Int).SetBytes(expanded)
 		expandedI = expandedI.Mod(expandedI, q)

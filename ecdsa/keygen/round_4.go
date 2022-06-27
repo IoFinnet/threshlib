@@ -36,7 +36,7 @@ func (round *round4) Start() *tss.Error {
 	wg := sync.WaitGroup{}
 	q := big.Wrap(round.EC().Params().N)
 	modQ := big.ModInt(q)
-	sid := hash.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
+	sid := hash.SHA256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
 		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
 		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 	for j, Pj := range round.Parties().IDs() {

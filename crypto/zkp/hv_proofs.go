@@ -49,7 +49,7 @@ func NewTProof(TI, h *crypto.ECPoint, sigmaI, lI *big.Int) (*TProof, error) {
 
 	var c *big.Int
 	{
-		cHash := hash.SHA512_256i(
+		cHash := hash.SHA256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), alpha.X(), alpha.Y())
 		c = hash.RejectionSample(q, cHash)
 	}
@@ -68,7 +68,7 @@ func (pf *TProof) Verify(TI, h *crypto.ECPoint) bool {
 
 	var c *big.Int
 	{
-		cHash := hash.SHA512_256i(
+		cHash := hash.SHA256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y())
 		c = hash.RejectionSample(q, cHash)
 	}
@@ -112,7 +112,7 @@ func NewSTProof(TI, R, h *crypto.ECPoint, sigmaI, lI *big.Int) (*STProof, error)
 
 	var c *big.Int
 	{
-		cHash := hash.SHA512_256i(
+		cHash := hash.SHA256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), alpha.X(), alpha.Y(), beta.X(), beta.Y())
 		c = hash.RejectionSample(q, cHash)
 	}
@@ -131,7 +131,7 @@ func (pf *STProof) Verify(SI, TI, R, h *crypto.ECPoint) bool {
 
 	var c *big.Int
 	{
-		cHash := hash.SHA512_256i(
+		cHash := hash.SHA256i(
 			TI.X(), TI.Y(), h.X(), h.Y(), g.X(), g.Y(), pf.Alpha.X(), pf.Alpha.Y(), pf.Beta.X(), pf.Beta.Y())
 		c = hash.RejectionSample(q, cHash)
 	}

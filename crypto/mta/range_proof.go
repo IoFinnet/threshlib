@@ -73,7 +73,7 @@ func ProveRangeAlice(ec elliptic.Curve, pk *paillier.PublicKey, c, NTilde, h1, h
 	// 8-9. e'
 	var e *big.Int
 	{ // must use RejectionSample
-		eHash := hash.SHA512_256i(append(pk.AsInts(), c, z, u, w)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), c, z, u, w)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -123,7 +123,7 @@ func (pf *RangeProofAlice) Verify(ec elliptic.Curve, pk *paillier.PublicKey, NTi
 	// 1-2. e'
 	var e *big.Int
 	{ // must use RejectionSample
-		eHash := hash.SHA512_256i(append(pk.AsInts(), c, pf.Z, pf.U, pf.W)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), c, pf.Z, pf.U, pf.W)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 

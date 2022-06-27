@@ -46,7 +46,7 @@ func NewProof(X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
+		eHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -77,7 +77,7 @@ func NewProofGivenNonce(X *crypto.ECPoint, x *big.Int, nonce *big.Int) (*ProofSc
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
+		eHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -107,7 +107,7 @@ func NewProofGivenAlpha(X *crypto.ECPoint, x *big.Int, alpha *big.Int, nonce *bi
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
+		eHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y(), nonce)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -157,7 +157,7 @@ func (pf *ProofSch) Verify(X *crypto.ECPoint) bool {
 
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
+		eHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -185,7 +185,7 @@ func (pf *ProofSch) VerifyWithNonce(X *crypto.ECPoint, nonce *big.Int) bool {
 
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y(), nonce)
+		eHash := hash.SHA256i(X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y(), nonce)
 		e = hash.RejectionSample(q, eHash)
 	}
 

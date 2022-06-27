@@ -25,7 +25,7 @@ type AbortTrigger int
 func HashShare(share *vss.Share) (hash []byte) {
 	hash = append(share.ID.Bytes(), share.Share.Bytes()...)
 	hash = append(hash, big.NewInt(uint64(share.Threshold)).Bytes()...)
-	hash = hsh.SHA512_256(hash)
+	hash = hsh.SHA256(hash)
 	return
 }
 
@@ -34,7 +34,7 @@ func NewECDSASignature(r, s *big.Int) *ECDSASignature {
 }
 
 func HashPaillierKey(pk *paillier.PublicKey) (hash []byte) {
-	hash = hsh.SHA512_256i(pk.AsInts()...).Bytes()
+	hash = hsh.SHA256i(pk.AsInts()...).Bytes()
 	return
 }
 

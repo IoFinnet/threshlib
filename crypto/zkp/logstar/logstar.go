@@ -44,7 +44,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -68,7 +68,7 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q, nonce)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q, nonce)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -158,7 +158,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -181,7 +181,7 @@ func (pf *ProofLogstar) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKe
 
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(),
+		eHash := hash.SHA256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(),
 			g.X(), g.Y(), q, nonce)...)
 		e = hash.RejectionSample(q, eHash)
 	}

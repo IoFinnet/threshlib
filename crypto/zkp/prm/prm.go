@@ -46,7 +46,7 @@ func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 	}
 
 	// Fig 17.2
-	e := hash.SHA512_256i(append([]*big.Int{s, t, N}, A[:]...)...)
+	e := hash.SHA256i(append([]*big.Int{s, t, N}, A[:]...)...)
 
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
@@ -76,7 +76,7 @@ func NewProofWithNonce(s, t, N, Phi, lambda, nonce *big.Int) (*ProofPrm, error) 
 	}
 
 	// Fig 17.2
-	e := hash.SHA512_256i(append([]*big.Int{s, t, N, nonce}, A[:]...)...)
+	e := hash.SHA256i(append([]*big.Int{s, t, N, nonce}, A[:]...)...)
 
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
@@ -112,7 +112,7 @@ func (pf *ProofPrm) Verify(s, t, N *big.Int) bool {
 		return false
 	}
 	modN := int2.ModInt(N)
-	e := hash.SHA512_256i(append([]*big.Int{s, t, N}, pf.A[:]...)...)
+	e := hash.SHA256i(append([]*big.Int{s, t, N}, pf.A[:]...)...)
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {
@@ -132,7 +132,7 @@ func (pf *ProofPrm) VerifyWithNonce(s, t, N, nonce *big.Int) bool {
 		return false
 	}
 	modN := big.ModInt(N)
-	e := hash.SHA512_256i(append([]*big.Int{s, t, N, nonce}, pf.A[:]...)...)
+	e := hash.SHA256i(append([]*big.Int{s, t, N, nonce}, pf.A[:]...)...)
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {

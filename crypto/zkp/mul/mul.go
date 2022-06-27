@@ -40,7 +40,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.I
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), X, Y, C, A, B)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), X, Y, C, A, B)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -64,7 +64,7 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, r
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), X, Y, C, A, B, nonce)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), X, Y, C, A, B, nonce)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -124,7 +124,7 @@ func (pf *ProofMul) Verify(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *b
 
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 
@@ -140,7 +140,7 @@ func (pf *ProofMul) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKey, X
 
 	var e *big.Int
 	{
-		eHash := hash.SHA512_256i(append(pk.AsInts(), X, Y, C, pf.A, pf.B, nonce)...)
+		eHash := hash.SHA256i(append(pk.AsInts(), X, Y, C, pf.A, pf.B, nonce)...)
 		e = hash.RejectionSample(q, eHash)
 	}
 

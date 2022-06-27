@@ -13,7 +13,7 @@ import (
 func TestRejectionSample(t *testing.T) {
 	curveQ := common.GetRandomPrimeInt(256)
 	smallQ := common.MustGetRandomInt(64)
-	hash := SHA512_256iOne(big.NewInt(123))
+	hash := SHA256iOne(big.NewInt(123))
 	temp := sha512.Sum512(big.NewInt(123).Bytes())
 	hashX2 := new(big.Int).SetBytes(temp[:])
 	type args struct {
