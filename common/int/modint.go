@@ -69,6 +69,10 @@ func (mi *modInt) Sqrt(x *Int) *Int {
 	return new(Int).ModSqrt(x, mi.int())
 }
 
+func (mi *modInt) Size() int {
+	return mi.int().BitLen() / 8
+}
+
 func (mi *modInt) int() *Int {
 	return new(Int).Set((*Int)(mi))
 }

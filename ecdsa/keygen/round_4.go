@@ -34,7 +34,8 @@ func (round *round4) Start() *tss.Error {
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 
 	wg := sync.WaitGroup{}
-	modQ := big.ModInt(big.Wrap(round.EC().Params().N))
+	q := big.Wrap(round.EC().Params().N)
+	modQ := big.ModInt(q)
 	sid := hash.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
 		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
 		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
@@ -126,7 +127,7 @@ func (round *round4) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			if !round.temp.rref3msgpf𝜓j[j].VerifyWithNonce(round.temp.rref2msgNj[j], noncej) {
+			if !round.temp.rref3msgpf𝜓j[j].Verify(q, round.temp.rref2msgNj[j], noncej) {
 				/* common.Logger.Debugf("party %v r4 KR err mod 𝜓[j=%v]: %v, noncej: %v", round.PartyID(),
 					j, zkpmod.FormatProofMod(round.temp.rref3msgpf𝜓j[j]), common.FormatBigInt(noncej),
 				)

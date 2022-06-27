@@ -327,7 +327,7 @@ keygen:
 					assert.NoError(t, err, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
-					if eq := assert.Equal(t, uj, Pj.temp.ui); !eq {
+					if eq := assert.Equal(t, uj.Int64(), Pj.temp.ui.Int64()); !eq {
 						t.Logf("Pj: %v, uj: %v, ui: %v", Pj,
 							common.FormatBigInt(uj), common.FormatBigInt(Pj.temp.ui))
 						t.FailNow()

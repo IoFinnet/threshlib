@@ -12,6 +12,7 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	big "github.com/binance-chain/tss-lib/common/int"
+	"github.com/binance-chain/tss-lib/tss"
 
 	. "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -26,15 +27,17 @@ func TestMod(test *testing.T) {
 	// p2, q2 := new(big.Int).Mul(p, big.NewInt(2)), new(big.Int).Mul(q, big.NewInt(2))
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
+	nonce := common.MustGetRandomInt(256)
+	order := big.Wrap(tss.S256().Params().N)
 
-	proof, err := NewProof(N, P, Q)
+	proof, err := NewProof(order, N, P, Q, nonce)
 	assert.NoError(test, err)
 
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
 
-	ok := proof.Verify(N)
+	ok := proof.Verify(order, N, nonce)
 	assert.True(test, ok, "proof must verify")
 
 	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
@@ -53,17 +56,19 @@ func TestBadW(test *testing.T) {
 	// p2, q2 := new(big.Int).Mul(p, big.NewInt(2)), new(big.Int).Mul(q, big.NewInt(2))
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
+	nonce := common.MustGetRandomInt(256)
+	order := big.Wrap(tss.S256().Params().N)
 
-	pr, err := NewProof(N, P, Q)
+	pr, err := NewProof(order, N, P, Q, nonce)
 	pr.W = nil
-	ok := pr.Verify(N)
+	ok := pr.Verify(order, N, nonce)
 	assert.False(test, ok, "proof with nil W must not verify")
 
 	pr.W = big.NewInt(0)
-	ok2 := pr.Verify(N)
+	ok2 := pr.Verify(order, N, nonce)
 	assert.False(test, ok2, "proof must not verify")
 
 	pr.W = GetRandomNonQuadraticNonResidue(N)
-	ok3 := pr.Verify(N)
+	ok3 := pr.Verify(order, N, nonce)
 	assert.False(test, ok3, "proof must not verify")
 }

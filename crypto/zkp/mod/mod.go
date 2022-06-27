@@ -7,14 +7,14 @@
 package zkpmod
 
 import (
+	"crypto"
 	"errors"
 	"fmt"
 	mathbig "math/big"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
-
-	"github.com/binance-chain/tss-lib/common"
 	int2 "github.com/binance-chain/tss-lib/common/int"
 )
 
@@ -22,6 +22,7 @@ const (
 	Iterations         = 13
 	ProofModBytesParts = Iterations*4 + 1
 	MinBitLen          = 254
+	DST                = "TSS-LIB-ZKP-MOD-DST"
 )
 
 var (
@@ -46,27 +47,7 @@ func isQuadraticResidue(X, N *big.Int) bool {
 	return ok
 }
 
-func NewProof(N, P, Q *big.Int) (*ProofMod, error) {
-	if N == nil || P == nil || Q == nil {
-		return nil, errors.New("nil value(s)")
-	}
-	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
-	// Fig 16.1
-	W := common.GetRandomQuadraticNonResidue(N)
-
-	// Fig 16.2
-	Y := [Iterations]*big.Int{}
-	for i := range Y {
-		ei := hash.SHA512_256i(append([]*big.Int{W, N}, Y[:i]...)...)
-		Y[i] = hash.RejectionSample(N, ei)
-	}
-
-	X, A, B, Z := proof(N, P, Q, Phi, Y, W)
-
-	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
-}
-
-func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
+func NewProofGivenNonce(q, N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	if N == nil || P == nil || Q == nil || nonce == nil || big.NewInt(0).Cmp(nonce) == 0 {
 		return nil, errors.New("nil value(s)")
 	}
@@ -81,12 +62,13 @@ func NewProofGivenNonce(N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
 		ei := hash.SHA512_256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
-		Y[i] = hash.RejectionSample(N, ei)
+		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+16)
+		expandedI := new(big.Int).SetBytes(expanded)
+		expandedI = expandedI.Mod(expandedI, q)
+		Y[i] = expandedI
 	}
-
 	X, A, B, Z := proof(N, P, Q, Phi, Y, W)
-
-	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
+	return &ProofMod{W: W, X: X, A: A, B: B, Z: Z}, nil
 }
 
 func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *big.Int) ([13]*big.Int, [13]*big.Int, [13]*big.Int, [13]*big.Int) {
@@ -151,32 +133,17 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
 	}, nil
 }
 
-func (pf *ProofMod) Verify(N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() || pf.W == nil || big.NewInt(0).Cmp(pf.W) == +1 || mathbig.Jacobi(pf.W.Big(), N.Big()) != -1 {
-		return false
-	}
-	Y := [Iterations]*big.Int{}
-	for i := range Y {
-		ei := hash.SHA512_256i(append([]*big.Int{pf.W, N}, Y[:i]...)...)
-		Y[i] = hash.RejectionSample(N, ei)
-	}
-
-	b, done := verification(N, pf, Y)
-	if done {
-		return b
-	}
-
-	return true
-}
-
-func (pf *ProofMod) VerifyWithNonce(N, nonce *big.Int) bool {
+func (pf *ProofMod) Verify(q, N, nonce *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
 		ei := hash.SHA512_256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
-		Y[i] = hash.RejectionSample(N, ei)
+		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+16)
+		expandedI := new(big.Int).SetBytes(expanded)
+		expandedI = expandedI.Mod(expandedI, q)
+		Y[i] = expandedI
 	}
 
 	b, done := verification(N, pf, Y)

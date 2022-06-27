@@ -42,7 +42,8 @@ func (round *round3) Start() *tss.Error {
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 	rid := round.temp.ridi
 	wg := sync.WaitGroup{}
-	modQ := big.ModInt(big.Wrap(round.EC().Params().N))
+	q := big.Wrap(round.EC().Params().N)
+	modQ := big.ModInt(q)
 	𝜅 := uint(128)
 	twoTo8𝜅 := new(big.Int).Lsh(big.NewInt(1), 8*𝜅)
 	sid := hash.SHA512_256i(append(round.Parties().IDs().Keys(), big.Wrap(tss.EC().Params().N),
@@ -204,7 +205,7 @@ func (round *round3) Start() *tss.Error {
 		nonce = new(big.Int).Lsh(nonce, uint(round.EC().Params().N.BitLen()-nonce.BitLen()))
 	}
 
-	𝜓Modi, errP := zkpmod.NewProofGivenNonce(round.save.LocalPreParams.NTildei,
+	𝜓Modi, errP := zkpmod.NewProof(q, round.save.LocalPreParams.NTildei,
 		common.PrimeToSafePrime(round.save.LocalPreParams.P),
 		common.PrimeToSafePrime(round.save.LocalPreParams.Q), nonce)
 	if errP != nil {
@@ -240,7 +241,7 @@ func (round *round3) Start() *tss.Error {
 				errChs <- round.WrapError(errors.New("create proofPrm failed"))
 				return
 			}
-			/* verif := 𝜙ji.VerifyWithNonce(round.EC(), &round.save.PaillierSK.PublicKey, round.save.LocalPreParams.NTildei,
+			/* verif := 𝜙ji.Verify(round.EC(), &round.save.PaillierSK.PublicKey, round.save.LocalPreParams.NTildei,
 				round.save.LocalPreParams.H1i, round.save.LocalPreParams.H2i, nonce)
 			common.Logger.Debugf("party:%v r3, Pj: %v, 𝜙_[j=%v],[i=%v]: %v, nonce[%v]: %v, ssid: %v, 𝜌: %v"+
 				", verif? %v",

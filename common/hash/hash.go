@@ -12,6 +12,7 @@ import (
 	"encoding/binary"
 
 	"github.com/binance-chain/tss-lib/common"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 )
 
