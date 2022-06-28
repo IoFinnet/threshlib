@@ -41,12 +41,12 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 	round.ok[i] = true
 
-	𝜅 := uint(256 - 1)
-	twoTo255 := new(big.Int).Lsh(big.NewInt(1), 𝜅)
+	𝜅 := uint(256)
+	twoTo256 := new(big.Int).Lsh(big.NewInt(1), 𝜅)
 
 	// Fig 5. Round 1. private key part
-	ridi := common.GetRandomPositiveInt(twoTo255)
-	ui := common.GetRandomPositiveInt(twoTo255)
+	ridi := common.GetRandomPositiveInt(twoTo256)
+	ui := common.GetRandomPositiveInt(twoTo256)
 
 	// Fig 5. Round 1. pub key part, vss shares
 	ids := round.Parties().IDs().Keys()
@@ -87,7 +87,7 @@ func (round *round1) Start() *tss.Error {
 	}
 	xⁿᵢ := vss.CreateZeroSumRandomArray(big.Wrap(round.EC().Params().N), len(round.Parties().IDs()))
 	XᵢKeyRefresh := make([]*crypto.ECPoint, len(round.Parties().IDs()))
-	𝜌ᵢ := common.GetRandomPositiveInt(twoTo255)
+	𝜌ᵢ := common.GetRandomPositiveInt(twoTo256)
 
 	for j := 0; j < len(round.Parties().IDs()); j++ {
 		XᵢKeyRefresh[j] = crypto.ScalarBaseMult(round.EC(), xⁿᵢ[j])
