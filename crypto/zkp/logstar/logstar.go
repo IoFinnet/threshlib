@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	big "github.com/binance-chain/tss-lib/common/int"
+	"github.com/binance-chain/tss-lib/crypto/zkp"
 
 	"github.com/binance-chain/tss-lib/common"
 	int2 "github.com/binance-chain/tss-lib/common/int"
@@ -43,7 +44,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y())...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -67,7 +68,7 @@ func NewProofGivenNonce(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), nonce)...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D, C, X.X(), X.Y(), g.X(), g.Y(), q, nonce)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -96,8 +97,7 @@ func initProof(q *int2.Int, NCap *int2.Int, pk *paillier.PublicKey, s *int2.Int,
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
-	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
-	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀 := zkp.TwoTo768
 	TwolPlus𝜀NCap := new(big.Int).Mul(TwolPlus𝜀, NCap)
 
 	// Fig 25.1 sample
@@ -149,8 +149,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 	}
 
 	q := big.Wrap(ec.Params().N)
-	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
-	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀 := zkp.TwoTo768
 
 	// Fig 25. range check
 	if pf.Z1.Cmp(TwolPlus𝜀) == 1 {
@@ -159,7 +158,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y())...)
+		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(), g.X(), g.Y(), q)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -173,8 +172,7 @@ func (pf *ProofLogstar) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKe
 	}
 
 	q := big.Wrap(ec.Params().N)
-	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
-	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀 := zkp.TwoTo768
 
 	// Fig 25. range check
 	if pf.Z1.Cmp(TwolPlus𝜀) == 1 {
@@ -184,7 +182,7 @@ func (pf *ProofLogstar) VerifyWithNonce(ec elliptic.Curve, pk *paillier.PublicKe
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D, C, X.X(), X.Y(),
-			g.X(), g.Y(), nonce)...)
+			g.X(), g.Y(), q, nonce)...)
 		e = common.RejectionSample(q, eHash)
 	}
 

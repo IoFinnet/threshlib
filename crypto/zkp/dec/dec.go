@@ -15,6 +15,7 @@ import (
 	big "github.com/binance-chain/tss-lib/common/int"
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
+	"github.com/binance-chain/tss-lib/crypto/zkp"
 )
 
 const (
@@ -91,8 +92,7 @@ func initProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap *int2.Int, s *int
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	qNCap := new(big.Int).Mul(q, NCap)
-	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
-	TwolPlus𝜀 := twoTo768
+	TwolPlus𝜀 := zkp.TwoTo768
 	TwolPlus𝜀NCap := new(big.Int).Mul(TwolPlus𝜀, NCap)
 
 	// Fig 30.1 sample

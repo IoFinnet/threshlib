@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	big "github.com/binance-chain/tss-lib/common/int"
+	"github.com/binance-chain/tss-lib/crypto/zkp"
 
 	"github.com/binance-chain/tss-lib/common"
 	int2 "github.com/binance-chain/tss-lib/common/int"
@@ -85,9 +86,8 @@ func coda(𝜎 *big.Int, 𝜈 *big.Int, p *big.Int, 𝛼 *big.Int, e *big.Int, �
 func initProof(ec elliptic.Curve, pk *paillier.PublicKey, NCap *big.Int, s *big.Int,
 	t *big.Int, p *big.Int, q *big.Int) (*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int,
 	*big.Int, *big.Int, *big.Int, *big.Int, *big.Int, *big.Int) {
-	Twol := big.Wrap(ec.Params().N)                    // "q" (N) == "2^l"
-	twoTo768 := new(big.Int).Lsh(big.NewInt(1), 768+1) // l+𝜀 == 768
-	TwolPlus𝜀 := twoTo768
+	Twol := big.Wrap(ec.Params().N) // "q" (N) == "2^l"
+	TwolPlus𝜀 := zkp.TwoTo768
 	sqrtNo := new(big.Int).Sqrt(pk.N) // pk.N == No
 	TwolPlus𝜀SqrtNo := new(big.Int).Mul(TwolPlus𝜀, sqrtNo)
 	TwolNCap := new(big.Int).Mul(Twol, NCap) // "qNCap"
