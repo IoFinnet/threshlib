@@ -43,7 +43,7 @@ benchsign: fmt
 
 test_unit_level0:
 	@echo "--> Running Unit Tests - Level 0"
-	@echo "!!! WARNING: This will take a long time :)"
+	@echo "!!! WARNING: This will take a long time :|"
 	@echo "!!! WARNING: This will delete fixtures  :("
 	go clean -testcache
 	rm -f ./test/_ecdsa_fixtures/*json
@@ -53,12 +53,12 @@ test_unit_level0:
 
 test_unit: test_unit_level0
 	@echo "--> Running Unit Tests - Level 1"
-	@echo "!!! WARNING: This will take a long time :)"
+	@echo "!!! WARNING: This will take a long time :|"
 	go test ${UT_TIMEOUT} ${UT_COVER} $(UT_PACKAGES_LEVEL_1)
 
 test_unit_race_level0:
 	@echo "--> Running Unit Tests (with Race Detection) - Level 0"
-	@echo "!!! WARNING: This will take a long time :)"
+	@echo "!!! WARNING: This will take a long time :|"
 	@echo "!!! WARNING: This will delete fixtures :("
 	go clean -testcache
 	rm -f ./test/_ecdsa_fixtures/*json
@@ -67,11 +67,19 @@ test_unit_race_level0:
 
 test_unit_race: test_unit_race_level0
 	@echo "--> Running Unit Tests (with Race Detection) - Level 1"
-	@echo "!!! WARNING: This will take a long time :)"
+	@echo "!!! WARNING: This will take a long time :|"
 	go test -race ${UT_TIMEOUT} ${UT_COVER} $(UT_PACKAGES_LEVEL_1)
+
+test_unit_race_ci: test_unit_race_level0
+	@echo "--> Running Unit Tests (with Race Detection) - Level 1"
+	@echo "!!! WARNING: This will take a long time :|"
+	go test -race ${UT_TIMEOUT} $(UT_PACKAGES_LEVEL_1)
 
 test:
 	make test_unit_race
+
+test_ci:
+	make test_unit_race_ci
 
 ########################################
 ### Pre Commit
@@ -83,4 +91,4 @@ pre_commit: build test
 # To avoid unintended conflicts with file names, always add to .PHONY
 # # unless there is a reason not to.
 # # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
-.PHONY: protob build test_unit test_unit_race test benchgen benchsign
+.PHONY: protob build test test_ci test_unit test_unit_race benchgen benchsign
