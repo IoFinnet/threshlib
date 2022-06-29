@@ -63,7 +63,7 @@ test_unit_race_level0:
 	go clean -testcache
 	rm -f ./test/_ecdsa_fixtures/*json
 	rm -f ./test/_eddsa_fixtures/*json
-	go test -race ${UT_TIMEOUT} ${UT_COVER} $(UT_PACKAGES_LEVEL_0)
+	go test -race ${UT_TIMEOUT} $(UT_PACKAGES_LEVEL_0)
 
 test_unit_race: test_unit_race_level0
 	@echo "--> Running Unit Tests (with Race Detection) - Level 1"
