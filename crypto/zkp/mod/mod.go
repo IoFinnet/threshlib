@@ -188,10 +188,15 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 		}(i)
 	}
 
+	// drain the channel (goroutines) before returning
+	fail := false
 	for i := 0; i < Iterations*2; i++ {
 		if !<-ch {
-			return false, true
+			fail = true
 		}
+	}
+	if fail {
+		return false, true
 	}
 	return true, true
 }
