@@ -47,7 +47,7 @@ func isQuadraticResidue(X, N *big.Int) bool {
 	return ok
 }
 
-func NewProofGivenNonce(q, N, P, Q, nonce *big.Int) (*ProofMod, error) {
+func NewProof(q, N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	if N == nil || P == nil || Q == nil || nonce == nil || big.NewInt(0).Cmp(nonce) == 0 {
 		return nil, errors.New("nil value(s)")
 	}

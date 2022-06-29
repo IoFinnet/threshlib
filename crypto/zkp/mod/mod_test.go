@@ -40,11 +40,11 @@ func TestMod(test *testing.T) {
 	ok := proof.Verify(order, N, nonce)
 	assert.True(test, ok, "proof must verify")
 
-	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
-	proof2, err2 := NewProofGivenNonce(N, P, Q, nonce)
+	nonce = common.GetBigRandomPositiveInt(q, q.BitLen())
+	proof2, err2 := NewProof(order, N, P, Q, nonce)
 	assert.NoError(test, err2)
 
-	ok2 := proof2.VerifyWithNonce(N, nonce)
+	ok2 := proof2.Verify(order, N, nonce)
 	assert.True(test, ok2, "proof must verify")
 }
 
