@@ -166,6 +166,7 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 			left := new(big.Int).Set(modN.Exp(pf.Z[i], N))
 			if left.Cmp(Y[i]) != 0 {
 				ch <- false
+				return
 			}
 			ch <- true
 		}(i)
@@ -183,6 +184,7 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 			}
 			if left.Cmp(right) != 0 {
 				ch <- false
+				return
 			}
 			ch <- true
 		}(i)
