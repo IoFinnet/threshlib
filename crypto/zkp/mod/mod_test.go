@@ -50,16 +50,21 @@ func TestMod(test *testing.T) {
 
 func TestBadW(test *testing.T) {
 	preParams, err := keygen.GeneratePreParams(time.Minute*20, 8)
-	assert.NoError(test, err)
+	if !assert.NoError(test, err) {
+		return
+	}
 
 	p, q, N := preParams.P, preParams.Q, preParams.NTildei
 	// p2, q2 := new(big.Int).Mul(p, big.NewInt(2)), new(big.Int).Mul(q, big.NewInt(2))
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
-	nonce := common.MustGetRandomInt(256)
+	nonce := common.GetRandomPrimeInt(256)
 	order := big.Wrap(tss.S256().Params().N)
 
 	pr, err := NewProof(order, N, P, Q, nonce)
+	if !assert.NoError(test, err) {
+		return
+	}
 	pr.W = nil
 	ok := pr.Verify(order, N, nonce)
 	assert.False(test, ok, "proof with nil W must not verify")

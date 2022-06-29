@@ -150,27 +150,24 @@ func (pf *ProofMod) Verify(q, N, nonce *big.Int) bool {
 	if done {
 		return b
 	}
-
 	return true
 }
 
 func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 	// Fig 16. Verification
-	{
-		if N.Bit(0) == 0 || N.ProbablyPrime(16) {
-			return false, true
-		}
+	if N.Bit(0) == 0 || N.ProbablyPrime(16) {
+		return false, true
 	}
 
-	chs := make(chan bool, Iterations*2)
+	ch := make(chan bool)
 	for i := 0; i < Iterations; i++ {
 		go func(i int) {
 			modN := int2.ModInt(N)
 			left := new(big.Int).Set(modN.Exp(pf.Z[i], N))
 			if left.Cmp(Y[i]) != 0 {
-				chs <- false
+				ch <- false
 			}
-			chs <- true
+			ch <- true
 		}(i)
 
 		go func(i int) {
@@ -185,14 +182,14 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 				right = modN.Mul(pf.W, right)
 			}
 			if left.Cmp(right) != 0 {
-				chs <- false
+				ch <- false
 			}
-			chs <- true
+			ch <- true
 		}(i)
 	}
 
 	for i := 0; i < Iterations*2; i++ {
-		if !<-chs {
+		if !<-ch {
 			return false, true
 		}
 	}
