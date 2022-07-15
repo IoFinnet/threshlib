@@ -44,7 +44,9 @@ func (round *round3) Start() *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
+	var err error
+
+	errsCh := make(chan *tss.Error, (len(round.Parties().IDs())-1)*10) // sufficient buffer
 	rid := round.temp.ridi
 	wg := sync.WaitGroup{}
 	q := big.Wrap(round.EC().Params().N)
@@ -55,8 +57,6 @@ func (round *round3) Start() *tss.Error {
 		big.Wrap(tss.EC().Params().P), big.Wrap(tss.EC().Params().B),
 		big.Wrap(tss.EC().Params().Gx), big.Wrap(tss.EC().Params().Gy))...)
 
-	var err error
-
 	idG := crypto.ScalarBaseMult(round.EC(), big.NewInt(1))
 	𝜌 := round.temp.𝜌ᵢ
 	for j, Pj := range round.Parties().IDs() {
@@ -64,13 +64,15 @@ func (round *round3) Start() *tss.Error {
 			continue
 		}
 		rid = modQ.Add(rid, round.temp.r2msgRidj[j])
+		𝜌 = big.NewInt(0).Add(𝜌, round.temp.rref2msg𝜌j[j])
+
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			// Fig 5. Round 3.1
 			keygenListToHash, errF := crypto.FlattenECPoints(round.temp.r2msgVss[j])
 			if errF != nil {
-				errChs <- round.WrapError(errF, Pj)
+				errsCh <- round.WrapError(errF, Pj)
 				return
 			}
 			keygenListToHash = append(keygenListToHash, []*big.Int{round.temp.r2msgSid[j], big.NewInt(uint64(j)),
@@ -80,7 +82,7 @@ func (round *round3) Start() *tss.Error {
 
 			VjKeygen := hash.SHA256i(keygenListToHash...)
 			if VjKeygen.Cmp(round.temp.r1msgVjKeygen[j]) != 0 {
-				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
+				errsCh <- round.WrapError(errors.New("verify hash failed"), Pj)
 				return
 			}
 		}(j, Pj)
@@ -89,7 +91,7 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			if round.save.NTildej[j].BitLen() < NBitLen {
-				errChs <- round.WrapError(errors.New("N too small"), Pj)
+				errsCh <- round.WrapError(errors.New("N too small"), Pj)
 				return
 			}
 		}(j, Pj)
@@ -98,7 +100,7 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			if round.save.PaillierPKs[j].N.BitLen() < paillierModulusLen {
-				errChs <- round.WrapError(errors.New("paillier modulus too small"), Pj)
+				errsCh <- round.WrapError(errors.New("paillier modulus too small"), Pj)
 				return
 			}
 		}(j, Pj)
@@ -107,25 +109,28 @@ func (round *round3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-
 			if round.temp.rref2msgNj[j].Cmp(twoTo8𝜅) == -1 {
-				errChs <- round.WrapError(errors.New(" Nj is too small"), Pj)
+				errsCh <- round.WrapError(errors.New(" Nj is too small"), Pj)
 				return
 			}
 		}(j, Pj)
 
-		𝜌 = big.NewInt(0).Add(𝜌, round.temp.rref2msg𝜌j[j])
-
-		Xkj := round.temp.rref2msgXj[j]
-		ᴨkXkj := crypto.NewECPointNoCurveCheck(round.EC(), idG.X(), idG.Y())
-		for _, X := range Xkj { // for each k
-			if ᴨkXkj, err = ᴨkXkj.Add(X); err != nil {
-				errChs <- round.WrapError(errors.New(" Xj product"), Pj)
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+			Xkj := round.temp.rref2msgXj[j]
+			ᴨkXkj := crypto.NewECPointNoCurveCheck(round.EC(), idG.X(), idG.Y())
+			for _, X := range Xkj { // for each k
+				if ᴨkXkj, err = ᴨkXkj.Add(X); err != nil {
+					errsCh <- round.WrapError(errors.New(" Xj product"), Pj)
+					return
+				}
 			}
-		}
-		if !idG.Equals(ᴨkXkj) {
-			errChs <- round.WrapError(errors.New("ᴨX must be G"), Pj)
-		}
+			if !idG.Equals(ᴨkXkj) {
+				errsCh <- round.WrapError(errors.New("ᴨX must be G"), Pj)
+				return
+			}
+		}(j, Pj)
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
@@ -142,7 +147,7 @@ func (round *round3) Start() *tss.Error {
 					Pj, zkpprm.FormatProofPrm(round.temp.rref2msgpf𝜓j[j]), common.FormatBigInt(Nj),
 					common.FormatBigInt(sj), common.FormatBigInt(nonce),
 				) */
-				errChs <- round.WrapError(errors.New("failed prm proof"), Pj)
+				errsCh <- round.WrapError(errors.New("failed prm proof"), Pj)
 				return
 			}
 		}(j, Pj)
@@ -154,12 +159,12 @@ func (round *round3) Start() *tss.Error {
 			𝜓array := round.temp.rref2msgpf𝜓j[j].ToIntArray()
 			XjPoints, errX := crypto.FlattenECPoints(round.temp.rref2msgXj[j])
 			if errX != nil {
-				errChs <- round.WrapError(errors.New("flattening error"), Pj)
+				errsCh <- round.WrapError(errors.New("flattening error"), Pj)
 				return
 			}
 			AjPoints, errA := crypto.FlattenECPoints(round.temp.rref2msgAj[j])
 			if errA != nil {
-				errChs <- round.WrapError(errors.New("flattening error"), Pj)
+				errsCh <- round.WrapError(errors.New("flattening error"), Pj)
 				return
 			}
 
@@ -171,17 +176,22 @@ func (round *round3) Start() *tss.Error {
 			h = append(h, AjPoints...)
 			Vj := hash.SHA256i(h...)
 			if same := round.temp.rref1msgVjKeyRefresh[j].Cmp(Vj) == 0; !same {
-				errChs <- round.WrapError(errors.New("different V hashes"), Pj)
+				errsCh <- round.WrapError(errors.New("different V hashes"), Pj)
 				return
 			}
 		}(j, Pj)
 	}
 
 	wg.Wait()
-	close(errChs)
 	culprits := make([]*tss.PartyID, 0)
-	for errCh := range errChs {
-		culprits = append(culprits, errCh.Culprits()...)
+outer:
+	for {
+		select {
+		case err := <-errsCh:
+			culprits = append(culprits, err.Culprits()...)
+		default:
+			break outer
+		}
 	}
 	if len(culprits) > 0 {
 		return round.WrapError(errors.New("round3: failed stage 3.1"), culprits...)
@@ -229,7 +239,7 @@ func (round *round3) Start() *tss.Error {
 		i, zkpsch.FormatProofSch(ᴨi), common.FormatBigInt(nonce),
 	) */
 
-	errChs = make(chan *tss.Error, len(round.Parties().IDs())-1)
+	errsCh = make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg = sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -243,7 +253,7 @@ func (round *round3) Start() *tss.Error {
 				round.save.LocalPreParams.H1i, round.save.LocalPreParams.H2i,
 				common.PrimeToSafePrime(round.save.LocalPreParams.P), common.PrimeToSafePrime(round.save.LocalPreParams.Q), nonce)
 			if errF != nil {
-				errChs <- round.WrapError(errors.New("create proofPrm failed"))
+				errsCh <- round.WrapError(errors.New("create proofPrm failed"))
 				return
 			}
 			/* verif := 𝜙ji.Verify(round.EC(), &round.save.PaillierSK.PublicKey, round.save.LocalPreParams.NTildei,
@@ -258,18 +268,18 @@ func (round *round3) Start() *tss.Error {
 			// "vss" as in Feldman's verifiable secret sharing
 			Cvssji, randomnessCvssji, errEv := round.save.PaillierPKs[j].EncryptAndReturnRandomness(round.temp.shares[j].Share)
 			if errEv != nil {
-				errChs <- round.WrapError(errors.New("encryption error"), Pj)
+				errsCh <- round.WrapError(errors.New("encryption error"), Pj)
 				return
 			}
 			// "zero" as un zero sum, per Figure 6, Round 1.
 			Czeroji, randomnessCzeroji, errE0 := round.save.PaillierPKs[j].EncryptAndReturnRandomness(round.temp.xⁿᵢ[j])
 			if errE0 != nil {
-				errChs <- round.WrapError(errors.New("encryption error"), Pj)
+				errsCh <- round.WrapError(errors.New("encryption error"), Pj)
 				return
 			}
 			𝜓jᵢ, errS := zkpsch.NewProofGivenAlpha(round.temp.XiRefreshList[j], round.temp.xⁿᵢ[j], round.temp.𝜏js[j], nonce)
 			if errS != nil {
-				errChs <- round.WrapError(fmt.Errorf("error with zkpsch"))
+				errsCh <- round.WrapError(fmt.Errorf("error with zkpsch"))
 				return
 			}
 			/* common.Logger.Debugf("party:%v r3, Pj: %v, 𝜓^[j=%v]_[i=%v]: %v, X^[j=%v]_[i=%v]: %v, nonce[%v]: %v"+
@@ -288,9 +298,11 @@ func (round *round3) Start() *tss.Error {
 		}(j, Pj)
 	}
 	wg.Wait()
-	close(errChs)
-	for errC := range errChs {
-		return errC
+	select {
+	case err := <-errsCh:
+		return err
+	default:
+		break
 	}
 	round.temp.𝜌 = 𝜌
 	round.temp.rid = rid
