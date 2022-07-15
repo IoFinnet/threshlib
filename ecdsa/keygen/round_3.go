@@ -115,22 +115,13 @@ func (round *round3) Start() *tss.Error {
 			}
 		}(j, Pj)
 
-		wg.Add(1)
-		go func(j int, Pj *tss.PartyID) {
-			defer wg.Done()
-			Xkj := round.temp.rref2msgXj[j]
-			ᴨkXkj := crypto.NewECPointNoCurveCheck(round.EC(), idG.X(), idG.Y())
-			for _, X := range Xkj { // for each k
-				if ᴨkXkj, err = ᴨkXkj.Add(X); err != nil {
-					errsCh <- round.WrapError(errors.New(" Xj product"), Pj)
-					return
-				}
+		Xkj := round.temp.rref2msgXj[j]
+		ᴨkXkj := crypto.NewECPointNoCurveCheck(round.EC(), idG.X(), idG.Y())
+		for _, X := range Xkj { // for each k
+			if ᴨkXkj, err = ᴨkXkj.Add(X); err != nil {
+				errsCh <- round.WrapError(errors.New(" Xj product"), Pj)
 			}
-			if !idG.Equals(ᴨkXkj) {
-				errsCh <- round.WrapError(errors.New("ᴨX must be G"), Pj)
-				return
-			}
-		}(j, Pj)
+		}
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
