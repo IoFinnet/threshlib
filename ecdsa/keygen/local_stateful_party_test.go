@@ -45,7 +45,7 @@ func TestSaveState(t *testing.T) {
 	startGR := runtime.NumGoroutine()
 
 	q := int2.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	// Save and reload party
 	preAdvanceFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {

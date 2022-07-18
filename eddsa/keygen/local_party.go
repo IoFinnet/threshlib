@@ -9,6 +9,7 @@ package keygen
 import (
 	"errors"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -82,7 +83,8 @@ func NewLocalParty(
 	p.temp.kgRound3Messages = make([]tss.ParsedMessage, partyCount)
 	// temp data init
 	p.temp.KGCs = make([]cmt.HashCommitment, partyCount)
-	p.temp.sessionId = sessionId
+
+	p.temp.sessionId = tss.ExpandSessionID(sessionId, len(p.params.EC().Params().N.Bytes()))
 	return p, nil
 }
 

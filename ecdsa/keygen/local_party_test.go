@@ -59,8 +59,10 @@ func handleMessage(t *testing.T, msg tss.Message, parties []*LocalParty, updater
 }
 
 func initTheParties(pIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold int, fixtures []LocalPartySaveData, outCh chan tss.Message, endCh chan LocalPartySaveData, parties []*LocalParty, errCh chan *tss.Error) ([]*LocalParty, chan *tss.Error) {
-	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
+	// q := big.Wrap(tss.EC().Params().N)
+	// sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
+	// try a small sessionId
+	sessionId := new(big.Int).SetInt64(1)
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
@@ -122,7 +124,7 @@ func TestStartRound1Paillier(t *testing.T) {
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 	var lp *LocalParty
 	out := make(chan tss.Message, len(pIDs))
 	if 0 < len(fixtures) {

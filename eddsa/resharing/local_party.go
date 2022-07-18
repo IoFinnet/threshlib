@@ -95,7 +95,9 @@ func NewLocalParty(
 	p.temp.dgRound3Message1s = make([]tss.ParsedMessage, oldPartyCount)         // from t+1 of Old Committee
 	p.temp.dgRound3Message2s = make([]tss.ParsedMessage, oldPartyCount)         // "
 	p.temp.dgRound4Messages = make([]tss.ParsedMessage, params.NewPartyCount()) // from n of New Committee
-	p.temp.sessionId = sessionId
+
+	// hash the sessionID to make sure it's of the expected length when used as a nonce
+	p.temp.sessionId = tss.ExpandSessionID(sessionId, len(p.params.EC().Params().N.Bytes()))
 	return p, nil
 }
 

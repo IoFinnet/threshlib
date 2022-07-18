@@ -9,6 +9,7 @@ package signing
 import (
 	"errors"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -93,7 +94,9 @@ func NewLocalParty(
 	// temp data init
 	p.temp.m = msg
 	p.temp.cjs = make([]*big.Int, partyCount)
-	p.temp.sessionId = sessionId
+
+	// hash the sessionID to make sure it's of the expected length when used as a nonce
+	p.temp.sessionId = tss.ExpandSessionID(sessionId, len(p.params.EC().Params().N.Bytes()))
 	return p, nil
 }
 

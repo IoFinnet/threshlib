@@ -59,7 +59,7 @@ func TestE2EConcurrentAndSaveFixturesEdwards(t *testing.T) {
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
 	q := big.Wrap(tss.Edwards().Params().N)
-	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen()-1)
+	sessionId := common.MustGetRandomInt(q.BitLen() - 1)
 
 	updater := test.SharedPartyUpdater
 

@@ -63,7 +63,7 @@ func TestE2EConcurrentEdwards(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen()-1)
+	sessionId := common.MustGetRandomInt(q.BitLen() - 1)
 	updater := test.SharedPartyUpdater
 
 	msg := big.NewInt(200)

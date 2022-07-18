@@ -203,7 +203,9 @@ func NewLocalParty(
 	p.temp.r4msgCulpritPj = make([]int, partyCount)
 	p.temp.r4msgCji = make([]*big.Int, partyCount)
 	p.temp.r4msgxji = make([]*big.Int, partyCount)
-	p.temp.sessionId = sessionId
+
+	// hash the sessionID to make sure it's of the expected length when used as a nonce
+	p.temp.sessionId = tss.ExpandSessionID(sessionId, len(p.params.EC().Params().N.Bytes()))
 	return p, nil
 }
 

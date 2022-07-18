@@ -219,7 +219,6 @@ func (z *Int) Exp(x, y, m *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
 	y.ensureInitialized()
-	m.ensureInitialized()
 	var bi *big.Int
 	if m == nil {
 		bi = new(big.Int).Exp(x.i.Big(), y.i.Big(), nil)

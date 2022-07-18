@@ -46,29 +46,6 @@ func setUp(level string) {
 	}
 }
 
-func initTheParties(signPIDs tss.SortedPartyIDs, p2pCtx *tss.PeerContext, threshold int,
-	keys []keygen.LocalPartySaveData, keyDerivationDelta *big.Int, outCh chan tss.Message,
-	endCh chan common.SignatureData, parties []*LocalParty,
-	errCh chan *tss.Error) (*big.Int, []*LocalParty, chan *tss.Error) {
-	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
-	// init the parties
-	msg := common.GetRandomPrimeInt(256)
-	for i := 0; i < len(signPIDs); i++ {
-		params, _ := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
-
-		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
-		P := P_.(*LocalParty)
-		parties = append(parties, P)
-		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
-				errCh <- err
-			}
-		}(P)
-	}
-	return msg, parties, errCh
-}
-
 func TestE2EConcurrent(t *testing.T) {
 	setUp("info")
 	threshold := testThreshold
@@ -88,8 +65,10 @@ func TestE2EConcurrent(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan common.SignatureData, len(signPIDs))
 	dumpCh := make(chan tss.Message, len(signPIDs))
-	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
+	// q := big.Wrap(tss.EC().Params().N)
+	// sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
+	// try a small sessionId
+	sessionId := new(big.Int).SetInt64(1)
 
 	updater := test.SharedPartyUpdater
 

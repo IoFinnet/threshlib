@@ -247,7 +247,7 @@ func TestTooManyParties(t *testing.T) {
 	params, _ := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, p2pCtx, pIDs[0], MaxParties+1, MaxParties/10,
 		len(pIDs), MaxParties/10)
 	q := big.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	var err error
 	var void keygen.LocalPartySaveData

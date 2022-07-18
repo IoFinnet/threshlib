@@ -24,19 +24,19 @@ const (
 var errLengthTooLarge = errors.New("requested byte length is too high")
 
 // ExpandXMD implements https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve#section-5.4.1.
-func ExpandXMD(id crypto.Hash, input, dst []byte, length int) []byte {
+func ExpandXMD(id crypto.Hash, input, dst []byte, byteLen int) []byte {
 	h := id.New()
 	dst = vetDSTXMD(h, dst)
 	b := id.Size()
 	blockSize := h.BlockSize()
 
-	ell := math.Ceil(float64(length) / float64(b))
-	if ell > 255 || length > math.MaxUint16 || len(dst) > math.MaxUint8 {
+	ell := math.Ceil(float64(byteLen) / float64(b))
+	if ell > 255 || byteLen > math.MaxUint16 || len(dst) > math.MaxUint8 {
 		panic(errLengthTooLarge)
 	}
 
 	zPad := make([]byte, blockSize)
-	lib := i2osp(length, 2)
+	lib := i2osp(byteLen, 2)
 	zeroByte := []byte{0}
 	dstPrime := dstPrime(dst)
 
@@ -48,11 +48,11 @@ func ExpandXMD(id crypto.Hash, input, dst []byte, length int) []byte {
 
 	// ell < 2 means the hash function's output length is sufficient
 	if ell < 2 {
-		return b1[0:length]
+		return b1[0:byteLen]
 	}
 
 	// Only if we need to expand the hash output, we keep on hashing
-	return xmd(h, b0, b1, dstPrime, uint(ell), length)
+	return xmd(h, b0, b1, dstPrime, uint(ell), byteLen)
 }
 
 func dstPrime(dst []byte) []byte {

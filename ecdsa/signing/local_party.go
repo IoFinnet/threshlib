@@ -9,6 +9,7 @@ package signing
 import (
 	"errors"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -162,7 +163,6 @@ func NewLocalParty(
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
 	p.temp.m = msg
-	p.temp.sessionId = sessionId
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
 	p.temp.DeltaShareBetas = make([]*big.Int, partyCount)
 	p.temp.DeltaShareBetaNegs = make([]*big.Int, partyCount)
@@ -201,6 +201,8 @@ func NewLocalParty(
 	p.temp.r5msgsji = make([]*big.Int, partyCount)
 	p.temp.r5msg𝛽ʹji = make([]*big.Int, partyCount)
 
+	// hash the sessionID to make sure it's of the expected length when used as a nonce
+	p.temp.sessionId = tss.ExpandSessionID(sessionId, len(p.params.EC().Params().N.Bytes()))
 	return p, nil
 }
 

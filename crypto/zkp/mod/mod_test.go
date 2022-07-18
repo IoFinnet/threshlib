@@ -27,7 +27,7 @@ func TestMod(test *testing.T) {
 	// p2, q2 := new(big.Int).Mul(p, big.NewInt(2)), new(big.Int).Mul(q, big.NewInt(2))
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
-	nonce := common.MustGetRandomInt(256)
+	nonce := common.GetBigRandomPositiveInt(q, q.BitLen())
 	order := big.Wrap(tss.S256().Params().N)
 
 	proof, err := NewProof(order, N, P, Q, nonce)
@@ -58,7 +58,7 @@ func TestBadW(test *testing.T) {
 	// p2, q2 := new(big.Int).Mul(p, big.NewInt(2)), new(big.Int).Mul(q, big.NewInt(2))
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
-	nonce := common.GetRandomPrimeInt(256)
+	nonce := common.GetRandomPrimeInt(q.BitLen())
 	order := big.Wrap(tss.S256().Params().N)
 
 	pr, err := NewProof(order, N, P, Q, nonce)

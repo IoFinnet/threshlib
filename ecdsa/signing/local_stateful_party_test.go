@@ -40,7 +40,7 @@ func TestSaveState(t *testing.T) {
 
 	// dumpCh := make(chan tss.Message, len(signPIDs))
 	q := int2.Wrap(tss.EC().Params().N)
-	sessionId := common.GetRandomPositiveInt(q)
+	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	updater := test.SharedPartyUpdater
 	keyDerivationDelta := int2.NewInt(0)
