@@ -222,6 +222,7 @@ func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 }
 
 func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool, sessionId *big.Int) (bool, *tss.Error) {
+	sessionId = tss.ExpandSessionID(sessionId, len(p.params.EC().Params().N.Bytes()))
 	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast, sessionId)
 	if err != nil {
 		return false, p.WrapError(err)
