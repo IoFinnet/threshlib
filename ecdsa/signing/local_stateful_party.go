@@ -17,7 +17,7 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-var _ tss.StatefulParty = &LocalStatefulParty{}
+var _ tss.StatefulParty = (*LocalStatefulParty)(nil)
 
 type (
 	LocalStatefulParty struct {
