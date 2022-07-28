@@ -10,43 +10,53 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	big "github.com/binance-chain/tss-lib/common/int"
 	"sync"
+
+	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
 )
 
-type Party interface {
-	Start() *Error
-	// The main entry point when updating a party's state from the wire.
-	// isBroadcast should represent whether the message was received via a reliable broadcast
-	UpdateFromBytes(wireBytes []byte, from *PartyID, isBroadcast bool, sessionId *big.Int) (ok bool, err *Error)
-	// You may use this entry point to update a party's state when running locally or in tests
-	Update(msg ParsedMessage) (ok bool, err *Error)
-	ValidateMessage(msg ParsedMessage) (bool, *Error)
-	StoreMessage(msg ParsedMessage) (bool, *Error)
-	FirstRound() Round
-	WrapError(err error, culprits ...*PartyID) *Error
-	Running() bool
-	WaitingFor() []*PartyID
-	Params() *Parameters
-	PartyID() *PartyID
-	String() string
+type (
+	Party interface {
+		Start() *Error
+		// The main entry point when updating a party's state from the wire.
+		// isBroadcast should represent whether the message was received via a reliable broadcast
+		UpdateFromBytes(wireBytes []byte, from *PartyID, isBroadcast bool, sessionId *big.Int) (ok bool, err *Error)
+		// You may use this entry point to update a party's state when running locally or in tests
+		Update(msg ParsedMessage) (ok bool, err *Error)
+		ValidateMessage(msg ParsedMessage) (bool, *Error)
+		StoreMessage(msg ParsedMessage) (bool, *Error)
+		FirstRound() Round
+		WrapError(err error, culprits ...*PartyID) *Error
+		Running() bool
+		WaitingFor() []*PartyID
+		Params() *Parameters
+		PartyID() *PartyID
+		String() string
 
-	// Private lifecycle methods
-	setRound(Round) *Error
-	Round() Round
-	advance()
-	Lock()
-	Unlock()
-}
+		// Private lifecycle methods
+		setRound(Round) *Error
+		Round() Round
+		advance()
+		Lock()
+		Unlock()
+	}
 
-type BaseParty struct {
-	mtx        sync.Mutex
-	rndMtx     sync.RWMutex
-	rnd        Round
-	FirstRound Round
-}
+	StatefulParty interface {
+		Party
+		Hydrate(marshalledPartyState string) (bool, *Error)
+		Dehydrate() (string, *Error)
+		Restart(task string, roundNumber int) *Error
+	}
+
+	BaseParty struct {
+		mtx        sync.Mutex
+		rndMtx     sync.RWMutex
+		rnd        Round
+		FirstRound Round
+	}
+)
 
 func (p *BaseParty) Running() bool {
 	return p.rnd != nil

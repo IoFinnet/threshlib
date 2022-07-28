@@ -16,6 +16,8 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+var _ tss.StatefulParty = &LocalStatefulParty{}
+
 type (
 	LocalStatefulParty struct {
 		*LocalParty
@@ -109,7 +111,7 @@ func NewLocalStatefulParty(
 	preAdvanceFunc func(LocalStatefulParty, tss.ParsedMessage) (bool, *tss.Error),
 	sessionId *big.Int,
 	optionalPreParams ...LocalPreParams,
-) (tss.Party, error) {
+) (tss.StatefulParty, error) {
 	var party tss.Party
 	var err error
 	if party, err = NewLocalParty(params, out, end, sessionId, optionalPreParams...); err != nil {
