@@ -10,6 +10,7 @@ import (
 	"errors"
 
 	big "github.com/binance-chain/tss-lib/common/int"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 
 	int2 "github.com/binance-chain/tss-lib/common/int"
 	errors2 "github.com/pkg/errors"
@@ -20,6 +21,11 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
 )
+
+func newRound4(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
+	return &round4{&round3{&round2{&round1{
+		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 4}}}}}
+}
 
 func (round *round4) Start() *tss.Error {
 	if round.started {
@@ -42,11 +48,13 @@ func (round *round4) Start() *tss.Error {
 	// 1-3. verify paillier key proofs
 	culprits := make([]*tss.PartyID, 0, len(round.NewParties().IDs())) // who caused the error(s)
 	for _, msg := range round.temp.dgRound2Message1s {
+		if Pi.Index == msg.GetFrom().Index { // skipping myself
+			continue
+		}
 		r2msg1 := msg.Content().(*DGRound2Message1)
 		paiPK, proof := r2msg1.UnmarshalPaillierPK(), r2msg1.UnmarshalPaillierProof()
 		if ok, err := proof.Verify(paiPK.N, msg.GetFrom().KeyInt(), round.save.ECDSAPub); !ok || err != nil {
 			culprits = append(culprits, msg.GetFrom())
-			common.Logger.Warningf("paillier verify failed for party %s", msg.GetFrom())
 			continue
 		}
 		common.Logger.Debugf("paillier verify passed for party %s", msg.GetFrom())
@@ -79,6 +87,9 @@ func (round *round4) Start() *tss.Error {
 
 		vCj, vDj := r1msg.UnmarshalVCommitment(), r3msg2.UnmarshalVDeCommitment()
 
+		if len(vDj) == 0 {
+			return round.WrapError(errors.New("invalid de-commitment"), round.Parties().IDs()[j])
+		}
 		// 6. unpack flat "v" commitment content
 		vCmtDeCmt := commitments.HashCommitDecommit{C: vCj, D: vDj}
 		ok, flatVs := vCmtDeCmt.DeCommit()

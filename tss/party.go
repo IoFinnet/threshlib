@@ -12,9 +12,8 @@ import (
 	"fmt"
 	"sync"
 
-	big "github.com/binance-chain/tss-lib/common/int"
-
 	"github.com/binance-chain/tss-lib/common"
+	big "github.com/binance-chain/tss-lib/common/int"
 )
 
 type (
@@ -45,9 +44,9 @@ type (
 
 	StatefulParty interface {
 		Party
-		Hydrate(marshalledPartyState string) (bool, *Error)
+		Hydrate(marshalledPartyState string, sessionId *big.Int) (bool, *Error)
 		Dehydrate() (string, *Error)
-		Restart(task string, roundNumber int) *Error
+		Restart(task string, roundNumber int, marshalledPartyState string, sessionId *big.Int) *Error
 	}
 
 	BaseParty struct {

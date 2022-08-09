@@ -13,6 +13,11 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+func newRound2(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
+	return &round2{&round1{
+		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 2}}}
+}
+
 func (round *round2) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
@@ -30,10 +35,10 @@ func (round *round2) Start() *tss.Error {
 	i := Pi.Index
 
 	// 2. "broadcast" "ACK" members of the OLD committee
-	r2msg1 := NewDGRound2Message2(round.temp.sessionId,
+	r2msg2 := NewDGRound2Message2(round.temp.sessionId,
 		round.OldParties().IDs().Exclude(round.PartyID()), round.PartyID())
-	round.temp.dgRound2Message2s[i] = r2msg1
-	round.out <- r2msg1
+	round.temp.dgRound2Message2s[i] = r2msg2
+	round.out <- r2msg2
 
 	// 1.
 	// generate Paillier public key E_i, private key and proof
@@ -55,11 +60,15 @@ func (round *round2) Start() *tss.Error {
 	round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
 
 	paillierPf := preParams.PaillierSK.Proof(Pi.KeyInt(), round.save.ECDSAPub)
-	r2msg2 := NewDGRound2Message1(round.temp.sessionId,
+	/* common.Logger.Debugf("party: %v, r2, proof: %v, paiPK.N:%v, from: %v (%v), ECDSAPub: %v", Pi,
+	paillier.FormatProofHash(&paillierPf), common.FormatBigInt(preParams.PaillierSK.PublicKey.N),
+	common.FormatBigInt(Pi.KeyInt()), Pi, crypto.FormatECPoint(round.save.ECDSAPub))
+	*/
+	r2msg1 := NewDGRound2Message1(round.temp.sessionId,
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
 		&preParams.PaillierSK.PublicKey, paillierPf, preParams.NTildei, preParams.H1i, preParams.H2i)
-	round.temp.dgRound2Message1s[i] = r2msg2
-	round.out <- r2msg2
+	round.temp.dgRound2Message1s[i] = r2msg1
+	round.out <- r2msg1
 
 	// for this P: SAVE de-commitments, paillier keys for round 2
 	round.save.PaillierSK = preParams.PaillierSK

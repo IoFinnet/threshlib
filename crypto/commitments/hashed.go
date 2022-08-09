@@ -10,6 +10,8 @@
 package commitments
 
 import (
+	"fmt"
+
 	"github.com/binance-chain/tss-lib/common/hash"
 	big "github.com/binance-chain/tss-lib/common/int"
 
@@ -69,4 +71,12 @@ func (cmt *HashCommitDecommit) DeCommit() (bool, HashDeCommitment) {
 	} else {
 		return false, nil
 	}
+}
+
+func FormatHashDeCommitment(d HashDeCommitment) string {
+	if len(d) == 0 {
+		return "<>"
+	}
+	h := hash.SHA256i(d...)
+	return fmt.Sprintf("(%d) %s", len(d), common.FormatBigInt(h))
 }

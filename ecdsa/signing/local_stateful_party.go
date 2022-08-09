@@ -275,7 +275,7 @@ func StringToMarshalledLocalTempData(serializedPartyState string) (MarshalledSta
 	return marshalledStatefulPartyData, nil
 }
 
-func (p *LocalStatefulParty) Hydrate(marshalledPartyState string) (bool, *tss.Error) {
+func (p *LocalStatefulParty) Hydrate(marshalledPartyState string, _ *big.Int) (bool, *tss.Error) {
 	marshalledStatefulPartyData, err := StringToMarshalledLocalTempData(marshalledPartyState)
 	if err != nil {
 		return false, p.WrapError(err)
@@ -299,7 +299,7 @@ func (p *LocalStatefulParty) Dehydrate() (string, *tss.Error) {
 	return string(bz[:]), nil
 }
 
-func (p *LocalStatefulParty) Restart(task string, roundNumber int) *tss.Error {
+func (p *LocalStatefulParty) Restart(task string, roundNumber int, _ string, _ *big.Int) *tss.Error {
 	p.Lock()
 	defer p.Unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {

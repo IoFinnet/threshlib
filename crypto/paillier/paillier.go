@@ -287,6 +287,9 @@ func (privateKey *PrivateKey) Proof(k *big.Int, ecdsaPub *crypto2.ECPoint) Proof
 }
 
 func (pf Proof) Verify(pkN, k *big.Int, ecdsaPub *crypto2.ECPoint) (bool, error) {
+	if ecdsaPub == nil {
+		return false, fmt.Errorf("ecdsaPub cannot be nil")
+	}
 	iters := ProofIters
 	pch, xch := make(chan bool, 1), make(chan []*big.Int, 1) // buffered to allow early exit
 	prms := primes.Until(verifyPrimesUntil).List()           // uses cache primed in init()
@@ -370,4 +373,16 @@ func GenerateXs(m int, k, N *big.Int, ecdsaPub *crypto2.ECPoint) []*big.Int {
 		}
 	}
 	return ret
+}
+
+func FormatProofHash(proof *Proof) string {
+	if proof == nil {
+		return "<nil>"
+	}
+	for _, v := range proof[:] {
+		if v == nil {
+			return "<*nil*>"
+		}
+	}
+	return common.FormatBigInt(hash.SHA256i(proof[:]...))
 }

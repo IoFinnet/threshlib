@@ -8,6 +8,7 @@ package crypto
 
 import (
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -27,6 +28,9 @@ func GenerateNTildei(safePrimes [2]*big.Int) (NTildei, h1i, h2i *big.Int, err er
 }
 
 func FormatECPoint(p *ECPoint) string {
+	if p == nil {
+		return "<nil>"
+	}
 	x := common.FormatBigInt(p.X())
 	y := common.FormatBigInt(p.Y())
 	return "(" + x + "," + y + ")"

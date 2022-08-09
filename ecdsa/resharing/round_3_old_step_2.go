@@ -9,8 +9,14 @@ package resharing
 import (
 	"errors"
 
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
+
+func newRound3(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
+	return &round3{&round2{&round1{
+		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 3}}}}
+}
 
 func (round *round3) Start() *tss.Error {
 	if round.started {

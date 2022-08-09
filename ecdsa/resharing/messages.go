@@ -28,6 +28,7 @@ var (
 		(*DGRound2Message2)(nil),
 		(*DGRound3Message1)(nil),
 		(*DGRound3Message2)(nil),
+		(*DGRound4Message)(nil),
 	}
 )
 
@@ -121,6 +122,9 @@ func (m *DGRound2Message1) UnmarshalPaillierPK() *paillier.PublicKey {
 
 func (m *DGRound2Message1) UnmarshalPaillierProof() paillier.Proof {
 	var pf paillier.Proof
+	if m.PaillierProof == nil {
+		return paillier.Proof{}
+	}
 	ints := common.ByteSlicesToBigInts(m.PaillierProof)
 	copy(pf[:], ints[:paillier.ProofIters])
 	return pf

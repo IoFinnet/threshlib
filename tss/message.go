@@ -161,6 +161,10 @@ func (mm *MessageImpl) Content() MessageContent {
 	return mm.content
 }
 
+func (mm *MessageImpl) SetContent(c MessageContent) {
+	mm.content = c
+}
+
 func (mm *MessageImpl) ValidateBasic(ec elliptic.Curve) bool {
 	return mm.content.ValidateBasic(ec)
 }

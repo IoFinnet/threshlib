@@ -141,13 +141,13 @@ keygenFirstPart:
 			P_, _ := NewLocalStatefulParty(params, outCh2, endCh, noActionFunc, sessionId)
 			P, _ = P_.(*LocalStatefulParty)
 		}
-		_, errH := P.Hydrate(stateParties[i])
+		_, errH := P.Hydrate(stateParties[i], nil)
 		if errH != nil {
 			assert.NoError(t, errH, "there should be no error hydrating")
 		}
 		parties = append(parties, P)
 		go func(P *LocalStatefulParty) {
-			if errR := P.Restart(TaskName, 4); errR != nil {
+			if errR := P.Restart(TaskName, 4, "", nil); errR != nil {
 				errCh2 <- errR
 			}
 		}(P)
