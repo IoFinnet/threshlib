@@ -22,7 +22,7 @@ var _ tss.StatefulParty = (*LocalStatefulParty)(nil)
 type (
 	LocalStatefulParty struct {
 		*LocalParty
-		preAdvanceFunc func(LocalStatefulParty, tss.ParsedMessage) (bool, *tss.Error)
+		preAdvanceFunc func(tss.StatefulParty, tss.ParsedMessage) (bool, *tss.Error)
 	}
 
 	MarshalledLocalTempData struct {
@@ -107,7 +107,7 @@ func NewLocalStatefulParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
-	preAdvanceFunc func(LocalStatefulParty, tss.ParsedMessage) (bool, *tss.Error),
+	preAdvanceFunc func(tss.StatefulParty, tss.ParsedMessage) (bool, *tss.Error),
 	sessionId *big.Int,
 	startRndNums ...int,
 ) (tss.StatefulParty, error) {
@@ -122,7 +122,7 @@ func NewLocalStatefulParty(
 func (p *LocalStatefulParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
 	f := func(_p tss.Party) (bool, *tss.Error) {
 		p2 := _p.(*LocalStatefulParty)
-		return p2.preAdvanceFunc(*p2, msg)
+		return p2.preAdvanceFunc(p2, msg)
 	}
 	ok, err = tss.BaseUpdate(p, msg, TaskName, f)
 	if err != nil {

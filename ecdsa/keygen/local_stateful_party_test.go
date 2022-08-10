@@ -48,7 +48,7 @@ func TestSaveState(t *testing.T) {
 	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
 	// Save and reload party
-	preAdvanceFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	preAdvanceFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		var state string
 		var errF *tss.Error
 
@@ -123,7 +123,7 @@ keygenFirstPart:
 
 	time.Sleep(3 * time.Second)
 	// Second part
-	noActionFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	noActionFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		return true, nil
 	}
 

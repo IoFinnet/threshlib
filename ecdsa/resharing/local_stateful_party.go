@@ -18,7 +18,7 @@ var _ tss.StatefulParty = (*LocalStatefulParty)(nil)
 type (
 	LocalStatefulParty struct {
 		*LocalParty
-		preAdvanceFunc func(*LocalStatefulParty, tss.ParsedMessage) (bool, *tss.Error)
+		preAdvanceFunc func(tss.StatefulParty, tss.ParsedMessage) (bool, *tss.Error)
 	}
 
 	BaseMarshalledMessages struct {
@@ -90,7 +90,7 @@ func NewLocalStatefulParty(
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
 	end chan<- keygen.LocalPartySaveData,
-	preAdvanceFunc func(*LocalStatefulParty, tss.ParsedMessage) (bool, *tss.Error),
+	preAdvanceFunc func(tss.StatefulParty, tss.ParsedMessage) (bool, *tss.Error),
 	sessionId *big.Int,
 ) (tss.Party, error) {
 	var party tss.Party

@@ -58,7 +58,7 @@ func TestSaveState(t *testing.T) {
 	q := int2.Wrap(tss.EC().Params().N)
 	sessionId := common.GetBigRandomPositiveInt(q, q.BitLen())
 
-	preAdvanceOldFunc := func(p *LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	preAdvanceOldFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		var state string
 		var errF *tss.Error
 
@@ -85,7 +85,7 @@ func TestSaveState(t *testing.T) {
 		return false, nil
 	}
 
-	preAdvanceNewFunc := func(p *LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	preAdvanceNewFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		var state string
 		var errF *tss.Error
 
@@ -210,7 +210,7 @@ resharingFirstPart:
 	time.Sleep(2 * time.Second)
 	common.Logger.Debug("Second part -------------------------------------------------------")
 	// Second part
-	noActionFunc := func(p *LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	noActionFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		return true, nil
 	}
 

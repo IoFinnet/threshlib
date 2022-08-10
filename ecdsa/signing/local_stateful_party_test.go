@@ -46,7 +46,7 @@ func TestSaveState(t *testing.T) {
 	keyDerivationDelta := int2.NewInt(0)
 
 	// Save party state
-	preAdvanceFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	preAdvanceFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		var state string
 		var errF *tss.Error
 
@@ -127,7 +127,7 @@ signingFirstPart:
 	errCh2 := make(chan *tss.Error, len(signPIDs))
 	outCh2 := make(chan tss.Message, len(signPIDs))
 
-	nilAdvanceFunc := func(p LocalStatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
+	nilAdvanceFunc := func(p tss.StatefulParty, msg tss.ParsedMessage) (bool, *tss.Error) {
 		return false, nil
 	}
 
