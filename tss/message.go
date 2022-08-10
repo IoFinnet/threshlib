@@ -9,6 +9,7 @@ package tss
 import (
 	"crypto/elliptic"
 	"fmt"
+
 	big "github.com/binance-chain/tss-lib/common/int"
 
 	"google.golang.org/protobuf/proto"
@@ -159,10 +160,6 @@ func (mm *MessageImpl) WireMsg() *MessageWrapper {
 
 func (mm *MessageImpl) Content() MessageContent {
 	return mm.content
-}
-
-func (mm *MessageImpl) SetContent(c MessageContent) {
-	mm.content = c
 }
 
 func (mm *MessageImpl) ValidateBasic(ec elliptic.Curve) bool {
