@@ -44,9 +44,9 @@ type (
 
 	StatefulParty interface {
 		Party
-		Hydrate(marshalledPartyState string, sessionId *big.Int) (bool, *Error)
+		Hydrate(marshalledPartyState string) (bool, *Error)
 		Dehydrate() (string, *Error)
-		Restart(task string, roundNumber int, marshalledPartyState string, sessionId *big.Int) *Error
+		Restart(task string, roundNumber int, marshalledPartyState string) *Error
 	}
 
 	BaseParty struct {

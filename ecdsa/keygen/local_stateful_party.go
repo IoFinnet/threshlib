@@ -2,7 +2,6 @@ package keygen
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -307,7 +306,7 @@ func StringToMarshalledLocalTempData(serializedPartyState string) (MarshalledSta
 	return marshalledStatefulPartyData, nil
 }
 
-func (p *LocalStatefulParty) Hydrate(marshalledPartyState string, _ *big.Int) (bool, *tss.Error) {
+func (p *LocalStatefulParty) Hydrate(marshalledPartyState string) (bool, *tss.Error) {
 	marshalledStatefulPartyData, err := StringToMarshalledLocalTempData(marshalledPartyState)
 	if err != nil {
 		return false, p.WrapError(err)
@@ -336,22 +335,30 @@ func (p *LocalStatefulParty) RoundNumber(roundNumber int) tss.Round {
 	return newRound[roundNumber-1].(func(*tss.Parameters, *LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- LocalPartySaveData) tss.Round)(p.params, &p.data, &p.temp, p.out, p.end)
 }
 
-func (p *LocalStatefulParty) Restart(task string, roundNumber int, _ string, _ *big.Int) *tss.Error {
+func (p *LocalStatefulParty) Restart(task string, roundNumber int, marshalledPartyState string) *tss.Error {
 	p.Lock()
 	defer p.Unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
 		return p.WrapError(fmt.Errorf("could not start. this party has an invalid PartyID: %+v", p.PartyID()))
 	}
-	if p.Round() != nil {
-		return p.WrapError(errors.New("could not start. this party is in an unexpected state. use the constructor and Start()"))
+	var round tss.Round
+	if marshalledPartyState != "" {
+		_, errH := p.Hydrate(marshalledPartyState)
+		if errH != nil {
+			return errH
+		}
 	}
-	round := p.RoundNumber(roundNumber)
-	if err := p.SetRound(round); err != nil {
-		return err
+	if p.Round() == nil {
+		round = p.RoundNumber(roundNumber)
+		if err := p.SetRound(round); err != nil {
+			return err
+		}
+	} else {
+		round = p.Round()
 	}
-	common.Logger.Infof("party %s (%p): %s round %d restarting", p.Round().Params().PartyID(), p, task, roundNumber)
+	common.Logger.Infof("party %s (%p): %s round %d restarting", round.Params().PartyID(), p, task, roundNumber)
 	defer func() {
-		common.Logger.Debugf("party %s (%p): %s round %d finished", p.Round().Params().PartyID(), p, task, roundNumber)
+		common.Logger.Debugf("party %s (%p): %s round %d finished", round.Params().PartyID(), p, task, roundNumber)
 	}()
-	return p.Round().Start()
+	return round.Start()
 }

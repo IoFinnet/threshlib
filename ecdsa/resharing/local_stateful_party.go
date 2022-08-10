@@ -384,13 +384,12 @@ func StringToMarshalledLocalTempData(serializedPartyState string) (MarshalledLoc
 	return marshalledStatefulPartyData, nil
 }
 
-func (p *LocalStatefulParty) Hydrate(marshalledPartyState string, sessionId *big.Int) (bool, *tss.Error) {
+func (p *LocalStatefulParty) Hydrate(marshalledPartyState string) (bool, *tss.Error) {
 	marshalledStatefulPartyData, err := StringToMarshalledLocalTempData(marshalledPartyState)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
-	MarshalledToLocalTempData(&marshalledStatefulPartyData, &p.temp, &p.save, p.PartyID(), p.params,
-		sessionId)
+	MarshalledToLocalTempData(&marshalledStatefulPartyData, &p.temp, &p.save, p.PartyID(), p.params, p.temp.sessionId)
 	return true, nil
 }
 
@@ -408,19 +407,19 @@ func (p *LocalStatefulParty) RoundNumber(roundNumber int) tss.Round {
 	return newRound[roundNumber-1].(func(*tss.ReSharingParameters, *keygen.LocalPartySaveData, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- keygen.LocalPartySaveData) tss.Round)(p.params, &p.input, &p.save, &p.temp, p.out, p.end)
 }
 
-func (p *LocalStatefulParty) Restart(task string, roundNumber int, marshalledPartyState string,
-	sessionId *big.Int) *tss.Error {
+func (p *LocalStatefulParty) Restart(task string, roundNumber int, marshalledPartyState string) *tss.Error {
 	p.Lock()
 	defer p.Unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
 		return p.WrapError(fmt.Errorf("could not start. this party has an invalid PartyID: %+v", p.PartyID()))
 	}
 	var round tss.Round
-	_, errH := p.Hydrate(marshalledPartyState, sessionId)
-	if errH != nil {
-		return errH
+	if marshalledPartyState != "" {
+		_, errH := p.Hydrate(marshalledPartyState)
+		if errH != nil {
+			return errH
+		}
 	}
-
 	if p.Round() == nil {
 		round = p.RoundNumber(roundNumber)
 		if err := p.SetRound(round); err != nil {

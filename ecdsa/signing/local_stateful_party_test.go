@@ -142,13 +142,13 @@ signingFirstPart:
 			t.FailNow()
 		}
 		P := P_.(*LocalStatefulParty)
-		_, errH := P.Hydrate(stateParties[i], nil)
+		_, errH := P.Hydrate(stateParties[i])
 		if errH != nil {
 			assert.NoError(t, errH, "there should be no error hydrating")
 		}
 		parties = append(parties, P)
 		go func(P *LocalStatefulParty) {
-			if errS := P.Restart(TaskName, 4, "", nil); errS != nil {
+			if errS := P.Restart(TaskName, 4, ""); errS != nil {
 				errCh2 <- errS
 			}
 		}(P)
