@@ -251,7 +251,7 @@ resharingFirstPart:
 	for _, P := range oldCommittee {
 		go func(P *LocalStatefulParty) {
 			mutexOld.Lock()
-			if errR := P.Restart(TaskName, 3, stateOldCommittee[*P.PartyID()]); errR != nil {
+			if errR := P.Restart(3, stateOldCommittee[*P.PartyID()]); errR != nil {
 				errCh1 <- errR
 			}
 			mutexOld.Unlock()
@@ -262,7 +262,7 @@ resharingFirstPart:
 	for _, P := range newCommittee {
 		go func(P *LocalStatefulParty) {
 			mutexNew.Lock()
-			if errR := P.Restart(TaskName, 3, stateNewCommittee[*P.PartyID()]); errR != nil {
+			if errR := P.Restart(3, stateNewCommittee[*P.PartyID()]); errR != nil {
 				errCh2 <- errR
 			}
 			mutexNew.Unlock()

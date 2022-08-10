@@ -299,7 +299,7 @@ func (p *LocalStatefulParty) Dehydrate() (string, *tss.Error) {
 	return string(bz[:]), nil
 }
 
-func (p *LocalStatefulParty) Restart(task string, roundNumber int, marshalledPartyState string) *tss.Error {
+func (p *LocalStatefulParty) Restart(roundNumber int, marshalledPartyState string) *tss.Error {
 	p.Lock()
 	defer p.Unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
@@ -319,9 +319,9 @@ func (p *LocalStatefulParty) Restart(task string, roundNumber int, marshalledPar
 	if err := p.SetRound(round); err != nil {
 		return err
 	}
-	common.Logger.Infof("party %s (%p): %s round %d restarting", p.Round().Params().PartyID(), p, task, roundNumber)
+	common.Logger.Infof("party %s (%p): %s round %d restarting", p.Round().Params().PartyID(), p, TaskName, roundNumber)
 	defer func() {
-		common.Logger.Debugf("party %s (%p): %s round %d finished", p.Round().Params().PartyID(), p, task, roundNumber)
+		common.Logger.Debugf("party %s (%p): %s round %d finished", p.Round().Params().PartyID(), p, TaskName, roundNumber)
 	}()
 	return p.Round().Start()
 }

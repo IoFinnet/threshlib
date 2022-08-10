@@ -148,7 +148,7 @@ signingFirstPart:
 		}
 		parties = append(parties, P)
 		go func(P *LocalStatefulParty) {
-			if errS := P.Restart(TaskName, 4, ""); errS != nil {
+			if errS := P.Restart(4, ""); errS != nil {
 				errCh2 <- errS
 			}
 		}(P)

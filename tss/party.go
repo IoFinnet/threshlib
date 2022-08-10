@@ -46,7 +46,7 @@ type (
 		Party
 		Hydrate(marshalledPartyState string) (bool, *Error)
 		Dehydrate() (string, *Error)
-		Restart(task string, roundNumber int, marshalledPartyState string) *Error
+		Restart(roundNumber int, marshalledPartyState string) *Error
 	}
 
 	BaseParty struct {

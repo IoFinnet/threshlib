@@ -147,7 +147,7 @@ keygenFirstPart:
 		}
 		parties = append(parties, P)
 		go func(P *LocalStatefulParty) {
-			if errR := P.Restart(TaskName, 4, ""); errR != nil {
+			if errR := P.Restart(4, ""); errR != nil {
 				errCh2 <- errR
 			}
 		}(P)
