@@ -92,7 +92,7 @@ func NewLocalStatefulParty(
 	end chan<- keygen.LocalPartySaveData,
 	preAdvanceFunc func(tss.StatefulParty, tss.ParsedMessage) (bool, *tss.Error),
 	sessionId *big.Int,
-) (tss.Party, error) {
+) (tss.StatefulParty, error) {
 	var party tss.Party
 	var err error
 	if party, err = NewLocalParty(params, key, out, end, sessionId); err != nil {
