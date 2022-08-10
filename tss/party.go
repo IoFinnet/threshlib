@@ -45,7 +45,7 @@ type (
 	StatefulParty interface {
 		Party
 		Hydrate(marshalledPartyState string) (bool, *Error)
-		Dehydrate() (string, *Error)
+		Dehydrate() (marshalledPartyState string, err *Error)
 		Restart(roundNumber int, marshalledPartyState string) *Error
 	}
 
