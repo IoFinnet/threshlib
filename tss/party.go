@@ -174,49 +174,6 @@ func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
 }
 
 // an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
-func BaseUpdate2(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
-	// fast-fail on an invalid message; do not lock the mutex yet
-	if _, err := p.ValidateMessage(msg); err != nil {
-		return false, err
-	}
-	// lock the mutex. need this mtx unlock hook; L108 is recursive so cannot use defer
-	r := func(ok bool, err *Error) (bool, *Error) {
-		p.Unlock()
-		return ok, err
-	}
-	p.Lock() // data is written to P state below
-	common.Logger.Debugf("party %s received message: %s", p.PartyID(), msg.String())
-	if p.Round() != nil {
-		common.Logger.Debugf("party %s round %d update: %s", p.PartyID(), p.Round().RoundNumber(), msg.String())
-	}
-	if ok, err := p.StoreMessage(msg); err != nil || !ok {
-		return r(false, err)
-	}
-	if p.Round() != nil {
-		common.Logger.Debugf("party %s: %s round %d update", p.Round().Params().PartyID(), task, p.Round().RoundNumber())
-		if _, err := p.Round().Update(); err != nil {
-			return r(false, err)
-		}
-		if p.Round().CanProceed() {
-			if p.advance(); p.Round() != nil {
-				if err := p.Round().Start(); err != nil {
-					return r(false, err)
-				}
-				rndNum := p.Round().RoundNumber()
-				common.Logger.Infof("party %s: %s round %d started", p.Round().Params().PartyID(), task, rndNum)
-			} else {
-				// finished! the round implementation will have sent the data through the `end` channel.
-				common.Logger.Infof("party %s: %s finished!", p.PartyID(), task)
-			}
-			p.Unlock()                       // recursive so can't defer after return
-			return BaseUpdate2(p, msg, task) // re-run round update or finish)
-		}
-		return r(true, nil)
-	}
-	return r(true, nil)
-}
-
-// an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
 func BaseUpdate(p Party, msg ParsedMessage, task string, advanceCallback ...func(Party) (bool, *Error)) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {

@@ -330,7 +330,7 @@ func (p *LocalStatefulParty) Dehydrate() (string, *tss.Error) {
 	return string(bz[:]), nil
 }
 
-func (p *LocalStatefulParty) RoundNumber(roundNumber int) tss.Round {
+func (p *LocalStatefulParty) RoundByNumber(roundNumber int) tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4, newRoundout}
 	return newRound[roundNumber-1].(func(*tss.Parameters, *LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- LocalPartySaveData) tss.Round)(p.params, &p.data, &p.temp, p.out, p.end)
 }
@@ -349,7 +349,7 @@ func (p *LocalStatefulParty) Restart(roundNumber int, marshalledPartyState strin
 		}
 	}
 	if p.Round() == nil {
-		round = p.RoundNumber(roundNumber)
+		round = p.RoundByNumber(roundNumber)
 		if err := p.SetRound(round); err != nil {
 			return err
 		}
