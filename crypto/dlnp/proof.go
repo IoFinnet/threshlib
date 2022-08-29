@@ -31,6 +31,10 @@ type (
 	}
 )
 
+var (
+	one = big.NewInt(1)
+)
+
 func NewProof(h1, h2, x, p, q, N *big.Int) *Proof {
 	pMulQ := new(big.Int).Mul(p, q)
 	modN, modPQ := int2.ModInt(N), int2.ModInt(pMulQ)
@@ -57,6 +61,32 @@ func (p *Proof) Verify(h1, h2, N *big.Int) bool {
 		return false
 	}
 	modN := int2.ModInt(N)
+	if N.Sign() != 1 {
+		return false
+	}
+	h1_ := new(big.Int).Mod(h1, N)
+	if h1_.Cmp(one) != 1 || h1_.Cmp(N) != -1 {
+		return false
+	}
+	h2_ := new(big.Int).Mod(h2, N)
+	if h2_.Cmp(one) != 1 || h2_.Cmp(N) != -1 {
+		return false
+	}
+	if h1_.Cmp(h2_) == 0 {
+		return false
+	}
+	for i := range p.T {
+		a := new(big.Int).Mod(p.T[i], N)
+		if a.Cmp(one) != 1 || a.Cmp(N) != -1 {
+			return false
+		}
+	}
+	for i := range p.Alpha {
+		a := new(big.Int).Mod(p.Alpha[i], N)
+		if a.Cmp(one) != 1 || a.Cmp(N) != -1 {
+			return false
+		}
+	}
 	msg := append([]*big.Int{h1, h2, N}, p.Alpha[:]...)
 	c := hash.SHA256i(msg...)
 	cIBI := new(big.Int)
