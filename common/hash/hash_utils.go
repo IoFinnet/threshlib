@@ -15,12 +15,14 @@ func RejectionSample(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 	e := eHash
 	// optimisation to skip firstBitsOf for secp256k1 and nist256p1
 	if qBits != hashBitLen {
-		e = firstBitsOf(qBits, eHash)
+		e = firstBitsOf(qBits, e)
 	}
 	// while e is not between 0-q
 	for e.Cmp(q) > -1 {
-		eHash = SHA256iOne(eHash)
-		e = firstBitsOf(qBits, eHash)
+		e = SHA256iOne(e)
+		if qBits != hashBitLen {
+			e = firstBitsOf(qBits, e)
+		}
 	}
 	return e
 }
