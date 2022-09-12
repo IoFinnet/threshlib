@@ -22,7 +22,6 @@ const (
 	Iterations         = 13
 	ProofModBytesParts = Iterations*4 + 1
 	MinBitLen          = 254
-	DST                = "TSS-LIB-ZKP-MOD-DST"
 )
 
 var (
@@ -62,7 +61,7 @@ func NewProof(q, N, P, Q, nonce *big.Int) (*ProofMod, error) {
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
 		ei := hash.SHA256i(append([]*big.Int{nonce, W, N}, Y[:i]...)...)
-		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+16)
+		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+2)
 		expandedI := new(big.Int).SetBytes(expanded)
 		expandedI = expandedI.Mod(expandedI, q)
 		Y[i] = expandedI
@@ -140,7 +139,7 @@ func (pf *ProofMod) Verify(q, N, nonce *big.Int) bool {
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
 		ei := hash.SHA256i(append([]*big.Int{nonce, pf.W, N}, Y[:i]...)...)
-		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+16)
+		expanded := hash.ExpandXMD(crypto.SHA256, N.Bytes(), ei.Bytes(), len(q.Bytes())+2)
 		expandedI := new(big.Int).SetBytes(expanded)
 		expandedI = expandedI.Mod(expandedI, q)
 		Y[i] = expandedI
