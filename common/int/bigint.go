@@ -1,4 +1,4 @@
-// Constant time big.Int (best effort)
+// Optionally constant time big.Int (best effort)
 
 package int
 
@@ -13,20 +13,33 @@ import (
 type (
 	Int struct {
 		i     *big_const.Int
-		mutex sync.RWMutex
+		i2    *big.Int
+		mutex *sync.RWMutex
 	}
 )
 
-func NewInt(x uint64) *Int {
-	return &Int{new(big_const.Int).SetUint64(x), sync.RWMutex{}}
+var (
+	constantTimeIntEnabled = false
+)
+
+// EnableConstantTimeArithmetic enables best-effort constant time arithmetic (experimental, probably slow)
+// Must be called before any LocalParty constructor or protocol is used, or behaviour may be unpredictable.
+func EnableConstantTimeArithmetic() (enabled bool) {
+	constantTimeIntEnabled = true
+	return constantTimeIntEnabled
 }
 
-func Wrap(i *big.Int) *Int {
-	cBI := new(big_const.Int).SetBytes(i.Bytes())
-	if i.Cmp(zero.Big()) < 0 {
-		cBI = cBI.Neg(1)
+func NewInt(x uint64) *Int {
+	i := new(big_const.Int).SetUint64(x)
+	return &Int{i, i.Big(), new(sync.RWMutex)}
+}
+
+func Wrap(i2 *big.Int) *Int {
+	i := new(big_const.Int).SetBytes(i2.Bytes())
+	if i2.Cmp(zero.Big()) < 0 {
+		i = i.Neg(1)
 	}
-	return &Int{cBI, sync.RWMutex{}}
+	return &Int{i, i2, new(sync.RWMutex)}
 }
 
 func (z *Int) Set(x *Int) *Int {
@@ -34,14 +47,22 @@ func (z *Int) Set(x *Int) *Int {
 	x.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.SetBytes(x.Bytes())
+	if constantTimeIntEnabled {
+		z.i = z.i.SetBytes(x.Bytes())
+	} else {
+		z.i2 = z.i2.SetBytes(x.Bytes())
+	}
 	return z
 }
 func (z *Int) SetBytes(data []byte) *Int {
 	z.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.SetBytes(data)
+	if constantTimeIntEnabled {
+		z.i = z.i.SetBytes(data)
+	} else {
+		z.i2 = z.i2.SetBytes(data)
+	}
 	return z
 }
 func (z *Int) SetInt64(x int64) *Int {
@@ -51,28 +72,22 @@ func (z *Int) SetInt64(x int64) *Int {
 	z.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.SetUint64(uint64(x))
+	if constantTimeIntEnabled {
+		z.i = z.i.SetUint64(uint64(x))
+	} else {
+		z.i2 = z.i2.SetUint64(uint64(x))
+	}
 	return z
 }
 func (z *Int) SetUint64(x uint64) *Int {
 	z.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.SetUint64(x)
-	return z
-}
-func (z *Int) SetNat(x *big_const.Nat) *Int {
-	z.ensureInitialized()
-	z.mutex.Lock()
-	defer z.mutex.Unlock()
-	z.i = z.i.SetNat(x)
-	return z
-}
-func (z *Int) SetBig(x *big.Int, size int) *Int {
-	z.ensureInitialized()
-	z.mutex.Lock()
-	defer z.mutex.Unlock()
-	z.i = z.i.SetBig(x, size)
+	if constantTimeIntEnabled {
+		z.i = z.i.SetUint64(x)
+	} else {
+		z.i2 = z.i2.SetUint64(x)
+	}
 	return z
 }
 func (z *Int) Clone() *Int {
@@ -80,46 +95,25 @@ func (z *Int) Clone() *Int {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
 	cloned := new(Int)
-	cloned.i = z.i.Clone()
+	if constantTimeIntEnabled {
+		cloned.i = z.i.Clone()
+	} else {
+		cloned.i2 = new(big.Int).SetBytes(z.i2.Bytes())
+	}
 	return cloned
-}
-func (z *Int) Resize(cap int) *Int {
-	z.ensureInitialized()
-	z.mutex.Lock()
-	defer z.mutex.Unlock()
-	z.i = z.i.Resize(cap)
-	return z
-}
-func (z *Int) Eq(x *Int) big_const.Choice {
-	z.ensureInitialized()
-	x.ensureInitialized()
-	return z.i.Eq(x.i)
 }
 func (z *Int) Cmp(y *Int) (r int) {
 	z.ensureInitialized()
 	y.ensureInitialized()
-	return z.i.Big().Cmp(y.i.Big())
-}
-func (z *Int) Abs() *big_const.Nat {
-	z.ensureInitialized()
-	z.mutex.RLock()
-	defer z.mutex.RUnlock()
-	return z.i.Abs()
-}
-func (z *Int) IsNegative() big_const.Choice {
-	z.ensureInitialized()
-	return z.IsNegative()
-}
-func (z *Int) AnnouncedLen() int {
-	z.ensureInitialized()
-	z.mutex.RLock()
-	defer z.mutex.RUnlock()
-	return z.i.AnnouncedLen()
+	return z.Big().Cmp(y.Big())
 }
 func (z *Int) BitLen() int {
 	z.ensureInitialized()
 	z.mutex.RLock()
 	defer z.mutex.RUnlock()
+	if !constantTimeIntEnabled {
+		return z.i2.BitLen()
+	}
 	// TODO: this leaks the value, but AnnouncedLen will not work for generating primes.
 	return z.i.TrueLen()
 }
@@ -128,15 +122,23 @@ func (z *Int) Neg(x *Int) *Int {
 	x.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	// allocate a new *Int otherwise we will mutate arg `x`
-	z.i = x.Clone().i.Neg(1)
+	if constantTimeIntEnabled {
+		// allocate a new *Int otherwise we will mutate arg `x`
+		z.i = x.Clone().i.Neg(1)
+	} else {
+		z.i2 = z.i2.Neg(x.i2)
+	}
 	return z
 }
 func (z *Int) SetNeg() *Int {
 	z.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.Neg(1)
+	if constantTimeIntEnabled {
+		z.i = z.i.Neg(1)
+	} else {
+		z.i2 = z.i2.Neg(z.i2)
+	}
 	return z
 }
 func (z *Int) SetInt(x *Int) *Int {
@@ -145,6 +147,7 @@ func (z *Int) SetInt(x *Int) *Int {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
 	z.i = x.i
+	z.i2 = x.i2
 	return z
 }
 func (z *Int) Add(x, y *Int) *Int {
@@ -153,7 +156,11 @@ func (z *Int) Add(x, y *Int) *Int {
 	y.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.Add(x.i, y.i, -1)
+	if constantTimeIntEnabled {
+		z.i = z.i.Add(x.i, y.i, -1)
+	} else {
+		z.i2 = z.i2.Add(x.i2, y.i2)
+	}
 	return z
 }
 func (z *Int) Mul(x, y *Int) *Int {
@@ -162,7 +169,11 @@ func (z *Int) Mul(x, y *Int) *Int {
 	y.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.Clone().Mul(x.i.Clone(), y.i.Clone(), -1)
+	if constantTimeIntEnabled {
+		z.i = z.i.Clone().Mul(x.i.Clone(), y.i.Clone(), -1)
+	} else {
+		z.i2 = z.i2.Mul(x.i2, y.i2)
+	}
 	return z
 }
 func (z *Int) Mod(x, y *Int) *Int {
@@ -171,30 +182,25 @@ func (z *Int) Mod(x, y *Int) *Int {
 	y.ensureInitialized()
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	z.i = z.i.SetBytes(x.i.Mod(big_const.ModulusFromBytes(y.Bytes())).Bytes())
+	if constantTimeIntEnabled {
+		z.i = z.i.SetBytes(x.i.Mod(big_const.ModulusFromBytes(y.Bytes())).Bytes())
+	} else {
+		z.i2 = z.i2.Mod(x.i2, y.i2)
+	}
 	return z
-}
-func (z *Int) SetModSymmetric(x *big_const.Nat, m *big_const.Modulus) *Int {
-	z.ensureInitialized()
-	z.mutex.Lock()
-	defer z.mutex.Unlock()
-	z.i = z.i.SetModSymmetric(x, m)
-	return z
-}
-func (z *Int) CheckInRange(m *big_const.Modulus) big_const.Choice {
-	z.ensureInitialized()
-	z.mutex.RLock()
-	defer z.mutex.RUnlock()
-	return z.i.CheckInRange(m)
 }
 func (z *Int) String() string {
 	z.ensureInitialized()
 	z.mutex.RLock()
 	defer z.mutex.RUnlock()
-	return z.i.String()
+	if constantTimeIntEnabled {
+		return z.i.String()
+	} else {
+		return z.i2.String()
+	}
 }
 
-// TODO: DANGER ZONE! Revisit
+// TODO: DANGER ZONE! Potentially non constant-time. Revisit
 func (z *Int) SetBit(x *Int, i int, b uint) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
@@ -205,14 +211,14 @@ func (z *Int) Sub(x, y *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
 	y.ensureInitialized()
-	bi := new(big.Int).Sub(x.i.Big(), y.i.Big())
+	bi := new(big.Int).Sub(x.Big(), y.Big())
 	return z.wrap(bi)
 }
 func (z *Int) Div(x, y *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
 	y.ensureInitialized()
-	bi := new(big.Int).Div(x.i.Big(), y.i.Big())
+	bi := new(big.Int).Div(x.Big(), y.Big())
 	return z.wrap(bi)
 }
 func (z *Int) Exp(x, y, m *Int) *Int {
@@ -221,9 +227,9 @@ func (z *Int) Exp(x, y, m *Int) *Int {
 	y.ensureInitialized()
 	var bi *big.Int
 	if m == nil {
-		bi = new(big.Int).Exp(x.i.Big(), y.i.Big(), nil)
+		bi = new(big.Int).Exp(x.Big(), y.Big(), nil)
 	} else {
-		bi = new(big.Int).Exp(x.i.Big(), y.i.Big(), m.i.Big())
+		bi = new(big.Int).Exp(x.Big(), y.Big(), m.Big())
 	}
 	return z.wrap(bi)
 }
@@ -231,13 +237,13 @@ func (z *Int) ModInverse(x, m *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
 	m.ensureInitialized()
-	bi := new(big.Int).ModInverse(x.i.Big(), m.i.Big())
+	bi := new(big.Int).ModInverse(x.Big(), m.Big())
 	return z.wrap(bi)
 }
 func (z *Int) Sqrt(x *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
-	bi := new(big.Int).Sqrt(x.i.Big())
+	bi := new(big.Int).Sqrt(x.Big())
 	return z.wrap(bi)
 
 }
@@ -245,7 +251,7 @@ func (z *Int) ModSqrt(x, m *Int) *Int {
 	z.ensureInitialized()
 	x.ensureInitialized()
 	m.ensureInitialized()
-	bi := new(big.Int).ModSqrt(x.i.Big(), m.i.Big())
+	bi := new(big.Int).ModSqrt(x.Big(), m.Big())
 	return z.wrap(bi)
 }
 func (z *Int) Lsh(x *Int, n uint) *Int {
@@ -273,17 +279,17 @@ func (z *Int) GCD(x, y, a, b *Int) *Int {
 	b.ensureInitialized()
 	var bi *big.Int
 	if x == nil && y == nil {
-		bi = z.i.Big().GCD(nil, nil, a.Big(), b.Big())
+		bi = z.Big().GCD(nil, nil, a.Big(), b.Big())
 	} else {
 		x.ensureInitialized()
 		y.ensureInitialized()
-		bi = z.i.Big().GCD(x.Big(), y.Big(), a.Big(), b.Big())
+		bi = z.Big().GCD(x.Big(), y.Big(), a.Big(), b.Big())
 	}
 	return z.wrap(bi)
 }
 func (z *Int) ProbablyPrime(n int) bool {
 	z.ensureInitialized()
-	return z.i.Big().ProbablyPrime(n)
+	return z.Big().ProbablyPrime(n)
 }
 func (z *Int) And(x, y *Int) *Int {
 	z.ensureInitialized()
@@ -296,47 +302,50 @@ func (z *Int) And(x, y *Int) *Int {
 // getters
 func (z *Int) Sign() int {
 	z.ensureInitialized()
-	return z.i.Big().Sign()
+	return z.Big().Sign()
 }
 func (z *Int) Int64() int64 {
 	z.ensureInitialized()
-	return z.i.Big().Int64()
+	return z.Big().Int64()
 }
 func (z *Int) Uint64() uint64 {
 	z.ensureInitialized()
-	return z.i.Big().Uint64()
+	return z.Big().Uint64()
 }
 func (z *Int) Bit(i int) uint {
 	z.ensureInitialized()
-	return z.i.Big().Bit(i)
+	return z.Big().Bit(i)
 }
 func (z *Int) Bytes() []byte {
 	z.ensureInitialized()
-	return z.i.Big().Bytes()
+	return z.Big().Bytes()
 }
 func (z *Int) Big() *big.Int {
 	z.ensureInitialized()
-	return z.i.Big()
+	if constantTimeIntEnabled {
+		return z.i.Big()
+	} else {
+		return z.i2
+	}
 }
 
 // -----
 
 func (z *Int) ensureInitialized() {
-	if z.i == nil {
+	if constantTimeIntEnabled && z.i == nil {
 		z.i = new(big_const.Int)
+	} else if !constantTimeIntEnabled && z.i2 == nil {
+		z.i2 = new(big.Int)
+	}
+	if z.mutex == nil {
+		z.mutex = new(sync.RWMutex)
 	}
 }
 func (z *Int) wrap(bi *big.Int) *Int {
 	wrapped := Wrap(bi)
 	z.i = wrapped.i
+	z.i2 = wrapped.i2
 	return z
-}
-
-func (z *Int) Text(base int) string {
-	z.ensureInitialized()
-	z.mutex.RLock()
-	defer z.mutex.RUnlock()
-	return z.i.Big().Text(base)
 }
 
 func SetString(s string, base int) (*Int, bool) {

@@ -20,7 +20,8 @@ var (
 )
 
 func ModInt(mod *Int) *modInt {
-	newMod := &Int{mod.i.Clone(), sync.RWMutex{}}
+	i := mod.Clone()
+	newMod := &Int{i.i, i.Big(), new(sync.RWMutex)}
 	return (*modInt)(newMod)
 }
 
@@ -46,7 +47,7 @@ func (mi *modInt) Mul(x, y *Int) *Int {
 	mutex := sync.RWMutex{}
 	mutex.Lock()
 	defer mutex.Unlock()
-	i := &Int{mi.i.Clone(), sync.RWMutex{}}
+	i := &Int{mi.i, mi.int().Big(), new(sync.RWMutex)}
 	i.Mul(x, y)
 	return i.Mod(i, mi.int())
 }
