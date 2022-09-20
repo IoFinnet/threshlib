@@ -9,6 +9,7 @@ package keygen
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common/hash"
@@ -59,6 +60,21 @@ func (round *round3) Start() *tss.Error {
 
 	idG := crypto.ScalarBaseMult(round.EC(), big.NewInt(1))
 	𝜌 := round.temp.𝜌ᵢ
+
+	concurrency := runtime.NumCPU()
+	if concurrency > len(round.Parties().IDs()) {
+		concurrency = len(round.Parties().IDs())
+	}
+	common.Logger.Debugf(
+		"%s Setting up PRM verification with concurrency level %d",
+		round.PartyID(),
+		concurrency,
+	)
+	prmVerifier, errV := zkpprm.NewPrmProofVerifier(concurrency)
+	if errV != nil {
+		return round.WrapError(fmt.Errorf("zkpprm init"))
+	}
+
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -125,22 +141,24 @@ func (round *round3) Start() *tss.Error {
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
-			defer wg.Done()
-
 			Nj, sj, tj := round.temp.rref2msgNj[j], round.temp.rref2msgsj[j], round.temp.rref2msgtj[j]
 			ssid := hash.SHA256i([]*big.Int{sid /*round.temp.r2msgRidj[j],*/, Nj, sj, tj, round.temp.sessionId}...)
 			nonce := big.NewInt(0).Add(ssid, big.NewInt(uint64(j)))
 			if nonce.BitLen() < zkpprm.MinBitLen {
 				nonce = new(big.Int).Lsh(nonce, uint(zkpprm.MinBitLen-nonce.BitLen()))
 			}
-			if v := round.temp.rref2msgpf𝜓j[j].VerifyWithNonce(sj, tj, Nj, nonce); !v {
-				/* common.Logger.Debugf("party %v r3 err Pj: %v, proof: %v, Ni: %v, si: %v, nonce: %v", round.PartyID(),
-					Pj, zkpprm.FormatProofPrm(round.temp.rref2msgpf𝜓j[j]), common.FormatBigInt(Nj),
-					common.FormatBigInt(sj), common.FormatBigInt(nonce),
-				) */
-				errsCh <- round.WrapError(errors.New("failed prm proof"), Pj)
-				return
-			}
+			prmVerifier.VerifyWithNonce(round.temp.rref2msgpf𝜓j[j], sj, tj, Nj, nonce, func(isValid bool) {
+				if !isValid {
+					/* common.Logger.Debugf("party %v r3 err Pj: %v, proof: %v, Ni: %v, si: %v, nonce: %v", round.PartyID(),
+						Pj, zkpprm.FormatProofPrm(round.temp.rref2msgpf𝜓j[j]), common.FormatBigInt(Nj),
+						common.FormatBigInt(sj), common.FormatBigInt(nonce),
+					) */
+					errsCh <- round.WrapError(errors.New("failed prm proof"), Pj)
+					return
+				}
+				wg.Done()
+			})
+
 		}(j, Pj)
 
 		wg.Add(1)
