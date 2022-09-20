@@ -307,13 +307,15 @@ keygen:
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
-						if j2 == j {
-							continue
-						}
+						var share *big.Int
 						P.Lock()
+						if j2 == j {
+							share = P.temp.shares[j].Share
+						} else {
+							share = P.temp.r3msgxij[j]
+						}
 						// vssMsgs := P.temp.kgRound3Messages
 						// share := vssMsgs[j].Content().(*KGRound3Message).Share
-						share := P.temp.r3msgxij[j]
 						shareStruct := &vss.Share{
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),

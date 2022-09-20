@@ -129,16 +129,19 @@ keygen:
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
-						if j2 == j {
-							continue
-						}
+						var share *int2.Int
 						P.Lock()
 						vssMsgs := P.temp.kgRound2Message1s
-						share := vssMsgs[j].Content().(*KGRound2Message1).Share
+						if j2 == j {
+							share = P.temp.shares[j].Share
+						} else {
+							share = new(big.Int).SetBytes(vssMsgs[j].Content().(*KGRound2Message1).Share)
+						}
+
 						shareStruct := &vss.Share{
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
-							Share:     new(big.Int).SetBytes(share),
+							Share:     share,
 						}
 						pShares = append(pShares, shareStruct)
 						P.Unlock()
@@ -309,17 +312,19 @@ keygen:
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
-						if j2 == j {
-							continue
-						}
+						var share *int2.Int
 						P.Lock()
 						vssMsgs := P.temp.kgRound2Message1s
-						share := vssMsgs[j].Content().(*KGRound2Message1).Share
+						if j2 == j {
+							share = P.temp.shares[j].Share
+						} else {
+							share = new(big.Int).SetBytes(vssMsgs[j].Content().(*KGRound2Message1).Share)
+						}
 						P.Unlock()
 						shareStruct := &vss.Share{
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
-							Share:     new(big.Int).SetBytes(share),
+							Share:     share,
 						}
 						pShares = append(pShares, shareStruct)
 					}
