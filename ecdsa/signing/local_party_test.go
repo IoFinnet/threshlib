@@ -145,10 +145,10 @@ signing:
 				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
-				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X().Big(), sumS.Big())
+				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X(), sumS)
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify
@@ -172,7 +172,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	chainCode := make([]byte, 32)
 	max32b := new(big.Int).Lsh(new(big.Int).SetUint64(1), 256)
 	max32b = new(big.Int).Sub(max32b, new(big.Int).SetUint64(1))
-	common.GetRandomPositiveInt(max32b).Big().FillBytes(chainCode)
+	common.GetRandomPositiveInt(max32b).FillBytes(chainCode)
 
 	il, extendedChildPk, errorDerivation := derivingPubkeyFromPath(keys[0].ECDSAPub, chainCode, []uint32{12, 209, 3}, btcec.S256())
 	assert.NoErrorf(t, errorDerivation, "there should not be an error deriving the child public key")
@@ -257,10 +257,10 @@ signing:
 				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
-				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X().Big(), sumS.Big())
+				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X(), sumS)
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify

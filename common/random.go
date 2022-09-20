@@ -37,7 +37,7 @@ func MustGetRandomInt(minBits int, upper ...*big.Int) *big.Int {
 	} else {
 		max = upper[0]
 	}
-	maxBI := max.Big()
+	maxBI := max
 
 	// Generate cryptographically strong pseudo-random int between 0 - max
 	var n *gbig.Int
@@ -90,10 +90,10 @@ func GetRandomPrimeInt(minBits int) *big.Int {
 	}
 	try, err := rand.Prime(rand.Reader, minBits)
 	if err != nil ||
-		try.Cmp(zero.Big()) == 0 {
+		try.Cmp(zero) == 0 {
 		// fallback to older method
 		for {
-			try = MustGetRandomInt(minBits).Big()
+			try = MustGetRandomInt(minBits)
 			if probablyPrime(big.Wrap(try)) {
 				break
 			}
@@ -139,7 +139,7 @@ func GetRandomGeneratorOfTheQuadraticResidue(n *big.Int) *big.Int {
 func GetRandomQuadraticNonResidue(n *big.Int) *big.Int {
 	for {
 		w := GetRandomPositiveInt(n)
-		if gbig.Jacobi(w.Big(), n.Big()) == -1 {
+		if gbig.Jacobi(w, n) == -1 {
 			return w
 		}
 	}

@@ -54,7 +54,7 @@ func (P *ECPoint) Y() *big.Int {
 }
 
 func (P *ECPoint) Add(p1 *ECPoint) (*ECPoint, error) {
-	x, y := P.curve.Add(P.X().Big(), P.Y().Big(), p1.X().Big(), p1.Y().Big())
+	x, y := P.curve.Add(P.X(), P.Y(), p1.X(), p1.Y())
 	return NewECPoint(P.curve, big.Wrap(x), big.Wrap(y))
 }
 
@@ -72,16 +72,16 @@ func (P *ECPoint) ScalarMultConstantTime(k *big.Int) *ECPoint {
 	R1 := NewECPointNoCurveCheck(curve, P.X(), P.Y())
 	for i := P.curve.Params().N.BitLen() - 1; i >= 0; i-- {
 		if k.Bit(i) == 0 {
-			x, y := curve.Add(R0.X().Big(), R0.Y().Big(), R1.X().Big(), R1.Y().Big())
+			x, y := curve.Add(R0.X(), R0.Y(), R1.X(), R1.Y())
 			R1 = NewECPointNoCurveCheck(curve, big.Wrap(x), big.Wrap(y))
 
-			x, y = curve.Add(R0.X().Big(), R0.Y().Big(), R0.X().Big(), R0.Y().Big())
+			x, y = curve.Add(R0.X(), R0.Y(), R0.X(), R0.Y())
 			R0 = NewECPointNoCurveCheck(curve, big.Wrap(x), big.Wrap(y))
 		} else {
-			x, y := curve.Add(R0.X().Big(), R0.Y().Big(), R1.X().Big(), R1.Y().Big())
+			x, y := curve.Add(R0.X(), R0.Y(), R1.X(), R1.Y())
 			R0 = NewECPointNoCurveCheck(curve, big.Wrap(x), big.Wrap(y))
 
-			x, y = curve.Add(R1.X().Big(), R1.Y().Big(), R1.X().Big(), R1.Y().Big())
+			x, y = curve.Add(R1.X(), R1.Y(), R1.X(), R1.Y())
 			R1 = NewECPointNoCurveCheck(curve, big.Wrap(x), big.Wrap(y))
 		}
 	}
@@ -109,8 +109,8 @@ func (P *ECPoint) ToBtcecPubKey() *btcec.PublicKey {
 func (P *ECPoint) ToEdwardsPubKey() *edwards.PublicKey {
 	ecdsaPK := ecdsa.PublicKey{
 		Curve: P.curve,
-		X:     P.X().Big(),
-		Y:     P.Y().Big(),
+		X:     P.X(),
+		Y:     P.Y(),
 	}
 	pk := edwards.PublicKey(ecdsaPK)
 	return &pk
@@ -163,7 +163,7 @@ func ScalarMult(curve elliptic.Curve, P *ECPoint, k *big.Int) *ECPoint {
 	}
 	if _, isEdwards := curve.(*edwards.TwistedEdwardsCurve); isEdwards {
 		Pʹ := ed25519.Fromxy(P.X(), P.Y())
-		if curve.Params().N.Cmp(k.Big()) == -1 {
+		if curve.Params().N.Cmp(k) == -1 {
 			common.Logger.Warn("warn")
 		}
 		kBytes := ed25519.BigIntToEncodedBytes(k)
@@ -195,7 +195,7 @@ func isOnCurve(c elliptic.Curve, x, y *big.Int) bool {
 	if x == nil || y == nil {
 		return false
 	}
-	return c.IsOnCurve(x.Big(), y.Big())
+	return c.IsOnCurve(x, y)
 }
 
 // ----- //
@@ -244,11 +244,11 @@ func UnFlattenECPoints(curve elliptic.Curve, in []*big.Int, noCurveCheck ...bool
 
 func (P *ECPoint) GobEncode() ([]byte, error) {
 	buf := &bytes.Buffer{}
-	x, err := P.coords[0].Big().GobEncode()
+	x, err := P.coords[0].GobEncode()
 	if err != nil {
 		return nil, err
 	}
-	y, err := P.coords[1].Big().GobEncode()
+	y, err := P.coords[1].GobEncode()
 	if err != nil {
 		return nil, err
 	}
@@ -288,11 +288,11 @@ func (P *ECPoint) GobDecode(buf []byte) error {
 	}
 
 	X := new(big.Int)
-	if err := X.Big().GobDecode(x); err != nil {
+	if err := X.GobDecode(x); err != nil {
 		return err
 	}
 	Y := new(big.Int)
-	if err := Y.Big().GobDecode(y); err != nil {
+	if err := Y.GobDecode(y); err != nil {
 		return err
 	}
 	P.curve = tss.EC()

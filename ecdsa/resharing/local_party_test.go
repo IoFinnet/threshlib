@@ -221,12 +221,12 @@ signing:
 				pkX, pkY := signKeys[0].ECDSAPub.X(), signKeys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.S256(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
 				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(),
-					new(big.Int).SetBytes(signData.R).Big(),
-					new(big.Int).SetBytes(signData.S).Big())
+					new(big.Int).SetBytes(signData.R),
+					new(big.Int).SetBytes(signData.S))
 
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")

@@ -71,7 +71,7 @@ func fromBig(v *field.Element, n *big.Int) *field.Element {
 	}
 
 	buf := make([]byte, 0, 32)
-	for _, word := range n.Big().Bits() {
+	for _, word := range n.Bits() {
 		for i := 0; i < bits.UintSize; i += 8 {
 			if len(buf) >= cap(buf) {
 				break

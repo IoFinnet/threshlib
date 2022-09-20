@@ -215,8 +215,8 @@ signing:
 				pkX, pkY := signKeys[0].EDDSAPub.X(), signKeys[0].EDDSAPub.Y()
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
 
 				newSig, err := edwards.ParseSignature(signData.Signature)

@@ -200,10 +200,10 @@ signingSecondPart:
 				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
-				ok := ecdsa.Verify(&pk, int2.NewInt(42).Bytes(), R.X().Big(), sumS.Big())
+				ok := ecdsa.Verify(&pk, int2.NewInt(42).Bytes(), R.X(), sumS)
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify

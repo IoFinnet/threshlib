@@ -121,7 +121,7 @@ func LocalTempDataToMarshalled(data *localTempData, ECDSAPub *crypto.ECPoint) Ma
 	if data.VD != nil {
 		marshalledLocalTempData.VD = make([]*big.Int, len(data.VD))
 		for i, v := range data.VD {
-			marshalledLocalTempData.VD[i] = v.Clone()
+			marshalledLocalTempData.VD[i] = new(big.Int).SetBytes(v.Bytes())
 		}
 	}
 	marshalledLocalTempData.SessionId = data.sessionId

@@ -225,13 +225,13 @@ func TestMult(t *testing.T) {
 
 func TestMultEd(t *testing.T) {
 	curve := tss.Edwards()
-	xx, _ := big.SetString("14e528b1154be417b6cf078dd6712438d381a5b2c593d552ff2fd2c1207cf3cb", 16)
-	xy, _ := big.SetString("2d9082313f21ab975a6f7ce340ff0fce1258591c3c9c58d4308f2dc36a033713", 16)
+	xx, _ := new(big.Int).SetString("14e528b1154be417b6cf078dd6712438d381a5b2c593d552ff2fd2c1207cf3cb", 16)
+	xy, _ := new(big.Int).SetString("2d9082313f21ab975a6f7ce340ff0fce1258591c3c9c58d4308f2dc36a033713", 16)
 	X, _ := NewECPoint(curve, xx, xy)
-	e, _ := big.SetString("fad46d13fe8ce132c7f55c3caf1c2254217ce7538db37ef6cd058aec825c094", 16)
+	e, _ := new(big.Int).SetString("fad46d13fe8ce132c7f55c3caf1c2254217ce7538db37ef6cd058aec825c094", 16)
 	XEXPeNew := X.ScalarMult(e)
 	multOld := func(p *ECPoint, k *big.Int) *ECPoint {
-		x, y := p.Curve().ScalarMult(p.X().Big(), p.Y().Big(), k.Bytes())
+		x, y := p.Curve().ScalarMult(p.X(), p.Y(), k.Bytes())
 		newP, err := NewECPoint(curve, big.Wrap(x), big.Wrap(y))
 		assert.NoError(t, err)
 		return newP

@@ -100,7 +100,7 @@ func (round *round3) Start() *tss.Error {
 		encodedPubKey = ed25519.ECPointToEncodedBytes(round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
 	} else if isSecp256k1Curve {
 		s := new([32]byte)
-		round.key.EDDSAPub.X().Big().FillBytes(s[:])
+		round.key.EDDSAPub.X().FillBytes(s[:])
 		encodedPubKey = s
 	}
 

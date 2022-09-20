@@ -130,8 +130,8 @@ signing:
 				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
 
 				sBytes := ed25519.CopyBytes(parties[0].data.Signature[32:64])
@@ -145,7 +145,7 @@ signing:
 				t.Logf("R: %s\n", common.FormatBigInt(big.Wrap(newSig.R)))
 				t.Logf("S: %s\n", common.FormatBigInt(big.Wrap(newSig.S)))
 
-				ok := edwards.Verify(&pk, msg.Bytes(), R.Big(), sEncodedBigInt.Big())
+				ok := edwards.Verify(&pk, msg.Bytes(), R, sEncodedBigInt)
 				if !assert.True(t, ok, "eddsa verify must pass") {
 					t.Error("eddsa verify must pass")
 					t.FailNow()

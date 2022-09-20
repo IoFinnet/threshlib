@@ -85,7 +85,7 @@ func proof(N *big.Int, P *big.Int, Q *big.Int, Phi *big.Int, Y [13]*big.Int, W *
 			a, b := j&1, j&2>>1
 			Yi := new(big.Int).SetBytes(Y[i].Bytes()) // TODO use bool instead
 			if a > 0 {
-				Yi = modN.Mul(big.NewInt(1).SetNeg(), Yi)
+				Yi = modN.Mul(new(big.Int).SetInt64(-1), Yi)
 			}
 			if b > 0 {
 				Yi = modN.Mul(W, Yi)
@@ -177,7 +177,7 @@ func verification(N *big.Int, pf *ProofMod, Y [13]*big.Int) (bool, bool) {
 			left := modN.Exp(pf.X[i], big.NewInt(4))
 			right := Y[i]
 			if a > 0 {
-				right = modN.Mul(big.NewInt(1).SetNeg(), right)
+				right = modN.Mul(new(big.Int).SetInt64(-1), right)
 			}
 			if b > 0 {
 				right = modN.Mul(pf.W, right)
@@ -252,7 +252,7 @@ func (pf *ProofMod) Bytes() [ProofModBytesParts][]byte {
 func GetRandomNonQuadraticNonResidue(n *big.Int) *big.Int {
 	for {
 		w := common.GetRandomPositiveInt(n)
-		if mathbig.Jacobi(w.Big(), n.Big()) != -1 {
+		if mathbig.Jacobi(w, n) != -1 {
 			return w
 		}
 	}

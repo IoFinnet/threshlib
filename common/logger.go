@@ -20,6 +20,6 @@ func FormatBigInt(a *big.Int) string {
 	}
 	var aux = new(big.Int).SetInt64(0xFFFFFFFF)
 	return func(i *big.Int) string {
-		return new(big.Int).And(i, aux).Big().Text(16)
+		return new(big.Int).And(i, aux).Text(16)
 	}(a)
 }

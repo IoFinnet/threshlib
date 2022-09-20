@@ -90,7 +90,7 @@ func (round *finalization) Start() *tss.Error {
 	if isTwistedEdwardsCurve {
 		common.Logger.Debugf("finalize - r: %v, s:%v", hex.EncodeToString(round.temp.r.Bytes()),
 			hex.EncodeToString(s.Bytes()))
-		if ok = edwards.Verify(round.key.EDDSAPub.ToEdwardsPubKey(), round.temp.m.Bytes(), round.temp.r.Big(), s.Big()); !ok {
+		if ok = edwards.Verify(round.key.EDDSAPub.ToEdwardsPubKey(), round.temp.m.Bytes(), round.temp.r, s); !ok {
 			return round.WrapError(fmt.Errorf("edwards signature verification failed"))
 		}
 	} else if isSecp256k1Curve {
@@ -117,5 +117,5 @@ func (round *finalization) NextRound() tss.Round {
 }
 
 func encode32bytes(i *big.Int, buff *[32]byte) {
-	i.Big().FillBytes(buff[:])
+	i.FillBytes(buff[:])
 }

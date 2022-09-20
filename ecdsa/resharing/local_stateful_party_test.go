@@ -382,12 +382,12 @@ resharingSecondPart:
 				pkX, pkY := signKeys[0].ECDSAPub.X(), signKeys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.S256(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
 				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(),
-					new(int2.Int).SetBytes(signData.R).Big(),
-					new(int2.Int).SetBytes(signData.S).Big())
+					new(int2.Int).SetBytes(signData.R),
+					new(int2.Int).SetBytes(signData.S))
 
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")

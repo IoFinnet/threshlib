@@ -57,7 +57,7 @@ func (k *MarshallableEcdsaPrivateKey) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &newKey); err != nil {
 		return err
 	}
-	k.D = newKey.D.Big()
+	k.D = newKey.D
 	k.PublicKey = (ecdsa.PublicKey)(newKey.PublicKey)
 
 	return nil
@@ -79,8 +79,8 @@ func (k *MarshallableEcdsaPublicKey) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &newKey); err != nil {
 		return err
 	}
-	k.X = newKey.X.Big()
-	k.Y = newKey.Y.Big()
+	k.X = newKey.X
+	k.Y = newKey.Y
 	k.Curve = tss.EC()
 
 	return nil

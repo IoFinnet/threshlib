@@ -180,8 +180,8 @@ keygen:
 				pkX, pkY := save.EDDSAPub.X(), save.EDDSAPub.Y()
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
 				t.Logf("u len: %v", len(u.Bytes()))
 				t.Logf("u: %v", common.FormatBigInt(u))
@@ -191,7 +191,7 @@ keygen:
 				// fmt.Println("err: ", err.Error())
 
 				// test pub key, should be on curve and match pkX, pkY
-				assert.True(t, pk.IsOnCurve(pkX.Big(), pkY.Big()), "public key must be on curve")
+				assert.True(t, pk.IsOnCurve(pkX, pkY), "public key must be on curve")
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")

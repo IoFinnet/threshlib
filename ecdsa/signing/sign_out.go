@@ -84,10 +84,10 @@ func (round *signout) Start() *tss.Error {
 
 	pk := ecdsa.PublicKey{
 		Curve: round.Params().EC(),
-		X:     round.key.ECDSAPub.X().Big(),
-		Y:     round.key.ECDSAPub.Y().Big(),
+		X:     round.key.ECDSAPub.X(),
+		Y:     round.key.ECDSAPub.Y(),
 	}
-	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.Rx.Big(), Sigma.Big())
+	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.Rx, Sigma)
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}

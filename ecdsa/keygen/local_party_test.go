@@ -366,15 +366,15 @@ keygen:
 				pkX, pkY := save.ECDSAPub.X(), save.ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
 					Curve: tss.EC(),
-					X:     pkX.Big(),
-					Y:     pkY.Big(),
+					X:     pkX,
+					Y:     pkY,
 				}
 				sk := ecdsa.PrivateKey{
 					PublicKey: pk,
-					D:         u.Big(),
+					D:         u,
 				}
 				// test pub key, should be on curve and match pkX, pkY
-				assert.True(t, sk.IsOnCurve(pkX.Big(), pkY.Big()), "public key must be on curve")
+				assert.True(t, sk.IsOnCurve(pkX, pkY), "public key must be on curve")
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")

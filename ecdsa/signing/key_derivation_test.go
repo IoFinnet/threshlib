@@ -71,7 +71,7 @@ func TestHDKeyDerivation(t *testing.T) {
 	chainCode := make([]byte, 32)
 	max32b := new(big.Int).Lsh(new(big.Int).SetUint64(1), 256)
 	max32b = new(big.Int).Sub(max32b, new(big.Int).SetUint64(1))
-	common.GetRandomPositiveInt(max32b).Big().FillBytes(chainCode)
+	common.GetRandomPositiveInt(max32b).FillBytes(chainCode)
 
 	extendedParentPk := &ckd.ExtendedKey{
 		PublicKey:  pk,
@@ -155,7 +155,7 @@ signing:
 					X:     extendedChildPk.X(),
 					Y:     extendedChildPk.Y(),
 				}
-				ok := ecdsa.Verify(ecdsaPK, msg.Bytes(), bigR.X().Big(), sumS.Big())
+				ok := ecdsa.Verify(ecdsaPK, msg.Bytes(), bigR.X(), sumS)
 				assert.True(t, ok, "ecdsa verify must pass")
 
 				t.Log("ECDSA signing test done.")
