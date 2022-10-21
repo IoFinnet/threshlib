@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"fmt"
 	"runtime"
@@ -38,6 +39,10 @@ const (
 	testThreshold               = test.TestThreshold
 	culpritPartySimulatingAbort = 2
 	victimPartySimulatingAbort  = 1
+)
+
+var (
+	msg = big.NewInt(42)
 )
 
 func setUp(level string) {
@@ -77,7 +82,7 @@ func TestE2EConcurrent(t *testing.T) {
 		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P_, errP := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
+		P_, errP := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		if errP != nil {
 			t.Errorf("error %v", errP)
 			t.FailNow()
@@ -123,7 +128,7 @@ signing:
 			// P = ...... with dtemp
 			// P.start
 
-		case <-endCh:
+		case end := <-endCh:
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
 				t.Logf("Done. Received signature data from %d participants", ended)
@@ -148,7 +153,24 @@ signing:
 					X:     pkX,
 					Y:     pkY,
 				}
-				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X(), sumS)
+
+				r, s, v := end.R, end.S, end.SignatureRecovery
+				sig := make([]byte, 65)
+				copy(sig[32-len(r):32], r)
+				copy(sig[64-len(s):64], s)
+				sig[64] = v[0] & 0x01
+
+				expPub := keys[0].ECDSAPub.ToBtcecPubKey().SerializeUncompressed()
+
+				gotPub, err2 := crypto.Ecrecover(msg.Bytes(), sig)
+				if !assert.NoError(t, err2) {
+					return
+				}
+				if !bytes.Equal(expPub, gotPub) {
+					t.Fatalf("recovered key did not match the expected one")
+				}
+
+				ok := ecdsa.Verify(&pk, msg.Bytes(), R.X(), sumS)
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify
@@ -200,7 +222,7 @@ func TestE2EWithHDKeyDerivation(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
+		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -260,7 +282,7 @@ signing:
 					X:     pkX,
 					Y:     pkY,
 				}
-				ok := ecdsa.Verify(&pk, big.NewInt(42).Bytes(), R.X(), sumS)
+				ok := ecdsa.Verify(&pk, msg.Bytes(), R.X(), sumS)
 				assert.True(t, ok, "ecdsa verify must pass")
 				t.Log("ECDSA signing test done.")
 				// END ECDSA verify
@@ -396,7 +418,7 @@ func TestAbortIdentification(t *testing.T) {
 		params, _ := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P_, _ := NewLocalParty(big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
+		P_, _ := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh, sessionId)
 		P := P_.(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -653,7 +675,7 @@ func TestTooManyParties(t *testing.T) {
 
 	var err error
 	var void keygen.LocalPartySaveData
-	_, err = NewLocalParty(big.NewInt(42), params, void, big.NewInt(0), nil, nil, sessionId)
+	_, err = NewLocalParty(msg, params, void, big.NewInt(0), nil, nil, sessionId)
 	if !assert.Error(t, err) {
 		t.FailNow()
 		return
