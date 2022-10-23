@@ -7,12 +7,13 @@
 package signing
 
 import (
+	"bytes"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"errors"
 	"fmt"
 
 	big "github.com/binance-chain/tss-lib/common/int"
+	"github.com/btcsuite/btcd/btcec/v2"
 
 	"github.com/binance-chain/tss-lib/common"
 	int2 "github.com/binance-chain/tss-lib/common/int"
@@ -20,17 +21,6 @@ import (
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
-
-func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
-	modN := int2.ModInt(big.Wrap(ec.Params().N))
-	SInv := modN.Inverse(S)
-	mG := crypto.ScalarBaseMult(ec, m)
-	rx := R.X()
-	rxPK := PK.ScalarMult(rx)
-	R2, _ := mG.Add(rxPK)
-	R2 = R2.ScalarMult(SInv)
-	return R2.Equals(R)
-}
 
 func newRound5(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
 	return &signout{&sign4{&presign3{&presign2{&presign1{
@@ -82,20 +72,36 @@ func (round *signout) Start() *tss.Error {
 	round.data.SignatureRecovery = []byte{byte(recid)}
 	round.data.M = round.temp.m.Bytes()
 
-	pk := ecdsa.PublicKey{
-		Curve: round.Params().EC(),
-		X:     round.key.ECDSAPub.X(),
-		Y:     round.key.ECDSAPub.Y(),
-	}
-	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.Rx, Sigma)
+	// self-test ECDSA verify
+	pk1 := round.key.ECDSAPub.ToBtcecPubKey()
+	ok := ecdsa.Verify(pk1.ToECDSA(), round.temp.m.Bytes(), round.temp.Rx, Sigma)
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}
 
+	// self-test EC recovery
+	m, r, s, v := round.temp.m.Bytes(), round.data.R, round.data.S, round.data.SignatureRecovery
+	expPub, gotPub, err := selfTestECRecovery(m, r, s, v, pk1)
+	if err != nil {
+		return round.WrapError(err)
+	}
+	if !bytes.Equal(expPub, gotPub) {
+		return round.WrapError(fmt.Errorf("EC recovery self-test failed"))
+	}
 	round.end <- *round.data
 	round.temp.G = nil
 	round.temp.𝜈i = nil
 	return nil
+}
+
+func selfTestECRecovery(msg, r, s, v []byte, pk *btcec.PublicKey) ([]byte, []byte, error) {
+	sig := make([]byte, 65)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = v[0] & 0x01
+	expPub := pk.SerializeUncompressed()
+	gotPub, err := crypto.Ecrecover(msg, sig)
+	return expPub, gotPub, err
 }
 
 func (round *signout) CanAccept(msg tss.ParsedMessage) bool {
