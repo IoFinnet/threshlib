@@ -148,6 +148,7 @@ func (round *round3) Start() *tss.Error {
 				nonce = new(big.Int).Lsh(nonce, uint(zkpprm.MinBitLen-nonce.BitLen()))
 			}
 			prmVerifier.VerifyWithNonce(round.temp.rref2msgpf𝜓j[j], sj, tj, Nj, nonce, func(isValid bool) {
+				defer wg.Done()
 				if !isValid {
 					/* common.Logger.Debugf("party %v r3 err Pj: %v, proof: %v, Ni: %v, si: %v, nonce: %v", round.PartyID(),
 						Pj, zkpprm.FormatProofPrm(round.temp.rref2msgpf𝜓j[j]), common.FormatBigInt(Nj),
@@ -156,7 +157,6 @@ func (round *round3) Start() *tss.Error {
 					errsCh <- round.WrapError(errors.New("failed prm proof"), Pj)
 					return
 				}
-				wg.Done()
 			})
 
 		}(j, Pj)
