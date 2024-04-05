@@ -5,8 +5,9 @@ go 1.17
 require (
 	filippo.io/edwards25519 v1.0.0-rc.1
 	github.com/agl/ed25519 v0.0.0-20200305024217-f36fc4b53d43
-	github.com/btcsuite/btcd v0.22.0-beta.0.20220201204404-81fbd9b67e54
-	github.com/btcsuite/btcd/btcec/v2 v2.1.0
+	github.com/btcsuite/btcd v0.23.2
+	github.com/btcsuite/btcd/btcec/v2 v2.1.3
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
 	github.com/btcsuite/btcutil v1.0.3-0.20211129182920-9c4bbabe7acd
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.2
 	github.com/hashicorp/go-multierror v1.1.1
@@ -14,8 +15,8 @@ require (
 	github.com/otiai10/primes v0.0.0-20210501021515-f1b2be525a11
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2
-	google.golang.org/protobuf v1.27.1
+	golang.org/x/crypto v0.17.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
@@ -33,10 +34,10 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
 
 replace github.com/agl/ed25519 => github.com/SwingbyProtocol/edwards25519 v0.0.0-20200305024217-f36fc4b53d43
