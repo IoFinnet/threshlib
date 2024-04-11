@@ -1,5 +1,7 @@
 name: Go Vulnerability Check
 on:
+  schedule:
+    - cron: '0 0 * * 0'  # Runs every Sunday at 12:00 AM (UTC)
   push:
     branches:
     - master
