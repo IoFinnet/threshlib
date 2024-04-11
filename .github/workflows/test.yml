@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     name: Test
-    runs-on: buildjet-32vcpu-ubuntu-2004
+    runs-on: ubuntu-latest
     steps:
 
     - uses: actions/checkout@v3
