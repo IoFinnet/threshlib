@@ -26,6 +26,9 @@ type VictimAndCulprit struct {
 }
 
 func NewError(err error, task string, round int, victim *PartyID, culprits ...*PartyID) *Error {
+	if err == nil {
+		return nil
+	}
 	return &Error{cause: err, task: task, round: round, victim: victim, culprits: culprits}
 }
 
