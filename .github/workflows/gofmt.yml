@@ -1,0 +1,14 @@
+name: Go-fmt
+on: push
+jobs:
+  gofmt:
+    name: Run Gofmt
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - uses: Jerome1337/gofmt-action@v1.0.5
