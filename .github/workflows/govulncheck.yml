@@ -1,0 +1,25 @@
+name: Go Vulnerability Check
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Runs every Sunday at 12:00 AM (UTC)
+  push:
+    branches:
+    - master
+    - release/*
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  govulncheck:
+    name: Run govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v5
+      - uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
+

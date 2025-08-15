@@ -1,0 +1,8 @@
+version: v2
+managed:
+  enabled: false
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: .
+    opt:
+      - paths=import

@@ -1,0 +1,54 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib;
+option go_package = "./common";
+
+import "shared.proto";
+
+/*
+ * Container for output signatures, mostly used for marshalling this data structure to a mobile app
+ */
+message EndData {
+    message PreSignatureDataECDSA {
+        // Components to produce s = sum(s_i)
+        bytes ssid = 1;
+        ECPoint pk = 2;
+        ECPoint r = 3;
+        bytes k_i = 4;
+        bytes chi_i = 5;
+        bytes hd_delta = 6; // HD derivation delta (optional)
+    }
+
+    message PreSignatureDataEdDSA {
+        // Components to produce lambda
+        bytes ssid = 1;
+        ECPoint pk = 2;
+        bytes encoded_r = 3;
+        bytes r_i = 4;
+        bytes r = 5;
+        bytes w_i = 6;
+        uint64 a = 7;
+        bytes hd_delta = 8; // HD derivation delta (optional)
+    }
+
+    bytes signature = 1;
+
+    // Ethereum-style recovery byte; only the first byte is relevant
+    bytes signature_recovery = 2;
+
+    // Signature components R, S
+    bytes r = 3;
+    bytes s = 4;
+
+    // M represents the original message digest that was signed M
+    bytes m = 5;
+
+    // One-Round Sign Data
+    PreSignatureDataECDSA pre_sign_data_ecdsa = 10;
+    PreSignatureDataEdDSA pre_sign_data_eddsa = 11;
+}
