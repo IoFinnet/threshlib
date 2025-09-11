@@ -6,9 +6,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
 
-      - uses: Jerome1337/gofmt-action@v1.0.5
+      - uses: Jerome1337/gofmt-action@d5eabd189843f1d568286a54578159978b7c0fb1 # v1.0.5
